@@ -1,7 +1,7 @@
 {
   "name": "private-portfolio",
   "version": "1.0.0",
-  "main": "index.ts",
+  "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
@@ -9,10 +9,28 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@expo/vector-icons": "^15.0.3",
+    "@tamagui/config": "^1.144.3",
+    "@tamagui/core": "^1.144.3",
+    "@types/uuid": "^10.0.0",
+    "date-fns": "^4.1.0",
     "expo": "~54.0.32",
+    "expo-constants": "^18.0.13",
+    "expo-document-picker": "^14.0.8",
+    "expo-file-system": "^19.0.21",
+    "expo-linking": "^8.0.11",
+    "expo-router": "^6.0.22",
+    "expo-sharing": "^14.0.8",
+    "expo-sqlite": "^16.0.10",
     "expo-status-bar": "~3.0.9",
     "react": "19.1.0",
-    "react-native": "0.81.5"
+    "react-dom": "^19.1.0",
+    "react-native": "0.81.5",
+    "react-native-safe-area-context": "^5.6.2",
+    "react-native-web": "^0.21.2",
+    "tamagui": "^1.144.3",
+    "uuid": "^13.0.0",
+    "zustand": "^5.0.10"
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
