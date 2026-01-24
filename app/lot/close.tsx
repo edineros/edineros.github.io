@@ -46,7 +46,7 @@ export default function CloseLotScreen() {
         setQuantity(lotData.remainingQuantity.toString());
       }
 
-      const priceResult = await fetchPrice(assetData.symbol, assetData.type);
+      const priceResult = await fetchPrice(assetData.symbol, assetData.type, assetData.currency);
       if (priceResult) {
         setCurrentPrice(priceResult.price);
         setPricePerUnit(priceResult.price.toString());

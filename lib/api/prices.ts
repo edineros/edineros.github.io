@@ -6,7 +6,7 @@ import {
   setCachedExchangeRate,
 } from '../db/priceCache';
 import { fetchYahooPrice, searchYahooSymbol } from './providers/yahoo';
-import { fetchCoinGeckoPrice, searchCoinGecko, getCoinGeckoId } from './providers/coingecko';
+import { fetchCoinGeckoPrice, searchCoinGecko } from './providers/coingecko';
 import { fetchExchangeRate } from './providers/frankfurter';
 
 // TTL in minutes for different asset types
@@ -31,7 +31,8 @@ export interface PriceResult {
 
 export async function fetchPrice(
   symbol: string,
-  assetType: AssetType
+  assetType: AssetType,
+  preferredCurrency?: string
 ): Promise<PriceResult | null> {
   // Check cache first
   const cached = await getValidCachedPrice(symbol);
@@ -48,7 +49,7 @@ export async function fetchPrice(
   let result: { price: number; currency: string; name?: string } | null = null;
 
   if (assetType === 'crypto') {
-    result = await fetchCoinGeckoPrice(symbol);
+    result = await fetchCoinGeckoPrice(symbol, preferredCurrency);
   } else if (assetType === 'cash') {
     // Cash is always worth 1 in its currency
     return {
@@ -169,12 +170,13 @@ export async function searchSymbol(
 // Refresh price (ignore cache)
 export async function refreshPrice(
   symbol: string,
-  assetType: AssetType
+  assetType: AssetType,
+  preferredCurrency?: string
 ): Promise<PriceResult | null> {
   let result: { price: number; currency: string; name?: string } | null = null;
 
   if (assetType === 'crypto') {
-    result = await fetchCoinGeckoPrice(symbol);
+    result = await fetchCoinGeckoPrice(symbol, preferredCurrency);
   } else if (assetType === 'cash') {
     return {
       price: 1,

@@ -43,7 +43,7 @@ export async function calculateAssetStats(
   const averageCost = totalQuantity > 0 ? totalCost / totalQuantity : 0;
 
   // Fetch current price
-  const priceResult = await fetchPrice(asset.symbol, asset.type);
+  const priceResult = await fetchPrice(asset.symbol, asset.type, asset.currency);
   let currentPrice: number | null = priceResult?.price ?? null;
   let currentValue: number | null = null;
   let unrealizedGain: number | null = null;

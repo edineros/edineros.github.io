@@ -56,7 +56,7 @@ export default function AssetDetailScreen() {
       setTransactions(txData);
 
       if (assetData) {
-        const priceResult = await fetchPrice(assetData.symbol, assetData.type);
+        const priceResult = await fetchPrice(assetData.symbol, assetData.type, assetData.currency);
         if (priceResult) {
           setCurrentPrice(priceResult.price);
           setPriceLastUpdated(priceResult.fetchedAt);
@@ -72,7 +72,7 @@ export default function AssetDetailScreen() {
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     if (asset) {
-      const priceResult = await refreshPrice(asset.symbol, asset.type);
+      const priceResult = await refreshPrice(asset.symbol, asset.type, asset.currency);
       if (priceResult) {
         setCurrentPrice(priceResult.price);
         setPriceLastUpdated(priceResult.fetchedAt);

@@ -1,7 +1,6 @@
 interface CoinGeckoPrice {
   [coinId: string]: {
-    usd: number;
-    usd_24h_change?: number;
+    [currency: string]: number;
   };
 }
 
@@ -41,7 +40,10 @@ export function getCoinGeckoId(symbol: string): string | null {
   return symbolToIdMap[upper] || null;
 }
 
-export async function fetchCoinGeckoPrice(symbolOrId: string): Promise<{
+export async function fetchCoinGeckoPrice(
+  symbolOrId: string,
+  preferredCurrency?: string
+): Promise<{
   price: number;
   currency: string;
 } | null> {
@@ -49,7 +51,10 @@ export async function fetchCoinGeckoPrice(symbolOrId: string): Promise<{
     // Try to resolve symbol to ID
     const coinId = getCoinGeckoId(symbolOrId) || symbolOrId.toLowerCase();
 
-    const url = `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(coinId)}&vs_currencies=usd`;
+    // Request both preferred currency and USD as fallback
+    const currencies = preferredCurrency ? `${preferredCurrency.toLowerCase()},usd` : 'usd';
+
+    const url = `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(coinId)}&vs_currencies=${currencies}`;
 
     const response = await fetch(url, {
       headers: {
@@ -64,14 +69,27 @@ export async function fetchCoinGeckoPrice(symbolOrId: string): Promise<{
 
     const data = (await response.json()) as CoinGeckoPrice;
 
-    if (!data[coinId]?.usd) {
+    if (!data[coinId]) {
       return null;
     }
 
-    return {
-      price: data[coinId].usd,
-      currency: 'USD',
-    };
+    // Try preferred currency first, then USD
+    const prefCurrencyLower = preferredCurrency?.toLowerCase();
+    if (prefCurrencyLower && data[coinId][prefCurrencyLower] !== undefined) {
+      return {
+        price: data[coinId][prefCurrencyLower],
+        currency: preferredCurrency!.toUpperCase(),
+      };
+    }
+
+    if (data[coinId].usd !== undefined) {
+      return {
+        price: data[coinId].usd,
+        currency: 'USD',
+      };
+    }
+
+    return null;
   } catch (error) {
     console.error('Error fetching CoinGecko price:', error);
     return null;
