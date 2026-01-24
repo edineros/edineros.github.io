@@ -8,10 +8,9 @@ import { formatCurrency } from '../../lib/utils/format';
 import type { Asset, Transaction } from '../../lib/types';
 
 export default function EditLotScreen() {
-  const { lotId, assetId, portfolioId } = useLocalSearchParams<{
+  const { lotId, assetId } = useLocalSearchParams<{
     lotId: string;
     assetId: string;
-    portfolioId: string;
   }>();
   const [asset, setAsset] = useState<Asset | null>(null);
   const [transaction, setTransaction] = useState<Transaction | null>(null);
