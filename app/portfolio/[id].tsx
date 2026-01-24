@@ -1,8 +1,9 @@
 import { useEffect, useCallback, useState } from 'react';
-import { FlatList, RefreshControl, Pressable, Text as RNText } from 'react-native';
+import { FlatList, RefreshControl, Pressable } from 'react-native';
 import { Link, useLocalSearchParams, useFocusEffect, Stack } from 'expo-router';
 import { YStack, XStack, Text, Spinner } from 'tamagui';
 import { useAppStore } from '../../store';
+import { HeaderIconButton } from '../../components/HeaderButtons';
 import { formatCurrency, formatPercent, formatQuantity, getGainColor } from '../../lib/utils/format';
 import type { Asset } from '../../lib/types';
 
@@ -162,11 +163,7 @@ export default function PortfolioDetailScreen() {
         options={{
           title: displayTitle,
           headerRight: () => (
-            <Link href={`/portfolio/edit/${id}`} asChild>
-              <Pressable style={{ paddingLeft: 8 }}>
-                <RNText style={{ color: '#007AFF', fontSize: 17 }}>Edit</RNText>
-              </Pressable>
-            </Link>
+            <HeaderIconButton icon="create-outline" href={`/portfolio/edit/${id}`} />
           ),
         }}
       />

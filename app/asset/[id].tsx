@@ -1,7 +1,8 @@
 import { useState, useCallback } from 'react';
-import { FlatList, RefreshControl, Alert, Pressable, Text as RNText } from 'react-native';
+import { FlatList, RefreshControl, Alert } from 'react-native';
 import { Link, useLocalSearchParams, useFocusEffect, Stack, router } from 'expo-router';
 import { useAppStore } from '../../store';
+import { HeaderIconButton } from '../../components/HeaderButtons';
 import { YStack, XStack, Text, Button, Card, Spinner, Separator, Tabs } from 'tamagui';
 import { getAssetById } from '../../lib/db/assets';
 import { getLotsForAsset, getTransactionsByAssetId, deleteTransaction } from '../../lib/db/transactions';
@@ -271,9 +272,7 @@ export default function AssetDetailScreen() {
         options={{
           title: displayTitle,
           headerRight: () => (
-            <Pressable onPress={handleDeleteAsset} style={{ paddingLeft: 8 }}>
-              <RNText style={{ color: '#FF6B6B', fontSize: 17 }}>Delete</RNText>
-            </Pressable>
+            <HeaderIconButton icon="trash-outline" color="#FF6B6B" onPress={handleDeleteAsset} />
           ),
         }}
       />

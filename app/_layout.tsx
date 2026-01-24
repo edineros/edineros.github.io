@@ -1,32 +1,12 @@
 import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { TamaguiProvider, Theme } from 'tamagui';
-import { Platform, Pressable, Text } from 'react-native';
+import { Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { router } from 'expo-router';
 import config from '../tamagui.config';
 import { getDatabase } from '../lib/db/schema';
-
-// Custom back button that always works (even after page refresh on web)
-function BackButton({ fallbackPath = '/' }: { fallbackPath?: string }) {
-  return (
-    <Pressable
-      onPress={() => {
-        if (router.canGoBack()) {
-          router.back();
-        } else {
-          router.replace(fallbackPath);
-        }
-      }}
-      style={{ paddingRight: 8 }}
-    >
-      <Text style={{ color: '#007AFF', fontSize: 17 }}>
-        ‹ Back
-      </Text>
-    </Pressable>
-  );
-}
+import { HeaderBackButton } from '../components/HeaderButtons';
 
 export default function RootLayout() {
   useEffect(() => {
@@ -63,7 +43,7 @@ export default function RootLayout() {
               name="portfolio/[id]"
               options={{
                 title: 'Portfolio',
-                headerLeft: () => <BackButton fallbackPath="/" />,
+                headerLeft: () => <HeaderBackButton fallbackPath="/" />,
               }}
             />
             <Stack.Screen
@@ -71,7 +51,7 @@ export default function RootLayout() {
               options={{
                 title: '',
                 presentation: 'modal',
-                headerLeft: () => <BackButton fallbackPath="/" />,
+                headerLeft: () => <HeaderBackButton fallbackPath="/" />,
               }}
             />
             <Stack.Screen
@@ -79,14 +59,14 @@ export default function RootLayout() {
               options={{
                 title: 'Edit Portfolio',
                 presentation: 'modal',
-                headerLeft: () => <BackButton fallbackPath="/" />,
+                headerLeft: () => <HeaderBackButton fallbackPath="/" />,
               }}
             />
             <Stack.Screen
               name="asset/[id]"
               options={{
                 title: 'Asset',
-                headerLeft: () => <BackButton fallbackPath="/" />,
+                headerLeft: () => <HeaderBackButton fallbackPath="/" />,
               }}
             />
             <Stack.Screen
@@ -94,7 +74,7 @@ export default function RootLayout() {
               options={{
                 title: '',
                 presentation: 'modal',
-                headerLeft: () => <BackButton fallbackPath="/" />,
+                headerLeft: () => <HeaderBackButton fallbackPath="/" />,
               }}
             />
             <Stack.Screen
@@ -102,7 +82,7 @@ export default function RootLayout() {
               options={{
                 title: 'Add Transaction',
                 presentation: 'modal',
-                headerLeft: () => <BackButton fallbackPath="/" />,
+                headerLeft: () => <HeaderBackButton fallbackPath="/" />,
               }}
             />
             <Stack.Screen
@@ -110,7 +90,7 @@ export default function RootLayout() {
               options={{
                 title: 'Sell Position',
                 presentation: 'modal',
-                headerLeft: () => <BackButton fallbackPath="/" />,
+                headerLeft: () => <HeaderBackButton fallbackPath="/" />,
               }}
             />
           </Stack>
