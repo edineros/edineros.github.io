@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
-import { FlatList, RefreshControl, Alert } from 'react-native';
-import { Link, useLocalSearchParams, useFocusEffect, Stack } from 'expo-router';
+import { FlatList, RefreshControl, Alert, Pressable, Text as RNText } from 'react-native';
+import { Link, useLocalSearchParams, useFocusEffect, Stack, router } from 'expo-router';
+import { useAppStore } from '../../store';
 import { YStack, XStack, Text, Button, Card, Spinner, Separator, Tabs } from 'tamagui';
 import { getAssetById } from '../../lib/db/assets';
 import { getLotsForAsset, getTransactionsByAssetId, deleteTransaction } from '../../lib/db/transactions';
@@ -26,6 +27,28 @@ export default function AssetDetailScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('lots');
+  const { deleteAsset } = useAppStore();
+
+  const handleDeleteAsset = useCallback(() => {
+    if (!asset || !portfolioId) {
+      return;
+    }
+    Alert.alert(
+      'Delete Asset',
+      `Are you sure you want to delete "${asset.symbol}"? This will also delete all transactions and lots.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            await deleteAsset(id!, portfolioId);
+            router.back();
+          },
+        },
+      ]
+    );
+  }, [asset, portfolioId, id, deleteAsset]);
 
   useFocusEffect(
     useCallback(() => {
@@ -247,6 +270,11 @@ export default function AssetDetailScreen() {
       <Stack.Screen
         options={{
           title: displayTitle,
+          headerRight: () => (
+            <Pressable onPress={handleDeleteAsset} style={{ paddingLeft: 8 }}>
+              <RNText style={{ color: '#FF6B6B', fontSize: 17 }}>Delete</RNText>
+            </Pressable>
+          ),
         }}
       />
       <YStack flex={1} backgroundColor="$background">

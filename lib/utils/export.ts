@@ -1,10 +1,9 @@
-import { File, Paths } from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
+import { Platform } from 'react-native';
+import { format } from 'date-fns';
 import { getAllPortfolios } from '../db/portfolios';
 import { getAssetsByPortfolioId } from '../db/assets';
 import { getTransactionsByAssetId } from '../db/transactions';
 import type { ExportData, Portfolio, Asset, Transaction } from '../types';
-import { format } from 'date-fns';
 
 const EXPORT_VERSION = '1.0';
 
@@ -32,15 +31,33 @@ export async function exportAllData(): Promise<ExportData> {
   };
 }
 
+// Web-specific: trigger file download
+function downloadFile(content: string, filename: string, mimeType: string): void {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 export async function exportToJson(): Promise<string> {
   const data = await exportAllData();
   const json = JSON.stringify(data, null, 2);
-
   const filename = `portfolio_backup_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.json`;
+
+  if (Platform.OS === 'web') {
+    downloadFile(json, filename, 'application/json');
+    return filename; // Return filename for web (no file path)
+  }
+
+  // Native: use expo-file-system
+  const { File, Paths } = await import('expo-file-system');
   const file = new File(Paths.document, filename);
-
   await file.write(json);
-
   return file.uri;
 }
 
@@ -85,14 +102,27 @@ export async function exportTransactionsToCsv(portfolioId?: string): Promise<str
 
   const csv = rows.join('\n');
   const filename = `transactions_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.csv`;
+
+  if (Platform.OS === 'web') {
+    downloadFile(csv, filename, 'text/csv');
+    return filename;
+  }
+
+  // Native: use expo-file-system
+  const { File, Paths } = await import('expo-file-system');
   const file = new File(Paths.document, filename);
-
   await file.write(csv);
-
   return file.uri;
 }
 
 export async function shareFile(filePath: string): Promise<void> {
+  if (Platform.OS === 'web') {
+    // On web, file was already downloaded in exportToJson/exportTransactionsToCsv
+    return;
+  }
+
+  // Native: use expo-sharing
+  const Sharing = await import('expo-sharing');
   const isAvailable = await Sharing.isAvailableAsync();
 
   if (!isAvailable) {
@@ -138,7 +168,9 @@ export async function importFromJson(jsonString: string): Promise<{
   // Import assets
   for (const asset of data.assets) {
     const newPortfolioId = portfolioIdMap.get(asset.portfolioId);
-    if (!newPortfolioId) continue;
+    if (!newPortfolioId) {
+      continue;
+    }
 
     const newAsset = await createAsset(
       newPortfolioId,
@@ -160,7 +192,9 @@ export async function importFromJson(jsonString: string): Promise<{
 
   for (const tx of sortedTransactions) {
     const newAssetId = assetIdMap.get(tx.assetId);
-    if (!newAssetId) continue;
+    if (!newAssetId) {
+      continue;
+    }
 
     // Map lot ID if this is a sell transaction
     const newLotId = tx.lotId ? lotIdMap.get(tx.lotId) : undefined;

@@ -105,14 +105,14 @@ npm run android   # Run on Android
 - [x] CSV export (transactions)
 - [x] JSON import (restore from backup)
 
-## Needs Testing/Verification
+## Recently Verified/Implemented
 
-- [ ] Settings screen functionality
-- [ ] Edit portfolio screen
-- [ ] Delete asset functionality
-- [ ] Export/import on web platform
-- [ ] Price fetching error handling
-- [ ] Offline mode behavior
+- [x] Settings screen functionality (export/import works)
+- [x] Edit portfolio screen (accessible via Edit button in portfolio header)
+- [x] Delete asset functionality (accessible via Delete button in asset header)
+- [x] Export/import on web platform (uses blob download/file input)
+- [x] Price fetching error handling (try/catch with graceful fallback)
+- [x] Offline mode behavior (uses cached prices when offline)
 
 ## Not Implemented (P1 - Next Priority)
 

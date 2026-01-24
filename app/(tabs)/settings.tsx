@@ -1,8 +1,6 @@
-import { useState } from 'react';
-import { Alert, ScrollView } from 'react-native';
+import { useState, useRef } from 'react';
+import { Alert, ScrollView, Platform } from 'react-native';
 import { YStack, XStack, Text, Button, Card, Separator } from 'tamagui';
-import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
 import { exportToJson, exportTransactionsToCsv, shareFile, importFromJson } from '../../lib/utils/export';
 import { useAppStore } from '../../store';
 
@@ -10,6 +8,7 @@ export default function SettingsScreen() {
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const { loadPortfolios } = useAppStore();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleExportJson = async () => {
     setIsExporting(true);
@@ -35,8 +34,11 @@ export default function SettingsScreen() {
     }
   };
 
-  const handleImport = async () => {
+  const handleImportNative = async () => {
     try {
+      const DocumentPicker = await import('expo-document-picker');
+      const { File } = await import('expo-file-system');
+
       const result = await DocumentPicker.getDocumentAsync({
         type: 'application/json',
         copyToCacheDirectory: true,
@@ -46,14 +48,15 @@ export default function SettingsScreen() {
         return;
       }
 
-      const file = result.assets[0];
-      if (!file) {
+      const pickedFile = result.assets[0];
+      if (!pickedFile) {
         return;
       }
 
       setIsImporting(true);
 
-      const content = await FileSystem.readAsStringAsync(file.uri);
+      const file = new File(pickedFile.uri);
+      const content = await file.text();
       const importResult = await importFromJson(content);
 
       Alert.alert(
@@ -61,7 +64,6 @@ export default function SettingsScreen() {
         `Imported:\n- ${importResult.portfoliosImported} portfolios\n- ${importResult.assetsImported} assets\n- ${importResult.transactionsImported} transactions`
       );
 
-      // Reload portfolios
       await loadPortfolios();
     } catch (error) {
       Alert.alert('Import Failed', (error as Error).message);
@@ -70,8 +72,54 @@ export default function SettingsScreen() {
     }
   };
 
+  const handleImportWeb = () => {
+    // Trigger hidden file input
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      const content = await file.text();
+      const importResult = await importFromJson(content);
+
+      Alert.alert(
+        'Import Successful',
+        `Imported:\n- ${importResult.portfoliosImported} portfolios\n- ${importResult.assetsImported} assets\n- ${importResult.transactionsImported} transactions`
+      );
+
+      await loadPortfolios();
+    } catch (error) {
+      Alert.alert('Import Failed', (error as Error).message);
+    } finally {
+      setIsImporting(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleImport = Platform.OS === 'web' ? handleImportWeb : handleImportNative;
+
   return (
     <ScrollView style={{ flex: 1 }}>
+      {/* Hidden file input for web */}
+      {Platform.OS === 'web' && (
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json,application/json"
+          style={{ display: 'none' }}
+          onChange={handleFileChange}
+        />
+      )}
+
       <YStack flex={1} padding="$4" gap="$4">
         <Card elevate bordered padding="$4">
           <Text fontSize="$5" fontWeight="600" marginBottom="$3">
@@ -86,7 +134,6 @@ export default function SettingsScreen() {
               size="$4"
               onPress={handleExportJson}
               disabled={isExporting}
-              icon={isExporting ? undefined : undefined}
             >
               {isExporting ? 'Exporting...' : 'Export as JSON (Full Backup)'}
             </Button>

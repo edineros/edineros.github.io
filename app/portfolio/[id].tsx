@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useState } from 'react';
-import { FlatList, RefreshControl, Pressable } from 'react-native';
+import { FlatList, RefreshControl, Pressable, Text as RNText } from 'react-native';
 import { Link, useLocalSearchParams, useFocusEffect, Stack } from 'expo-router';
 import { YStack, XStack, Text, Spinner } from 'tamagui';
 import { useAppStore } from '../../store';
@@ -161,6 +161,13 @@ export default function PortfolioDetailScreen() {
       <Stack.Screen
         options={{
           title: displayTitle,
+          headerRight: () => (
+            <Link href={`/portfolio/edit/${id}`} asChild>
+              <Pressable style={{ paddingLeft: 8 }}>
+                <RNText style={{ color: '#007AFF', fontSize: 17 }}>Edit</RNText>
+              </Pressable>
+            </Link>
+          ),
         }}
       />
       <YStack flex={1} backgroundColor="#000000">
