@@ -12,7 +12,7 @@ const HEADER_BUTTON_STYLES = {
   },
   right: {
     paddingLeft: 16,
-    paddingRight: 8,
+    paddingRight: 16,
     paddingVertical: 8,
   },
   hitSlop: { top: 10, bottom: 10, left: 10, right: 10 },
