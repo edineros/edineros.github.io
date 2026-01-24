@@ -6,6 +6,7 @@ import { useAppStore } from '../../store';
 import { HeaderIconButton } from '../../components/HeaderButtons';
 import { QuantityAtPrice } from '../../components/QuantityAtPrice';
 import { FloatingActionButton } from '../../components/FloatingActionButton';
+import { PortfolioSwitcher } from '../../components/PortfolioSwitcher';
 import { formatCurrency, formatPercent, getGainColor } from '../../lib/utils/format';
 import { CONTENT_HORIZONTAL_PADDING } from '../../lib/constants/layout';
 import type { Asset } from '../../lib/types';
@@ -171,9 +172,14 @@ export default function PortfolioDetailScreen() {
     <>
       <Stack.Screen
         options={{
-          title: portfolio?.name,
+          headerTitle: () => (
+            <PortfolioSwitcher
+              currentPortfolio={portfolio}
+              portfolios={portfolios}
+            />
+          ),
           headerRight: () => (
-            <HeaderIconButton icon="create-outline" href={`/portfolio/edit/${id}`} />
+            <HeaderIconButton icon="settings-outline" href={`/portfolio/edit/${id}`} />
           ),
         }}
       />

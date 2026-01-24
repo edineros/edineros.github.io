@@ -1,8 +1,7 @@
 import { useState, useCallback } from 'react';
 import { FlatList, RefreshControl } from 'react-native';
-import { Link, useLocalSearchParams, useFocusEffect, Stack, router } from 'expo-router';
+import { Link, useLocalSearchParams, useFocusEffect, Stack } from 'expo-router';
 import { confirm } from '../../lib/utils/confirm';
-import { useAppStore } from '../../store';
 import { HeaderIconButton } from '../../components/HeaderButtons';
 import { QuantityAtPrice } from '../../components/QuantityAtPrice';
 import { FloatingActionButton } from '../../components/FloatingActionButton';
@@ -32,23 +31,6 @@ export default function AssetDetailScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('lots');
-  const { deleteAsset } = useAppStore();
-
-  const handleDeleteAsset = useCallback(async () => {
-    if (!asset || !portfolioId) {
-      return;
-    }
-    const confirmed = await confirm({
-      title: 'Delete Asset',
-      message: `Are you sure you want to delete "${asset.symbol}"? This will also delete all transactions and lots.`,
-      confirmText: 'Delete',
-      destructive: true,
-    });
-    if (confirmed) {
-      await deleteAsset(id!, portfolioId);
-      router.back();
-    }
-  }, [asset, portfolioId, id, deleteAsset]);
 
   useFocusEffect(
     useCallback(() => {
@@ -271,7 +253,10 @@ export default function AssetDetailScreen() {
         options={{
           title: asset?.symbol,
           headerRight: () => (
-            <HeaderIconButton icon="trash-outline" color="#FF6B6B" onPress={handleDeleteAsset} />
+            <HeaderIconButton
+              icon="settings-outline"
+              href={`/asset/edit/${id}?portfolioId=${portfolioId}`}
+            />
           ),
         }}
       />
