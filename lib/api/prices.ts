@@ -7,6 +7,7 @@ import {
 } from '../db/priceCache';
 import { fetchYahooPrice, searchYahooSymbol } from './providers/yahoo';
 import { fetchCoinGeckoPrice, searchCoinGecko } from './providers/coingecko';
+import { fetchKrakenPrice, isKrakenSupported } from './providers/kraken';
 import { fetchExchangeRate } from './providers/frankfurter';
 
 // TTL in minutes for different asset types
@@ -29,6 +30,31 @@ export interface PriceResult {
   fetchedAt: Date;
 }
 
+// Fetch from appropriate provider based on asset type
+async function fetchFromProvider(
+  symbol: string,
+  assetType: AssetType,
+  preferredCurrency?: string
+): Promise<{ price: number; currency: string; name?: string } | null> {
+  if (assetType === 'crypto') {
+    // Try Kraken first (no rate limits), fall back to CoinGecko
+    if (isKrakenSupported(symbol)) {
+      const result = await fetchKrakenPrice(symbol, preferredCurrency);
+      if (result) {
+        return result;
+      }
+    }
+    return await fetchCoinGeckoPrice(symbol, preferredCurrency);
+  }
+
+  if (assetType === 'cash') {
+    return { price: 1, currency: symbol.toUpperCase() };
+  }
+
+  // Stocks, ETFs, bonds, commodities - use Yahoo Finance
+  return await fetchYahooPrice(symbol);
+}
+
 export async function fetchPrice(
   symbol: string,
   assetType: AssetType,
@@ -45,24 +71,7 @@ export async function fetchPrice(
     };
   }
 
-  // Fetch from appropriate provider
-  let result: { price: number; currency: string; name?: string } | null = null;
-
-  if (assetType === 'crypto') {
-    result = await fetchCoinGeckoPrice(symbol, preferredCurrency);
-  } else if (assetType === 'cash') {
-    // Cash is always worth 1 in its currency
-    return {
-      price: 1,
-      currency: symbol.toUpperCase(),
-      fromCache: false,
-      fetchedAt: new Date(),
-    };
-  } else {
-    // Stocks, ETFs, bonds, commodities - use Yahoo Finance
-    result = await fetchYahooPrice(symbol);
-  }
-
+  const result = await fetchFromProvider(symbol, assetType, preferredCurrency);
   if (!result) {
     return null;
   }
@@ -173,21 +182,7 @@ export async function refreshPrice(
   assetType: AssetType,
   preferredCurrency?: string
 ): Promise<PriceResult | null> {
-  let result: { price: number; currency: string; name?: string } | null = null;
-
-  if (assetType === 'crypto') {
-    result = await fetchCoinGeckoPrice(symbol, preferredCurrency);
-  } else if (assetType === 'cash') {
-    return {
-      price: 1,
-      currency: symbol.toUpperCase(),
-      fromCache: false,
-      fetchedAt: new Date(),
-    };
-  } else {
-    result = await fetchYahooPrice(symbol);
-  }
-
+  const result = await fetchFromProvider(symbol, assetType, preferredCurrency);
   if (!result) {
     return null;
   }
