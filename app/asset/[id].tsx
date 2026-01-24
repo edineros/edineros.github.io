@@ -163,6 +163,14 @@ export default function AssetDetailScreen() {
         </XStack>
         <XStack marginTop="$3" gap="$2" justifyContent="flex-end">
           <Link
+            href={`/lot/edit?lotId=${item.id}&assetId=${id}&portfolioId=${portfolioId}`}
+            asChild
+          >
+            <Button size="$2" variant="outlined">
+              Edit
+            </Button>
+          </Link>
+          <Link
             href={`/lot/close?assetId=${id}&lotId=${item.id}&portfolioId=${portfolioId}`}
             asChild
           >
