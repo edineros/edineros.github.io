@@ -109,93 +109,122 @@ export default function SettingsScreen() {
   const handleImport = Platform.OS === 'web' ? handleImportWeb : handleImportNative;
 
   return (
-    <ScrollView style={{ flex: 1 }}>
-      {/* Hidden file input for web */}
-      {Platform.OS === 'web' && (
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".json,application/json"
-          style={{ display: 'none' }}
-          onChange={handleFileChange}
-        />
-      )}
+    <YStack flex={1} backgroundColor="#000000">
+      <ScrollView style={{ flex: 1 }}>
+        {/* Hidden file input for web */}
+        {Platform.OS === 'web' && (
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json,application/json"
+            style={{ display: 'none' }}
+            onChange={handleFileChange}
+          />
+        )}
 
-      <YStack flex={1} padding={CONTENT_HORIZONTAL_PADDING} gap={16}>
-        <Card elevate bordered padding="$4">
-          <Text fontSize="$5" fontWeight="600" marginBottom="$3">
-            Data Export
-          </Text>
-          <Text fontSize="$3" color="$gray10" marginBottom="$4">
-            Export your portfolio data for backup or analysis
-          </Text>
-
-          <YStack gap="$3">
-            <Button
-              size="$4"
-              onPress={handleExportJson}
-              disabled={isExporting}
-            >
-              {isExporting ? 'Exporting...' : 'Export as JSON (Full Backup)'}
-            </Button>
-
-            <Button
-              size="$4"
-              variant="outlined"
-              onPress={handleExportCsv}
-              disabled={isExporting}
-            >
-              {isExporting ? 'Exporting...' : 'Export Transactions as CSV'}
-            </Button>
-          </YStack>
-        </Card>
-
-        <Card elevate bordered padding="$4">
-          <Text fontSize="$5" fontWeight="600" marginBottom="$3">
-            Data Import
-          </Text>
-          <Text fontSize="$3" color="$gray10" marginBottom="$4">
-            Import data from a previous backup. This will create new entries without
-            affecting existing data.
-          </Text>
-
-          <Button
-            size="$4"
-            onPress={handleImport}
-            disabled={isImporting}
-            theme="blue"
+        <YStack flex={1} padding={CONTENT_HORIZONTAL_PADDING} gap={16}>
+          <YStack
+            backgroundColor="#111111"
+            borderRadius={12}
+            borderWidth={1}
+            borderColor="#1F1F1F"
+            padding={CONTENT_HORIZONTAL_PADDING}
           >
-            {isImporting ? 'Importing...' : 'Import from JSON'}
-          </Button>
-        </Card>
-
-        <Card elevate bordered padding="$4">
-          <Text fontSize="$5" fontWeight="600" marginBottom="$3">
-            About
-          </Text>
-
-          <YStack gap="$2">
-            <XStack justifyContent="space-between">
-              <Text color="$gray10">Version</Text>
-              <Text>1.0.0</Text>
-            </XStack>
-
-            <Separator marginVertical="$2" />
-
-            <Text fontSize="$3" color="$gray10">
-              Portfolio Tracker is a privacy-first, offline-capable portfolio tracking
-              application. Your data is stored locally on your device and is never sent
-              to any server.
+            <Text color="#FFFFFF" fontSize={20} fontWeight="600" marginBottom={12}>
+              Data Export
+            </Text>
+            <Text color="#8E8E93" fontSize={15} marginBottom={16}>
+              Export your portfolio data for backup or analysis
             </Text>
 
-            <Separator marginVertical="$2" />
+            <YStack gap={12}>
+              <Button
+                size="$4"
+                onPress={handleExportJson}
+                disabled={isExporting}
+                backgroundColor="#007AFF"
+                color="#FFFFFF"
+                fontWeight="600"
+              >
+                {isExporting ? 'Exporting...' : 'Export as JSON (Full Backup)'}
+              </Button>
 
-            <Text fontSize="$2" color="$gray9">
-              Price data provided by Yahoo Finance, CoinGecko, and Frankfurter API.
-            </Text>
+              <Button
+                size="$4"
+                onPress={handleExportCsv}
+                disabled={isExporting}
+                backgroundColor="transparent"
+                borderColor="#1F1F1F"
+                borderWidth={1}
+                color="#FFFFFF"
+                fontWeight="600"
+              >
+                {isExporting ? 'Exporting...' : 'Export Transactions as CSV'}
+              </Button>
+            </YStack>
           </YStack>
-        </Card>
-      </YStack>
-    </ScrollView>
+
+          <YStack
+            backgroundColor="#111111"
+            borderRadius={12}
+            borderWidth={1}
+            borderColor="#1F1F1F"
+            padding={CONTENT_HORIZONTAL_PADDING}
+          >
+            <Text color="#FFFFFF" fontSize={20} fontWeight="600" marginBottom={12}>
+              Data Import
+            </Text>
+            <Text color="#8E8E93" fontSize={15} marginBottom={16}>
+              Import data from a previous backup. This will create new entries without
+              affecting existing data.
+            </Text>
+
+            <Button
+              size="$4"
+              onPress={handleImport}
+              disabled={isImporting}
+              backgroundColor="#007AFF"
+              color="#FFFFFF"
+              fontWeight="600"
+            >
+              {isImporting ? 'Importing...' : 'Import from JSON'}
+            </Button>
+          </YStack>
+
+          <YStack
+            backgroundColor="#111111"
+            borderRadius={12}
+            borderWidth={1}
+            borderColor="#1F1F1F"
+            padding={CONTENT_HORIZONTAL_PADDING}
+          >
+            <Text color="#FFFFFF" fontSize={20} fontWeight="600" marginBottom={12}>
+              About
+            </Text>
+
+            <YStack gap={8}>
+              <XStack justifyContent="space-between">
+                <Text color="#8E8E93">Version</Text>
+                <Text color="#FFFFFF">1.0.0</Text>
+              </XStack>
+
+              <YStack height={1} backgroundColor="#1F1F1F" marginVertical={8} />
+
+              <Text color="#8E8E93" fontSize={15}>
+                Portfolio Tracker is a privacy-first, offline-capable portfolio tracking
+                application. Your data is stored locally on your device and is never sent
+                to any server.
+              </Text>
+
+              <YStack height={1} backgroundColor="#1F1F1F" marginVertical={8} />
+
+              <Text color="#636366" fontSize={13}>
+                Price data provided by Yahoo Finance, CoinGecko, and Frankfurter API.
+              </Text>
+            </YStack>
+          </YStack>
+        </YStack>
+      </ScrollView>
+    </YStack>
   );
 }
