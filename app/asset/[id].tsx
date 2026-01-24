@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
-import { FlatList, RefreshControl, Alert } from 'react-native';
+import { FlatList, RefreshControl } from 'react-native';
 import { Link, useLocalSearchParams, useFocusEffect, Stack, router } from 'expo-router';
+import { confirm } from '../../lib/utils/confirm';
 import { useAppStore } from '../../store';
 import { HeaderIconButton } from '../../components/HeaderButtons';
 import { CONTENT_HORIZONTAL_PADDING } from '../../lib/constants/layout';
@@ -31,25 +32,20 @@ export default function AssetDetailScreen() {
   const [activeTab, setActiveTab] = useState('lots');
   const { deleteAsset } = useAppStore();
 
-  const handleDeleteAsset = useCallback(() => {
+  const handleDeleteAsset = useCallback(async () => {
     if (!asset || !portfolioId) {
       return;
     }
-    Alert.alert(
-      'Delete Asset',
-      `Are you sure you want to delete "${asset.symbol}"? This will also delete all transactions and lots.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            await deleteAsset(id!, portfolioId);
-            router.back();
-          },
-        },
-      ]
-    );
+    const confirmed = await confirm({
+      title: 'Delete Asset',
+      message: `Are you sure you want to delete "${asset.symbol}"? This will also delete all transactions and lots.`,
+      confirmText: 'Delete',
+      destructive: true,
+    });
+    if (confirmed) {
+      await deleteAsset(id!, portfolioId);
+      router.back();
+    }
   }, [asset, portfolioId, id, deleteAsset]);
 
   useFocusEffect(
@@ -102,22 +98,17 @@ export default function AssetDetailScreen() {
     setRefreshing(false);
   }, [asset]);
 
-  const handleDeleteTransaction = useCallback((tx: Transaction) => {
-    Alert.alert(
-      'Delete Transaction',
-      `Are you sure you want to delete this ${tx.type} transaction?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            await deleteTransaction(tx.id);
-            loadData();
-          },
-        },
-      ]
-    );
+  const handleDeleteTransaction = useCallback(async (tx: Transaction) => {
+    const confirmed = await confirm({
+      title: 'Delete Transaction',
+      message: `Are you sure you want to delete this ${tx.type} transaction?`,
+      confirmText: 'Delete',
+      destructive: true,
+    });
+    if (confirmed) {
+      await deleteTransaction(tx.id);
+      loadData();
+    }
   }, []);
 
   // Calculate totals

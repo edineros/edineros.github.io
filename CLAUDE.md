@@ -114,6 +114,35 @@ npm run android   # Run on Android
 - [x] Price fetching error handling (try/catch with graceful fallback)
 - [x] Offline mode behavior (uses cached prices when offline)
 
+## P0 Not Implemented
+
+1. Fix current issues
+- trying to delete a transaction by clicking the Delete button doesn't do anything;
+- trying to delete an asset by clicking the delete icon in the headaer doesn't do anything;
+- when a new asset and a lot for it is added, its rate and value is shown in the assets page, but when we return to the portfolio page, the asset is shown as "0 @ €0.00" so it seems at least the lots are not refreshed;
+
+2. Simplify
+- the "Add Asset" and "New Portfolio" titles should be shown in the header, the same way we show the Portfolios, Settings, asset, etc. titles;
+- we show "quantity @ price" in a few places. change the quantity and the price to be white color. extract that into a separate component for future consistency;
+- instead of listing currencies like buttons when creating/editing portfoltio/asset, we should instead have them as a dropdown;
+- the "Add Asset" / "Add Lot" button should be a circle floating button with + icon inside, placed near the right edge;
+
+3. Implement new features
+- the edit modal for the portfolio should include an option to delete the portfoltio (with confirmation);
+- add ability to edit asset (at least the optional name). The current delete icon should be changed to a gear/settings icon that opens an edit modal (similar to the edit for the portfolio). The current option for deleting an asset should go to the bottom of the edit page/modal of the asset (similar to the portfolio edit/delete);
+- the portfolio title should be a dropdown (we can include a down caret icon for an indication or something similar) that shows all the portfolios and that allows us to change the current portfolio from the dropdown;
+
+4. Lots/transactions
+- add option to edit lot (since lots are an UI abstraction, that probably means the underlying transaction should be updated?)
+
+5. Explore/update APIs
+- it looks like we are being rate limited by yahoo. explore new options and come up with suggestions. find a yahoo API to fetch multiple symbols at once, find another provider or give other suggestions
+
+6. Prepare the first test build for iOS. It won't be distributed via AppStore yet or via TestFlight because the developer doesn't have a paid apple developer account atm. So give instructions about how to proceed about opening the app with a test iphone to see if things are working properly. The developer has an expo.dev account if that will help. The developer may not be able to update the xcode on because the mac may need an update.
+
+7. Add unit test coverage
+
+
 ## Not Implemented (P1 - Next Priority)
 
 1. **Tags & Notes**

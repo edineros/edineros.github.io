@@ -30,25 +30,30 @@ export default function PortfolioDetailScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (id) {
-        // Load assets and stats (portfolio is already in store)
-        loadAssets(id);
-        loadPortfolioStats(id);
+      const loadData = async () => {
+        if (!id) {
+          return;
+        }
 
         // If portfolio not in store (direct URL navigation), load all portfolios
         if (!portfolio) {
-          loadPortfolios();
+          await loadPortfolios();
         }
-      }
+
+        // Load assets and portfolio stats
+        await loadAssets(id);
+        await loadPortfolioStats(id);
+      };
+
+      loadData();
     }, [id, portfolio])
   );
 
+  // Load asset stats whenever portfolioAssets change (always reload to get fresh data)
   useEffect(() => {
     if (portfolio && portfolioAssets.length > 0) {
       portfolioAssets.forEach((asset) => {
-        if (!assetStats.has(asset.id)) {
-          loadAssetStats(asset.id, portfolio.currency);
-        }
+        loadAssetStats(asset.id, portfolio.currency);
       });
     }
   }, [portfolio, portfolioAssets]);
