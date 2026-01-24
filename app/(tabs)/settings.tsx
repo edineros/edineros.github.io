@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { Alert, ScrollView, Platform } from 'react-native';
-import { YStack, XStack, Text, Button, Card, Separator } from 'tamagui';
+import { YStack, XStack, Text, Button } from 'tamagui';
 import { exportToJson, exportTransactionsToCsv, shareFile, importFromJson } from '../../lib/utils/export';
 import { useAppStore } from '../../store';
 import { CONTENT_HORIZONTAL_PADDING } from '../../lib/constants/layout';

@@ -371,11 +371,11 @@ export default function AssetDetailScreen() {
           flexDirection="column"
           flex={1}
         >
-          <Tabs.List paddingHorizontal={CONTENT_HORIZONTAL_PADDING}>
-            <Tabs.Tab value="lots" flex={1}>
+          <Tabs.List paddingHorizontal={CONTENT_HORIZONTAL_PADDING} justifyContent="space-between">
+            <Tabs.Tab value="lots" width="49%">
               <Text>Lots ({lots.length})</Text>
             </Tabs.Tab>
-            <Tabs.Tab value="transactions" flex={1}>
+            <Tabs.Tab value="transactions" width="49%">
               <Text>Transactions ({transactions.length})</Text>
             </Tabs.Tab>
           </Tabs.List>
