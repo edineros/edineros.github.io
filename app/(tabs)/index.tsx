@@ -1,13 +1,14 @@
 import { useEffect, useCallback, useState } from 'react';
-import { FlatList, RefreshControl, Alert, Pressable } from 'react-native';
-import { Link, useFocusEffect, router } from 'expo-router';
-import { YStack, XStack, Text, Button, Spinner } from 'tamagui';
+import { FlatList, RefreshControl, Pressable } from 'react-native';
+import { Link, useFocusEffect } from 'expo-router';
+import { YStack, XStack, Text, Spinner } from 'tamagui';
 import { useAppStore } from '../../store';
 import { formatCurrency, formatPercent, getGainColor } from '../../lib/utils/format';
+import { CONTENT_HORIZONTAL_PADDING } from '../../lib/constants/layout';
 import type { Portfolio } from '../../lib/types';
 
 export default function PortfolioListScreen() {
-  const { portfolios, portfolioStats, isLoading, loadPortfolios, loadPortfolioStats, deletePortfolio } =
+  const { portfolios, portfolioStats, isLoading, loadPortfolios, loadPortfolioStats } =
     useAppStore();
   const [refreshing, setRefreshing] = useState(false);
 
@@ -34,21 +35,6 @@ export default function PortfolioListScreen() {
     setRefreshing(false);
   }, [portfolios]);
 
-  const handleDelete = useCallback((portfolio: Portfolio) => {
-    Alert.alert(
-      'Delete Portfolio',
-      `Are you sure you want to delete "${portfolio.name}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => deletePortfolio(portfolio.id),
-        },
-      ]
-    );
-  }, [deletePortfolio]);
-
   const renderPortfolio = ({ item }: { item: Portfolio }) => {
     const stats = portfolioStats.get(item.id);
     const gainColor = stats ? getGainColor(stats.totalGain) : 'neutral';
@@ -57,9 +43,9 @@ export default function PortfolioListScreen() {
       <Link href={`/portfolio/${item.id}?name=${encodeURIComponent(item.name)}`} asChild>
         <Pressable>
           <YStack
-            marginHorizontal={16}
+            marginHorizontal={CONTENT_HORIZONTAL_PADDING}
             marginVertical={6}
-            padding={16}
+            padding={CONTENT_HORIZONTAL_PADDING}
             backgroundColor="#111111"
             borderRadius={12}
             borderWidth={1}
@@ -131,7 +117,7 @@ export default function PortfolioListScreen() {
     <YStack flex={1} backgroundColor="#000000">
       {/* Total across all portfolios */}
       {portfolios.length > 0 && (
-        <YStack paddingHorizontal={16} paddingBottom={20}>
+        <YStack paddingHorizontal={CONTENT_HORIZONTAL_PADDING} paddingBottom={20}>
           <Text color="#8E8E93" fontSize={13} marginBottom={4}>
             TOTAL BALANCE
           </Text>
@@ -177,12 +163,12 @@ export default function PortfolioListScreen() {
       />
 
       {/* Floating action button */}
-      <YStack position="absolute" bottom={24} left={16} right={16}>
+      <YStack position="absolute" bottom={24} left={CONTENT_HORIZONTAL_PADDING} right={CONTENT_HORIZONTAL_PADDING}>
         <Link href="/portfolio/create" asChild>
           <Pressable>
             <YStack
               backgroundColor="#007AFF"
-              paddingVertical={16}
+              paddingVertical={CONTENT_HORIZONTAL_PADDING}
               borderRadius={12}
               alignItems="center"
               pressStyle={{ opacity: 0.8 }}

@@ -3,6 +3,7 @@ import { Alert, ScrollView, Platform } from 'react-native';
 import { YStack, XStack, Text, Button, Card, Separator } from 'tamagui';
 import { exportToJson, exportTransactionsToCsv, shareFile, importFromJson } from '../../lib/utils/export';
 import { useAppStore } from '../../store';
+import { CONTENT_HORIZONTAL_PADDING } from '../../lib/constants/layout';
 
 export default function SettingsScreen() {
   const [isExporting, setIsExporting] = useState(false);
@@ -120,7 +121,7 @@ export default function SettingsScreen() {
         />
       )}
 
-      <YStack flex={1} padding="$4" gap="$4">
+      <YStack flex={1} padding={CONTENT_HORIZONTAL_PADDING} gap={16}>
         <Card elevate bordered padding="$4">
           <Text fontSize="$5" fontWeight="600" marginBottom="$3">
             Data Export

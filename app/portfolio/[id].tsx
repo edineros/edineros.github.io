@@ -5,6 +5,7 @@ import { YStack, XStack, Text, Spinner } from 'tamagui';
 import { useAppStore } from '../../store';
 import { HeaderIconButton } from '../../components/HeaderButtons';
 import { formatCurrency, formatPercent, formatQuantity, getGainColor } from '../../lib/utils/format';
+import { CONTENT_HORIZONTAL_PADDING } from '../../lib/constants/layout';
 import type { Asset } from '../../lib/types';
 
 export default function PortfolioDetailScreen() {
@@ -77,9 +78,9 @@ export default function PortfolioDetailScreen() {
       <Link href={`/asset/${item.id}?portfolioId=${id}&symbol=${item.symbol}`} asChild>
         <Pressable>
           <YStack
-            marginHorizontal={16}
+            marginHorizontal={CONTENT_HORIZONTAL_PADDING}
             marginVertical={4}
-            padding={16}
+            padding={CONTENT_HORIZONTAL_PADDING}
             backgroundColor="#111111"
             borderRadius={12}
             borderWidth={1}
@@ -169,7 +170,7 @@ export default function PortfolioDetailScreen() {
       />
       <YStack flex={1} backgroundColor="#000000">
         {/* Portfolio Summary */}
-        <YStack padding={16} gap={4}>
+        <YStack padding={CONTENT_HORIZONTAL_PADDING} gap={4}>
           <Text color="#8E8E93" fontSize={13}>
             TOTAL VALUE
           </Text>
@@ -211,7 +212,7 @@ export default function PortfolioDetailScreen() {
         </YStack>
 
         {/* Section header */}
-        <XStack paddingHorizontal={16} paddingVertical={12} justifyContent="space-between" alignItems="center">
+        <XStack paddingHorizontal={CONTENT_HORIZONTAL_PADDING} paddingVertical={12} justifyContent="space-between" alignItems="center">
           <Text color="#8E8E93" fontSize={13} fontWeight="600">
             HOLDINGS
           </Text>
@@ -245,12 +246,12 @@ export default function PortfolioDetailScreen() {
         />
 
         {/* Add asset button */}
-        <YStack position="absolute" bottom={24} left={16} right={16}>
+        <YStack position="absolute" bottom={24} left={CONTENT_HORIZONTAL_PADDING} right={CONTENT_HORIZONTAL_PADDING}>
           <Link href={`/asset/add?portfolioId=${id}`} asChild>
             <Pressable>
               <YStack
                 backgroundColor="#007AFF"
-                paddingVertical={16}
+                paddingVertical={CONTENT_HORIZONTAL_PADDING}
                 borderRadius={12}
                 alignItems="center"
                 pressStyle={{ opacity: 0.8 }}

@@ -3,6 +3,7 @@ import { FlatList, RefreshControl, Alert } from 'react-native';
 import { Link, useLocalSearchParams, useFocusEffect, Stack, router } from 'expo-router';
 import { useAppStore } from '../../store';
 import { HeaderIconButton } from '../../components/HeaderButtons';
+import { CONTENT_HORIZONTAL_PADDING } from '../../lib/constants/layout';
 import { YStack, XStack, Text, Button, Card, Spinner, Separator, Tabs } from 'tamagui';
 import { getAssetById } from '../../lib/db/assets';
 import { getLotsForAsset, getTransactionsByAssetId, deleteTransaction } from '../../lib/db/transactions';
@@ -138,9 +139,9 @@ export default function AssetDetailScreen() {
       <Card
         elevate
         bordered
-        marginHorizontal="$2"
-        marginVertical="$1"
-        padding="$3"
+        marginHorizontal={CONTENT_HORIZONTAL_PADDING}
+        marginVertical={4}
+        padding={16}
         backgroundColor="$background"
       >
         <XStack justifyContent="space-between" alignItems="flex-start">
@@ -200,9 +201,9 @@ export default function AssetDetailScreen() {
     <Card
       elevate
       bordered
-      marginHorizontal="$2"
-      marginVertical="$1"
-      padding="$3"
+      marginHorizontal={CONTENT_HORIZONTAL_PADDING}
+      marginVertical={4}
+      padding={16}
       backgroundColor="$background"
     >
       <XStack justifyContent="space-between" alignItems="flex-start">
@@ -278,7 +279,7 @@ export default function AssetDetailScreen() {
       />
       <YStack flex={1} backgroundColor="$background">
         {/* Asset Summary Card */}
-        <Card elevate bordered margin="$2" padding="$4" backgroundColor="$background">
+        <Card elevate bordered marginHorizontal={CONTENT_HORIZONTAL_PADDING} marginVertical={8} padding={16} backgroundColor="$background">
           <XStack justifyContent="space-between" alignItems="flex-start">
             <YStack>
               <XStack alignItems="center" gap="$2">
@@ -373,7 +374,7 @@ export default function AssetDetailScreen() {
           flexDirection="column"
           flex={1}
         >
-          <Tabs.List paddingHorizontal="$2">
+          <Tabs.List paddingHorizontal={CONTENT_HORIZONTAL_PADDING}>
             <Tabs.Tab value="lots" flex={1}>
               <Text>Lots ({lots.length})</Text>
             </Tabs.Tab>
@@ -427,7 +428,8 @@ export default function AssetDetailScreen() {
         <Link href={`/lot/add?assetId=${id}&portfolioId=${portfolioId}`} asChild>
           <Button
             size="$5"
-            margin="$4"
+            marginHorizontal={CONTENT_HORIZONTAL_PADDING}
+            marginVertical={16}
             backgroundColor="$blue10"
             color="white"
             fontWeight="600"
