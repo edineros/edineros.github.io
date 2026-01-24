@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Alert, ScrollView } from 'react-native';
+import { ScrollView } from 'react-native';
 import { router, useLocalSearchParams, Stack } from 'expo-router';
 import { YStack, Text, Button, Input, Label, Spinner, Separator } from 'tamagui';
 import { useAppStore } from '../../../store';
-import { confirm } from '../../../lib/utils/confirm';
+import { alert, confirm } from '../../../lib/utils/confirm';
 import { getAssetById } from '../../../lib/db/assets';
 import type { Asset } from '../../../lib/types';
 
@@ -30,7 +30,7 @@ export default function EditAssetScreen() {
         setName(a.name || '');
       }
     } catch (error) {
-      Alert.alert('Error', (error as Error).message);
+      alert('Error', (error as Error).message);
     } finally {
       setIsLoading(false);
     }
@@ -42,7 +42,7 @@ export default function EditAssetScreen() {
       await updateAsset(id!, { name: name.trim() || undefined });
       router.back();
     } catch (error) {
-      Alert.alert('Error', (error as Error).message);
+      alert('Error', (error as Error).message);
     } finally {
       setIsSaving(false);
     }
@@ -62,7 +62,7 @@ export default function EditAssetScreen() {
         await deleteAsset(id!, portfolioId);
         router.replace(`/portfolio/${portfolioId}`);
       } catch (error) {
-        Alert.alert('Error', (error as Error).message);
+        alert('Error', (error as Error).message);
         setIsDeleting(false);
       }
     }

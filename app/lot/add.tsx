@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Alert, ScrollView } from 'react-native';
+import { ScrollView } from 'react-native';
+import { alert } from '../../lib/utils/confirm';
 import { router, useLocalSearchParams, Stack } from 'expo-router';
 import { YStack, XStack, Text, Button, Input, Label } from 'tamagui';
 import { getAssetById } from '../../lib/db/assets';
@@ -37,19 +38,18 @@ export default function AddLotScreen() {
     const qty = parseFloat(quantity);
     const price = parseFloat(pricePerUnit);
     const feeVal = parseFloat(fee) || 0;
-
     if (!qty || qty <= 0) {
-      Alert.alert('Error', 'Please enter a valid quantity');
+      alert('Error', 'Please enter a valid quantity');
       return;
     }
 
     if (!price || price <= 0) {
-      Alert.alert('Error', 'Please enter a valid price');
+      alert('Error', 'Please enter a valid price');
       return;
     }
 
     if (!assetId) {
-      Alert.alert('Error', 'Asset not found');
+      alert('Error', 'Asset not found');
       return;
     }
 
@@ -68,7 +68,7 @@ export default function AddLotScreen() {
       );
       router.back();
     } catch (error) {
-      Alert.alert('Error', (error as Error).message);
+      alert('Error', (error as Error).message);
     } finally {
       setIsCreating(false);
     }

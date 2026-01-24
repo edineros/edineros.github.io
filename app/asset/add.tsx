@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Alert, ScrollView, Pressable, TextInput } from 'react-native';
+import { ScrollView, Pressable, TextInput } from 'react-native';
+import { alert } from '../../lib/utils/confirm';
 import { router, useLocalSearchParams, Stack } from 'expo-router';
 import { YStack, XStack, Text, Spinner } from 'tamagui';
 import { useAppStore } from '../../store';
@@ -68,12 +69,12 @@ export default function AddAssetScreen() {
 
   const handleCreate = async () => {
     if (!symbol.trim()) {
-      Alert.alert('Error', 'Please enter a symbol');
+      alert('Error', 'Please enter a symbol');
       return;
     }
 
     if (!portfolioId) {
-      Alert.alert('Error', 'Portfolio not found');
+      alert('Error', 'Portfolio not found');
       return;
     }
 
@@ -88,7 +89,7 @@ export default function AddAssetScreen() {
       );
       router.replace(`/asset/${asset.id}?portfolioId=${portfolioId}`);
     } catch (error) {
-      Alert.alert('Error', (error as Error).message);
+      alert('Error', (error as Error).message);
     } finally {
       setIsCreating(false);
     }

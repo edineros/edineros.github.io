@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Alert, ScrollView, Pressable, TextInput } from 'react-native';
+import { ScrollView, Pressable, TextInput } from 'react-native';
+import { alert } from '../../lib/utils/confirm';
 import { router, Stack } from 'expo-router';
 import { YStack, Text } from 'tamagui';
 import { useAppStore } from '../../store';
@@ -13,7 +14,7 @@ export default function CreatePortfolioScreen() {
 
   const handleCreate = async () => {
     if (!name.trim()) {
-      Alert.alert('Error', 'Please enter a portfolio name');
+      alert('Error', 'Please enter a portfolio name');
       return;
     }
 
@@ -22,7 +23,7 @@ export default function CreatePortfolioScreen() {
       const portfolio = await createPortfolio(name.trim(), currency);
       router.replace(`/portfolio/${portfolio.id}`);
     } catch (error) {
-      Alert.alert('Error', (error as Error).message);
+      alert('Error', (error as Error).message);
     } finally {
       setIsCreating(false);
     }

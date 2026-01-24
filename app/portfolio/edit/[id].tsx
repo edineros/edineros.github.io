@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Alert, ScrollView } from 'react-native';
+import { ScrollView } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { YStack, Text, Button, Input, Label, Spinner, Separator } from 'tamagui';
 import { useAppStore } from '../../../store';
 import { CurrencySelect } from '../../../components/CurrencySelect';
-import { confirm } from '../../../lib/utils/confirm';
+import { alert, confirm } from '../../../lib/utils/confirm';
 import { getPortfolioById } from '../../../lib/db/portfolios';
 import type { Portfolio } from '../../../lib/types';
 
@@ -33,7 +33,7 @@ export default function EditPortfolioScreen() {
         setCurrency(p.currency);
       }
     } catch (error) {
-      Alert.alert('Error', (error as Error).message);
+      alert('Error', (error as Error).message);
     } finally {
       setIsLoading(false);
     }
@@ -41,7 +41,7 @@ export default function EditPortfolioScreen() {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert('Error', 'Please enter a portfolio name');
+      alert('Error', 'Please enter a portfolio name');
       return;
     }
 
@@ -50,7 +50,7 @@ export default function EditPortfolioScreen() {
       await updatePortfolio(id!, { name: name.trim(), currency });
       router.back();
     } catch (error) {
-      Alert.alert('Error', (error as Error).message);
+      alert('Error', (error as Error).message);
     } finally {
       setIsSaving(false);
     }
@@ -70,7 +70,7 @@ export default function EditPortfolioScreen() {
         await deletePortfolio(id!);
         router.replace('/');
       } catch (error) {
-        Alert.alert('Error', (error as Error).message);
+        alert('Error', (error as Error).message);
         setIsDeleting(false);
       }
     }

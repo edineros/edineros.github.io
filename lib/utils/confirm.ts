@@ -12,6 +12,18 @@ interface ConfirmOptions {
  * Cross-platform confirmation dialog.
  * Uses Alert.alert on native and window.confirm on web.
  */
+/**
+ * Cross-platform alert dialog.
+ * Uses Alert.alert on native and window.alert on web.
+ */
+export function alert(title: string, message?: string): void {
+  if (Platform.OS === 'web') {
+    window.alert(message ? `${title}\n\n${message}` : title);
+  } else {
+    Alert.alert(title, message);
+  }
+}
+
 export function confirm(options: ConfirmOptions): Promise<boolean> {
   const {
     title,
