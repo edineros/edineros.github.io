@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Alert, ScrollView, Pressable, TextInput } from 'react-native';
-import { router } from 'expo-router';
-import { YStack, XStack, Text } from 'tamagui';
+import { router, Stack } from 'expo-router';
+import { YStack, Text } from 'tamagui';
 import { useAppStore } from '../../store';
-import { CURRENCY_OPTIONS } from '../../lib/utils/format';
+import { CurrencySelect } from '../../components/CurrencySelect';
 
 export default function CreatePortfolioScreen() {
   const [name, setName] = useState('');
@@ -29,17 +29,15 @@ export default function CreatePortfolioScreen() {
   };
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: '#000000' }}
-      contentContainerStyle={{ flexGrow: 1 }}
-      keyboardShouldPersistTaps="handled"
-    >
-      <YStack flex={1} padding={16} backgroundColor="#000000">
-        <Text color="#FFFFFF" fontSize={34} fontWeight="700" marginBottom={32}>
-          New Portfolio
-        </Text>
-
-        {/* Name input */}
+    <>
+      <Stack.Screen options={{ title: 'New Portfolio' }} />
+      <ScrollView
+        style={{ flex: 1, backgroundColor: '#000000' }}
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <YStack flex={1} padding={16} backgroundColor="#000000">
+          {/* Name input */}
         <YStack gap={8} marginBottom={24}>
           <Text color="#8E8E93" fontSize={13} fontWeight="600">
             NAME
@@ -64,38 +62,14 @@ export default function CreatePortfolioScreen() {
 
         {/* Currency selection */}
         <YStack gap={8} marginBottom={32}>
-          <Text color="#8E8E93" fontSize={13} fontWeight="600">
-            BASE CURRENCY
-          </Text>
-          <Text color="#636366" fontSize={13} marginBottom={8}>
+          <CurrencySelect
+            value={currency}
+            onChange={setCurrency}
+            label="BASE CURRENCY"
+          />
+          <Text color="#636366" fontSize={13}>
             All values will be displayed in this currency
           </Text>
-          <XStack flexWrap="wrap" gap={8}>
-            {CURRENCY_OPTIONS.map((option) => (
-              <Pressable
-                key={option.value}
-                onPress={() => setCurrency(option.value)}
-              >
-                <YStack
-                  backgroundColor={currency === option.value ? '#007AFF' : '#111111'}
-                  borderWidth={1}
-                  borderColor={currency === option.value ? '#007AFF' : '#1F1F1F'}
-                  paddingVertical={10}
-                  paddingHorizontal={16}
-                  borderRadius={8}
-                  pressStyle={{ opacity: 0.8 }}
-                >
-                  <Text
-                    color={currency === option.value ? '#FFFFFF' : '#8E8E93'}
-                    fontSize={15}
-                    fontWeight="600"
-                  >
-                    {option.value}
-                  </Text>
-                </YStack>
-              </Pressable>
-            ))}
-          </XStack>
         </YStack>
 
         {/* Create button */}
@@ -120,5 +94,6 @@ export default function CreatePortfolioScreen() {
         </YStack>
       </YStack>
     </ScrollView>
+    </>
   );
 }

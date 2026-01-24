@@ -136,7 +136,7 @@ npm run android   # Run on Android
 - add option to edit lot (since lots are an UI abstraction, that probably means the underlying transaction should be updated?)
 
 5. Explore/update APIs
-- it looks like we are being rate limited by yahoo. explore new options and come up with suggestions. find a yahoo API to fetch multiple symbols at once, find another provider or give other suggestions
+- it looks like we are being rate limited by yahoo. I sometimes see 520 error code on the https://api.allorigins.win/raw and sometimes the https://query1.finance.yahoo.com/ hangs. explore new options and come up with suggestions. find a yahoo API to fetch multiple symbols at once, find another provider or give other suggestions
 
 6. Prepare the first test build for iOS. It won't be distributed via AppStore yet or via TestFlight because the developer doesn't have a paid apple developer account atm. So give instructions about how to proceed about opening the app with a test iphone to see if things are working properly. The developer has an expo.dev account if that will help. The developer may not be able to update the xcode on because the mac may need an update.
 

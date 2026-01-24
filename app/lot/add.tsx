@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Alert, ScrollView } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, Stack } from 'expo-router';
 import { YStack, XStack, Text, Button, Input, Label } from 'tamagui';
 import { getAssetById } from '../../lib/db/assets';
 import { createTransaction } from '../../lib/db/transactions';
@@ -79,13 +79,11 @@ export default function AddLotScreen() {
   }
 
   return (
-    <ScrollView style={{ flex: 1 }}>
-      <YStack flex={1} padding="$4" gap="$4">
-        <Text fontSize="$5" fontWeight="600" color="$color">
-          Adding lot for {asset.symbol}
-        </Text>
-
-        <YStack gap="$2">
+    <>
+      <Stack.Screen options={{ title: 'Add Lot' }} />
+      <ScrollView style={{ flex: 1 }}>
+        <YStack flex={1} padding="$4" gap="$4">
+          <YStack gap="$2">
           <Label htmlFor="quantity">Quantity</Label>
           <Input
             id="quantity"
@@ -174,5 +172,6 @@ export default function AddLotScreen() {
         </Button>
       </YStack>
     </ScrollView>
+    </>
   );
 }

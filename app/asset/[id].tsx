@@ -4,6 +4,8 @@ import { Link, useLocalSearchParams, useFocusEffect, Stack, router } from 'expo-
 import { confirm } from '../../lib/utils/confirm';
 import { useAppStore } from '../../store';
 import { HeaderIconButton } from '../../components/HeaderButtons';
+import { QuantityAtPrice } from '../../components/QuantityAtPrice';
+import { FloatingActionButton } from '../../components/FloatingActionButton';
 import { CONTENT_HORIZONTAL_PADDING } from '../../lib/constants/layout';
 import { YStack, XStack, Text, Button, Card, Spinner, Separator, Tabs } from 'tamagui';
 import { getAssetById } from '../../lib/db/assets';
@@ -137,11 +139,14 @@ export default function AssetDetailScreen() {
       >
         <XStack justifyContent="space-between" alignItems="flex-start">
           <YStack flex={1}>
-            <Text fontSize="$4" fontWeight="600">
-              {formatQuantity(item.remainingQuantity)} units
-            </Text>
-            <Text fontSize="$3" color="$gray10">
-              @ {formatCurrency(item.purchasePrice, asset?.currency)} · {formatDate(item.purchaseDate)}
+            <QuantityAtPrice
+              quantity={item.remainingQuantity}
+              price={item.purchasePrice}
+              currency={asset?.currency}
+              fontSize="$3"
+            />
+            <Text fontSize="$2" color="$gray10" marginTop={2}>
+              {formatDate(item.purchaseDate)}
             </Text>
             {item.remainingQuantity !== item.originalQuantity && (
               <Text fontSize="$2" color="$gray9">
@@ -211,9 +216,14 @@ export default function AssetDetailScreen() {
               {formatDate(item.date)}
             </Text>
           </XStack>
-          <Text fontSize="$3" color="$gray10" marginTop="$1">
-            {formatQuantity(item.quantity)} @ {formatCurrency(item.pricePerUnit, asset?.currency)}
-          </Text>
+          <XStack marginTop="$1">
+            <QuantityAtPrice
+              quantity={item.quantity}
+              price={item.pricePerUnit}
+              currency={asset?.currency}
+              fontSize="$3"
+            />
+          </XStack>
           {item.notes && (
             <Text fontSize="$2" color="$gray9" marginTop="$1">
               {item.notes}
@@ -413,19 +423,7 @@ export default function AssetDetailScreen() {
           </Tabs.Content>
         </Tabs>
 
-        <Link href={`/lot/add?assetId=${id}&portfolioId=${portfolioId}`} asChild>
-          <Button
-            size="$5"
-            marginHorizontal={CONTENT_HORIZONTAL_PADDING}
-            marginVertical={16}
-            backgroundColor="$blue10"
-            color="white"
-            fontWeight="600"
-            pressStyle={{ opacity: 0.8 }}
-          >
-            Add Lot
-          </Button>
-        </Link>
+        <FloatingActionButton href={`/lot/add?assetId=${id}&portfolioId=${portfolioId}`} />
       </YStack>
     </>
   );

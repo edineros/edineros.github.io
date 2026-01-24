@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Alert, ScrollView } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { YStack, XStack, Text, Button, Input, Label, Spinner } from 'tamagui';
+import { YStack, Text, Button, Input, Label, Spinner } from 'tamagui';
 import { useAppStore } from '../../../store';
+import { CurrencySelect } from '../../../components/CurrencySelect';
 import { getPortfolioById } from '../../../lib/db/portfolios';
-import { CURRENCY_OPTIONS } from '../../../lib/utils/format';
 import type { Portfolio } from '../../../lib/types';
 
 export default function EditPortfolioScreen() {
@@ -85,24 +85,14 @@ export default function EditPortfolioScreen() {
         </YStack>
 
         <YStack gap="$2">
-          <Label>Base Currency</Label>
-          <Text fontSize="$3" color="$gray10" marginBottom="$2">
+          <CurrencySelect
+            value={currency}
+            onChange={setCurrency}
+            label="BASE CURRENCY"
+          />
+          <Text fontSize="$3" color="$gray10">
             Changing currency will affect how values are displayed
           </Text>
-          <XStack flexWrap="wrap" gap="$2">
-            {CURRENCY_OPTIONS.map((option) => (
-              <Button
-                key={option.value}
-                size="$3"
-                variant={currency === option.value ? undefined : 'outlined'}
-                backgroundColor={currency === option.value ? '$blue10' : undefined}
-                color={currency === option.value ? 'white' : undefined}
-                onPress={() => setCurrency(option.value)}
-              >
-                {option.value}
-              </Button>
-            ))}
-          </XStack>
         </YStack>
 
         <Button

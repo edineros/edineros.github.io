@@ -4,7 +4,9 @@ import { Link, useLocalSearchParams, useFocusEffect, Stack } from 'expo-router';
 import { YStack, XStack, Text, Spinner } from 'tamagui';
 import { useAppStore } from '../../store';
 import { HeaderIconButton } from '../../components/HeaderButtons';
-import { formatCurrency, formatPercent, formatQuantity, getGainColor } from '../../lib/utils/format';
+import { QuantityAtPrice } from '../../components/QuantityAtPrice';
+import { FloatingActionButton } from '../../components/FloatingActionButton';
+import { formatCurrency, formatPercent, getGainColor } from '../../lib/utils/format';
 import { CONTENT_HORIZONTAL_PADDING } from '../../lib/constants/layout';
 import type { Asset } from '../../lib/types';
 
@@ -117,9 +119,14 @@ export default function PortfolioDetailScreen() {
                   </Text>
                 )}
                 {stats && (
-                  <Text color="#636366" fontSize={12} marginTop={2}>
-                    {formatQuantity(stats.totalQuantity)} @ {formatCurrency(stats.averageCost, item.currency)}
-                  </Text>
+                  <XStack marginTop={2}>
+                    <QuantityAtPrice
+                      quantity={stats.totalQuantity}
+                      price={stats.averageCost}
+                      currency={item.currency}
+                      fontSize={12}
+                    />
+                  </XStack>
                 )}
               </YStack>
               <YStack alignItems="flex-end" gap={2}>
@@ -247,24 +254,7 @@ export default function PortfolioDetailScreen() {
           }
         />
 
-        {/* Add asset button */}
-        <YStack position="absolute" bottom={24} left={CONTENT_HORIZONTAL_PADDING} right={CONTENT_HORIZONTAL_PADDING}>
-          <Link href={`/asset/add?portfolioId=${id}`} asChild>
-            <Pressable>
-              <YStack
-                backgroundColor="#007AFF"
-                paddingVertical={CONTENT_HORIZONTAL_PADDING}
-                borderRadius={12}
-                alignItems="center"
-                pressStyle={{ opacity: 0.8 }}
-              >
-                <Text color="#FFFFFF" fontSize={17} fontWeight="600">
-                  Add Asset
-                </Text>
-              </YStack>
-            </Pressable>
-          </Link>
-        </YStack>
+        <FloatingActionButton href={`/asset/add?portfolioId=${id}`} />
       </YStack>
     </>
   );
