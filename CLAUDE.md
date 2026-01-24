@@ -291,6 +291,37 @@ if (!id) {
 
 ---
 
+# Testing
+
+## Setup
+
+- **Test Runner**: Jest with jest-expo preset
+- **Testing Library**: @testing-library/react-native
+
+## Commands
+
+```bash
+npm test          # Run all tests
+npm run test:watch # Run tests in watch mode
+```
+
+## Writing Tests
+
+Tests should be placed in the same directtory as the file they are testing and should be named `*.test.ts` / `*.test.tsx`.
+
+```typescript
+import { render, screen } from '@testing-library/react-native';
+
+describe('MyComponent', () => {
+  it('renders correctly', () => {
+    render(<MyComponent />);
+    expect(screen.getByText('Hello')).toBeOnTheScreen();
+  });
+});
+```
+
+---
+
 # Development Notes
 
 - Default currency is EUR (can be changed per portfolio)
