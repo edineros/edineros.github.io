@@ -9,7 +9,7 @@ import { CONTENT_HORIZONTAL_PADDING } from '../../lib/constants/layout';
 import type { Asset } from '../../lib/types';
 
 export default function PortfolioDetailScreen() {
-  const { id, name: nameParam } = useLocalSearchParams<{ id: string; name?: string }>();
+  const { id } = useLocalSearchParams<{ id: string }>();
   const [refreshing, setRefreshing] = useState(false);
   const {
     portfolios,
@@ -75,7 +75,7 @@ export default function PortfolioDetailScreen() {
     const gainColor = stats ? getGainColor(stats.unrealizedGain) : 'neutral';
 
     return (
-      <Link href={`/asset/${item.id}?portfolioId=${id}&symbol=${item.symbol}`} asChild>
+      <Link href={`/asset/${item.id}?portfolioId=${id}`} asChild>
         <Pressable>
           <YStack
             marginHorizontal={CONTENT_HORIZONTAL_PADDING}
@@ -142,13 +142,10 @@ export default function PortfolioDetailScreen() {
     );
   };
 
-  // Use name from URL param immediately, or loaded portfolio name
-  const displayTitle = nameParam || portfolio?.name || 'Portfolio';
-
   if (!portfolio) {
     return (
       <>
-        <Stack.Screen options={{ title: displayTitle }} />
+        <Stack.Screen options={{ title: '', }} />
         <YStack flex={1} justifyContent="center" alignItems="center" backgroundColor="#000000">
           <Spinner size="large" color="#FFFFFF" />
         </YStack>
@@ -162,7 +159,7 @@ export default function PortfolioDetailScreen() {
     <>
       <Stack.Screen
         options={{
-          title: displayTitle,
+          title: portfolio?.name,
           headerRight: () => (
             <HeaderIconButton icon="create-outline" href={`/portfolio/edit/${id}`} />
           ),

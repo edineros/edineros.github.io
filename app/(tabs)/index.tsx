@@ -40,7 +40,7 @@ export default function PortfolioListScreen() {
     const gainColor = stats ? getGainColor(stats.totalGain) : 'neutral';
 
     return (
-      <Link href={`/portfolio/${item.id}?name=${encodeURIComponent(item.name)}`} asChild>
+      <Link href={`/portfolio/${item.id}`} asChild>
         <Pressable>
           <YStack
             marginHorizontal={CONTENT_HORIZONTAL_PADDING}

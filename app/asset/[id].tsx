@@ -20,7 +20,7 @@ import { calculateLotStats } from '../../lib/utils/calculations';
 import type { Asset, Lot, Transaction } from '../../lib/types';
 
 export default function AssetDetailScreen() {
-  const { id, portfolioId, symbol: symbolParam } = useLocalSearchParams<{ id: string; portfolioId: string; symbol?: string }>();
+  const { id, portfolioId } = useLocalSearchParams<{ id: string; portfolioId: string }>();
   const [asset, setAsset] = useState<Asset | null>(null);
   const [lots, setLots] = useState<Lot[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -253,13 +253,10 @@ export default function AssetDetailScreen() {
     </Card>
   );
 
-  // Set title immediately from URL param, or use loaded asset symbol
-  const displayTitle = symbolParam || asset?.symbol || 'Asset';
-
   if (isLoading || !asset) {
     return (
       <>
-        <Stack.Screen options={{ title: displayTitle }} />
+        <Stack.Screen options={{ title: '' }} />
         <YStack flex={1} justifyContent="center" alignItems="center" backgroundColor="#000000">
           <Spinner size="large" color="#FFFFFF" />
         </YStack>
@@ -271,7 +268,7 @@ export default function AssetDetailScreen() {
     <>
       <Stack.Screen
         options={{
-          title: displayTitle,
+          title: asset?.symbol,
           headerRight: () => (
             <HeaderIconButton icon="trash-outline" color="#FF6B6B" onPress={handleDeleteAsset} />
           ),
