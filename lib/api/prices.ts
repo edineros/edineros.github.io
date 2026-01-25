@@ -58,17 +58,20 @@ async function fetchFromProvider(
 export async function fetchPrice(
   symbol: string,
   assetType: AssetType,
-  preferredCurrency?: string
+  preferredCurrency?: string,
+  forceRefresh?: boolean
 ): Promise<PriceResult | null> {
-  // Check cache first
-  const cached = await getValidCachedPrice(symbol);
-  if (cached) {
-    return {
-      price: cached.price,
-      currency: cached.currency,
-      fromCache: true,
-      fetchedAt: cached.fetchedAt,
-    };
+  // Check cache first (unless force refresh is requested)
+  if (!forceRefresh) {
+    const cached = await getValidCachedPrice(symbol);
+    if (cached) {
+      return {
+        price: cached.price,
+        currency: cached.currency,
+        fromCache: true,
+        fetchedAt: cached.fetchedAt,
+      };
+    }
   }
 
   const result = await fetchFromProvider(symbol, assetType, preferredCurrency);
@@ -92,6 +95,15 @@ export async function fetchPrice(
     fromCache: false,
     fetchedAt: new Date(),
   };
+}
+
+// Refresh price (regular fetch but ignore cache)
+export async function refreshPrice(
+  symbol: string,
+  assetType: AssetType,
+  preferredCurrency?: string
+): Promise<PriceResult | null> {
+  return await fetchPrice(symbol, assetType, preferredCurrency, true);
 }
 
 export async function convertCurrency(
@@ -174,33 +186,4 @@ export async function searchSymbol(
     type: r.type,
     exchange: r.exchange,
   }));
-}
-
-// Refresh price (ignore cache)
-export async function refreshPrice(
-  symbol: string,
-  assetType: AssetType,
-  preferredCurrency?: string
-): Promise<PriceResult | null> {
-  const result = await fetchFromProvider(symbol, assetType, preferredCurrency);
-  if (!result) {
-    return null;
-  }
-
-  // Update cache
-  await setCachedPrice(
-    symbol,
-    assetType,
-    result.price,
-    result.currency,
-    PRICE_TTL[assetType]
-  );
-
-  return {
-    price: result.price,
-    currency: result.currency,
-    name: result.name,
-    fromCache: false,
-    fetchedAt: new Date(),
-  };
 }
