@@ -19,6 +19,7 @@ interface KrakenTickerResponse {
 // Kraken uses X prefix for crypto (XBT, XETH) and Z prefix for fiat (ZEUR, ZUSD)
 const symbolToKrakenPair: Record<string, Record<string, string>> = {
   BTC: { EUR: 'XXBTZEUR', USD: 'XXBTZUSD' },
+  BITCOIN: { EUR: 'XXBTZEUR', USD: 'XXBTZUSD' },
   ETH: { EUR: 'XETHZEUR', USD: 'XETHZUSD' },
   SOL: { EUR: 'SOLEUR', USD: 'SOLUSD' },
   XRP: { EUR: 'XXRPZEUR', USD: 'XXRPZUSD' },
