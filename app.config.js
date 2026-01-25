@@ -1,13 +1,13 @@
 module.exports = {
   expo: {
-    name: "Portfolio Tracker",
+    name: "Private Portfolio",
     slug: "private-portfolio",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/icon.png",
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
-    scheme: "portfolio-tracker",
+    scheme: "private-portfolio",
     splash: {
       image: "./assets/splash-icon.png",
       resizeMode: "contain",
@@ -15,7 +15,7 @@ module.exports = {
     },
     ios: {
       supportsTablet: true,
-      bundleIdentifier: "com.portfolio.tracker"
+      bundleIdentifier: "com.private.portfolio"
     },
     android: {
       adaptiveIcon: {
@@ -23,7 +23,7 @@ module.exports = {
         backgroundColor: "#ffffff"
       },
       edgeToEdgeEnabled: true,
-      package: "com.portfolio.tracker"
+      package: "com.private.portfolio"
     },
     web: {
       favicon: "./assets/favicon.png",
