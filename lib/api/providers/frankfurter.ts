@@ -38,53 +38,6 @@ export async function fetchExchangeRate(
   }
 }
 
-export async function fetchMultipleExchangeRates(
-  baseCurrency: string,
-  targetCurrencies: string[]
-): Promise<Map<string, number>> {
-  const results = new Map<string, number>();
-
-  if (targetCurrencies.length === 0) {
-    return results;
-  }
-
-  // Add the base currency itself with rate 1
-  results.set(baseCurrency.toUpperCase(), 1);
-
-  // Filter out the base currency from targets
-  const targets = targetCurrencies
-    .filter((c) => c.toUpperCase() !== baseCurrency.toUpperCase())
-    .map((c) => c.toUpperCase());
-
-  if (targets.length === 0) {
-    return results;
-  }
-
-  try {
-    const url = `https://api.frankfurter.app/latest?from=${encodeURIComponent(baseCurrency.toUpperCase())}&to=${encodeURIComponent(targets.join(','))}`;
-
-    const response = await fetch(url, {
-      headers: {
-        Accept: 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      return results;
-    }
-
-    const data = (await response.json()) as FrankfurterRates;
-
-    for (const [currency, rate] of Object.entries(data.rates)) {
-      results.set(currency, rate);
-    }
-  } catch (error) {
-    console.error('Error fetching exchange rates:', error);
-  }
-
-  return results;
-}
-
 // Get list of supported currencies
 export async function getSupportedCurrencies(): Promise<string[]> {
   try {
