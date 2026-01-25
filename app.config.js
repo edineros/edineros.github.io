@@ -6,7 +6,7 @@ module.exports = {
     orientation: "portrait",
     icon: "./assets/icon.png",
     userInterfaceStyle: "automatic",
-    newArchEnabled: false,
+    newArchEnabled: true,
     scheme: "private-portfolio",
     splash: {
       image: "./assets/splash-icon.png",
@@ -15,7 +15,10 @@ module.exports = {
     },
     ios: {
       supportsTablet: true,
-      bundleIdentifier: "com.private.portfolio"
+      bundleIdentifier: "com.private.portfolio",
+      infoPlist: {
+        ITSAppUsesNonExemptEncryption: false
+      }
     },
     android: {
       adaptiveIcon: {
