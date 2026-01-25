@@ -6,7 +6,7 @@ module.exports = {
     orientation: "portrait",
     icon: "./assets/icon.png",
     userInterfaceStyle: "automatic",
-    newArchEnabled: true,
+    newArchEnabled: false,
     scheme: "private-portfolio",
     splash: {
       image: "./assets/splash-icon.png",
@@ -37,6 +37,11 @@ module.exports = {
     plugins: [
       "expo-router",
       "expo-sqlite"
-    ]
+    ],
+    extra: {
+      eas: {
+        projectId: "310eda78-0f81-43d5-8703-a573af9e6f4d"
+      }
+    }
   }
 };
