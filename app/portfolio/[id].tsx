@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useMemo } from 'react';
 import { FlatList, RefreshControl, Pressable } from 'react-native';
 import { Link, useLocalSearchParams, useFocusEffect, Stack } from 'expo-router';
 import { YStack, XStack, Text, Spinner } from 'tamagui';
@@ -7,6 +7,7 @@ import { HeaderIconButton } from '../../components/HeaderButtons';
 import { QuantityAtPrice } from '../../components/QuantityAtPrice';
 import { FloatingActionButton } from '../../components/FloatingActionButton';
 import { PortfolioSwitcher } from '../../components/PortfolioSwitcher';
+import { AssetAllocationChart, calculateAllocations } from '../../components/AssetAllocationChart';
 import { formatCurrency, formatPercent, getGainColor } from '../../lib/utils/format';
 import { CONTENT_HORIZONTAL_PADDING } from '../../lib/constants/layout';
 import type { Asset } from '../../lib/types';
@@ -61,6 +62,29 @@ export default function PortfolioDetailScreen() {
     await loadPortfolioStats(id);
     setRefreshing(false);
   }, [id]);
+
+  const allocationData = useMemo(() => {
+    if (!id) {
+      return { allocations: [], totalValue: 0 };
+    }
+
+    const assets_list = assets.get(id);
+    if (!assets_list || assets_list.length === 0) {
+      return { allocations: [], totalValue: 0 };
+    }
+
+    // Build a map with type info from assets and value from assetStats
+    const statsWithType = new Map<string, { type: Asset['type']; currentValue: number | null }>();
+    for (const asset of assets_list) {
+      const stat = assetStats.get(asset.id);
+      statsWithType.set(asset.id, {
+        type: asset.type,
+        currentValue: stat?.currentValue ?? null,
+      });
+    }
+
+    return calculateAllocations(statsWithType);
+  }, [id, assets, assetStats]);
 
   const renderAsset = ({ item }: { item: Asset }) => {
     const stats = assetStats.get(item.id);
@@ -231,6 +255,20 @@ export default function PortfolioDetailScreen() {
               onRefresh={onRefresh}
               tintColor="#FFFFFF"
             />
+          }
+          ListFooterComponent={
+            allocationData.allocations.length > 1 ? (
+              <YStack paddingHorizontal={CONTENT_HORIZONTAL_PADDING} paddingTop={16} gap={12}>
+                <Text color="#8E8E93" fontSize={13} fontWeight="600" textTransform="uppercase">
+                  Allocation
+                </Text>
+                <AssetAllocationChart
+                  allocations={allocationData.allocations}
+                  totalValue={allocationData.totalValue}
+                  currency={portfolio.currency}
+                />
+              </YStack>
+            ) : null
           }
           ListEmptyComponent={
             <YStack flex={1} padding={32} alignItems="center" justifyContent="center">

@@ -7,18 +7,8 @@ import { useAppStore } from '../../store';
 import { CurrencySelect } from '../../components/CurrencySelect';
 import { searchSymbol } from '../../lib/api/prices';
 import { getPortfolioById } from '../../lib/db/portfolios';
+import { ASSET_TYPE_CONFIGS } from '../../lib/constants/assetTypes';
 import type { AssetType } from '../../lib/types';
-
-const ASSET_TYPES: { value: AssetType; label: string }[] = [
-  { value: 'stock', label: 'Stock' },
-  { value: 'etf', label: 'ETF' },
-  { value: 'crypto', label: 'Crypto' },
-  { value: 'bond', label: 'Bond' },
-  { value: 'commodity', label: 'Commodity' },
-  { value: 'forex', label: 'Forex' },
-  { value: 'cash', label: 'Cash' },
-  { value: 'other', label: 'Other' },
-];
 
 export default function AddAssetScreen() {
   const { portfolioId } = useLocalSearchParams<{ portfolioId: string }>();
@@ -110,7 +100,7 @@ export default function AddAssetScreen() {
               TYPE
             </Text>
             <XStack flexWrap="wrap" gap={8}>
-              {ASSET_TYPES.map((item) => (
+              {ASSET_TYPE_CONFIGS.map((item) => (
                 <Pressable key={item.value} onPress={() => setType(item.value)}>
                   <YStack
                     backgroundColor={type === item.value ? '#007AFF' : '#111111'}
