@@ -6,8 +6,7 @@ import {
   setCachedExchangeRate,
 } from '../db/priceCache';
 import { fetchYahooPrice, searchYahooSymbol } from './providers/yahoo';
-import { fetchCoinGeckoPrice, searchCoinGecko } from './providers/coingecko';
-import { fetchKrakenPrice, isKrakenSupported } from './providers/kraken';
+import { fetchKrakenPrice, searchKrakenAssets } from './providers/kraken';
 import { fetchExchangeRate } from './providers/frankfurter';
 
 // TTL in minutes for different asset types
@@ -37,14 +36,8 @@ async function fetchFromProvider(
   preferredCurrency?: string
 ): Promise<{ price: number; currency: string; name?: string } | null> {
   if (assetType === 'crypto') {
-    // Try Kraken first (no rate limits), fall back to CoinGecko
-    if (isKrakenSupported(symbol)) {
-      const result = await fetchKrakenPrice(symbol, preferredCurrency);
-      if (result) {
-        return result;
-      }
-    }
-    return await fetchCoinGeckoPrice(symbol, preferredCurrency);
+    // Use Kraken for all crypto assets
+    return await fetchKrakenPrice(symbol, preferredCurrency);
   }
 
   if (assetType === 'cash') {
@@ -170,7 +163,7 @@ export async function searchSymbol(
   }
 
   if (assetType === 'crypto') {
-    const results = await searchCoinGecko(query);
+    const results = await searchKrakenAssets(query);
     return results.map((r) => ({
       symbol: r.symbol,
       name: r.name,

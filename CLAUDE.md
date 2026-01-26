@@ -25,7 +25,7 @@ npm run android   # Run on Android
 - **State Management**: Zustand
 - **Local Storage**: expo-sqlite (native), IndexedDB (web)
 - **UI Framework**: Tamagui
-- **Price APIs**: Yahoo Finance (stocks), CoinGecko (crypto), Frankfurter (forex)
+- **Price APIs**: Yahoo Finance (stocks), Kraken (crypto), Frankfurter (forex)
 
 ## Project Structure
 
@@ -57,7 +57,7 @@ npm run android   # Run on Android
 │   ├── prices.ts      # Main price fetching logic
 │   └── providers/     # Individual API providers
 │       ├── yahoo.ts   # Yahoo Finance (stocks, ETFs)
-│       ├── coingecko.ts # CoinGecko (crypto)
+│       ├── kraken.ts    # Kraken (crypto)
 │       └── frankfurter.ts # Frankfurter (forex)
 ├── utils/             # Utilities
 │   ├── calculations.ts # Portfolio/asset calculations

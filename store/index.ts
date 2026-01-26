@@ -222,13 +222,22 @@ export const useAppStore = create<AppState>((set) => ({
   loadPortfolioStats: async (portfolioId: string) => {
     try {
       const portfolio = await db.getPortfolioById(portfolioId);
-      if (!portfolio) return null;
+      if (!portfolio) {
+        return null;
+      }
 
-      const stats = await calculatePortfolioStats(portfolio);
+      const { portfolioStats: stats, assetStats: newAssetStats } = await calculatePortfolioStats(portfolio);
       set((state) => {
         const portfolioStats = new Map(state.portfolioStats);
         portfolioStats.set(portfolioId, stats);
-        return { portfolioStats };
+
+        // Also update all asset stats from the batch calculation
+        const assetStats = new Map(state.assetStats);
+        for (const [assetId, assetStat] of newAssetStats) {
+          assetStats.set(assetId, assetStat);
+        }
+
+        return { portfolioStats, assetStats };
       });
       return stats;
     } catch (error) {

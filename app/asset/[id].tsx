@@ -259,7 +259,7 @@ export default function AssetDetailScreen() {
     <>
       <Stack.Screen
         options={{
-          title: asset?.symbol,
+          title: asset?.name ?? asset?.symbol,
           headerRight: () => (
             <HeaderIconButton
               icon="settings-outline"

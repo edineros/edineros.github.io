@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { FlatList, RefreshControl, Pressable } from 'react-native';
 import { Link, useLocalSearchParams, useFocusEffect, Stack } from 'expo-router';
 import { YStack, XStack, Text, Spinner } from 'tamagui';
@@ -21,7 +21,6 @@ export default function PortfolioDetailScreen() {
     portfolioStats,
     loadPortfolios,
     loadAssets,
-    loadAssetStats,
     loadPortfolioStats,
     refreshPrices,
   } = useAppStore();
@@ -43,7 +42,7 @@ export default function PortfolioDetailScreen() {
           await loadPortfolios();
         }
 
-        // Load assets and portfolio stats
+        // Load assets first, then portfolio stats (which also calculates all asset stats)
         await loadAssets(id);
         await loadPortfolioStats(id);
       };
@@ -51,15 +50,6 @@ export default function PortfolioDetailScreen() {
       loadData();
     }, [id, portfolio])
   );
-
-  // Load asset stats whenever portfolioAssets change (always reload to get fresh data)
-  useEffect(() => {
-    if (portfolio && portfolioAssets.length > 0) {
-      portfolioAssets.forEach((asset) => {
-        loadAssetStats(asset.id, portfolio.currency);
-      });
-    }
-  }, [portfolio, portfolioAssets]);
 
   const onRefresh = useCallback(async () => {
     if (!id) {
@@ -69,14 +59,8 @@ export default function PortfolioDetailScreen() {
     await refreshPrices();
     await loadAssets(id);
     await loadPortfolioStats(id);
-
-    if (portfolio) {
-      for (const asset of portfolioAssets) {
-        await loadAssetStats(asset.id, portfolio.currency);
-      }
-    }
     setRefreshing(false);
-  }, [id, portfolio, portfolioAssets]);
+  }, [id]);
 
   const renderAsset = ({ item }: { item: Asset }) => {
     const stats = assetStats.get(item.id);

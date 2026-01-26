@@ -2,6 +2,14 @@ import type { Transaction, Lot, Asset, AssetWithStats, Portfolio, PortfolioWithS
 import { getLotsForAsset, getTransactionsByAssetId } from '../db/transactions';
 import { getAssetsByPortfolioId } from '../db/assets';
 import { fetchPrice, convertCurrency } from '../api/prices';
+import { fetchKrakenPrices } from '../api/providers/kraken';
+import {
+  getValidCachedPrice,
+  setCachedPrice,
+} from '../db/priceCache';
+
+// TTL in minutes for crypto prices (matches prices.ts)
+const CRYPTO_PRICE_TTL = 5;
 
 export function calculateLotStats(lot: Lot, currentPrice: number | null): {
   currentValue: number | null;
@@ -98,15 +106,45 @@ export async function calculateAssetStats(
 
 export async function calculatePortfolioStats(
   portfolio: Portfolio
-): Promise<PortfolioWithStats> {
+): Promise<{ portfolioStats: PortfolioWithStats; assetStats: Map<string, AssetWithStats> }> {
   const assets = await getAssetsByPortfolioId(portfolio.id);
+
+  // Collect crypto assets that need price fetching (not in cache)
+  const cryptoAssetsNeedingPrices: Asset[] = [];
+  for (const asset of assets) {
+    if (asset.type === 'crypto') {
+      const cached = await getValidCachedPrice(asset.symbol);
+      if (!cached) {
+        cryptoAssetsNeedingPrices.push(asset);
+      }
+    }
+  }
+
+  // Batch fetch crypto prices and cache them BEFORE calculating any stats
+  if (cryptoAssetsNeedingPrices.length > 0) {
+    const symbols = cryptoAssetsNeedingPrices.map((a) => a.symbol);
+    const prices = await fetchKrakenPrices(symbols, portfolio.currency);
+
+    // Cache the fetched prices
+    for (const [symbol, priceInfo] of prices) {
+      await setCachedPrice(
+        symbol,
+        'crypto',
+        priceInfo.price,
+        priceInfo.currency,
+        CRYPTO_PRICE_TTL
+      );
+    }
+  }
 
   let totalValue: number | null = 0;
   let totalCost = 0;
   let hasAllPrices = true;
+  const assetStatsMap = new Map<string, AssetWithStats>();
 
   for (const asset of assets) {
     const stats = await calculateAssetStats(asset, portfolio.currency);
+    assetStatsMap.set(asset.id, stats);
 
     // Add cost (convert to portfolio currency)
     let assetCost = stats.totalCost;
@@ -135,12 +173,15 @@ export async function calculatePortfolioStats(
     totalGain !== null && totalCost > 0 ? (totalGain / totalCost) * 100 : null;
 
   return {
-    ...portfolio,
-    totalValue,
-    totalCost,
-    totalGain,
-    totalGainPercent,
-    assetCount: assets.length,
+    portfolioStats: {
+      ...portfolio,
+      totalValue,
+      totalCost,
+      totalGain,
+      totalGainPercent,
+      assetCount: assets.length,
+    },
+    assetStats: assetStatsMap,
   };
 }
 

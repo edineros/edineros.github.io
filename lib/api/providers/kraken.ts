@@ -15,44 +15,137 @@ interface KrakenTickerResponse {
   };
 }
 
-// Map common symbols to Kraken pair format
-// Kraken uses X prefix for crypto (XBT, XETH) and Z prefix for fiat (ZEUR, ZUSD)
-const symbolToKrakenPair: Record<string, Record<string, string>> = {
-  BTC: { EUR: 'XXBTZEUR', USD: 'XXBTZUSD' },
-  BITCOIN: { EUR: 'XXBTZEUR', USD: 'XXBTZUSD' },
-  ETH: { EUR: 'XETHZEUR', USD: 'XETHZUSD' },
-  SOL: { EUR: 'SOLEUR', USD: 'SOLUSD' },
-  XRP: { EUR: 'XXRPZEUR', USD: 'XXRPZUSD' },
-  ADA: { EUR: 'ADAEUR', USD: 'ADAUSD' },
-  DOT: { EUR: 'DOTEUR', USD: 'DOTUSD' },
-  DOGE: { EUR: 'XDGEUR', USD: 'XDGUSD' },
-  LTC: { EUR: 'XLTCZEUR', USD: 'XLTCZUSD' },
-  LINK: { EUR: 'LINKEUR', USD: 'LINKUSD' },
-  AVAX: { EUR: 'AVAXEUR', USD: 'AVAXUSD' },
-  ATOM: { EUR: 'ATOMEUR', USD: 'ATOMUSD' },
-  UNI: { EUR: 'UNIEUR', USD: 'UNIUSD' },
-  XLM: { EUR: 'XXLMZEUR', USD: 'XXLMZUSD' },
-  XMR: { EUR: 'XXMRZEUR', USD: 'XXMRZUSD' },
-  MATIC: { EUR: 'MATICEUR', USD: 'MATICUSD' },
-};
+interface KrakenAssetPairsResponse {
+  error: string[];
+  result: {
+    [pair: string]: {
+      altname: string;
+      wsname?: string;
+      base: string;
+      quote: string;
+    };
+  };
+}
 
-function getKrakenPair(symbol: string, currency: string): string | null {
+// Cache for Kraken asset pairs
+let cachedAssetPairs: Map<string, { pair: string; base: string; quote: string; altname: string }> | null = null;
+let cachedAssetPairsTimestamp: number = 0;
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+// Normalize symbol names - Kraken uses X prefix for crypto (XBT for BTC, XETH for ETH)
+// and Z prefix for fiat (ZEUR, ZUSD)
+function normalizeSymbol(symbol: string): string {
   const upper = symbol.toUpperCase();
+  // Map common names to Kraken format
+  if (upper === 'BTC' || upper === 'BITCOIN') {
+    return 'XBT';
+  }
+  if (upper === 'DOGE' || upper === 'DOGECOIN') {
+    return 'XDG';
+  }
+  return upper;
+}
+
+// Fetch and cache all available Kraken trading pairs
+async function fetchAssetPairs(): Promise<Map<string, { pair: string; base: string; quote: string; altname: string }>> {
+  const now = Date.now();
+  if (cachedAssetPairs && now - cachedAssetPairsTimestamp < CACHE_TTL_MS) {
+    return cachedAssetPairs;
+  }
+
+  try {
+    const response = await fetch('https://api.kraken.com/0/public/AssetPairs');
+    if (!response.ok) {
+      return cachedAssetPairs || new Map();
+    }
+
+    const data = (await response.json()) as KrakenAssetPairsResponse;
+    if (data.error?.length > 0) {
+      console.error('Kraken AssetPairs API error:', data.error);
+      return cachedAssetPairs || new Map();
+    }
+
+    const pairs = new Map<string, { pair: string; base: string; quote: string; altname: string }>();
+
+    for (const [pairKey, pairInfo] of Object.entries(data.result)) {
+      // Skip .d pairs (dark pool)
+      if (pairKey.endsWith('.d')) {
+        continue;
+      }
+
+      // Normalize base symbol (remove X prefix for crypto)
+      let baseSymbol = pairInfo.base;
+      if (baseSymbol.startsWith('X') && baseSymbol.length === 4) {
+        baseSymbol = baseSymbol.substring(1);
+      }
+      // Special case: XBT -> BTC
+      if (baseSymbol === 'XBT') {
+        baseSymbol = 'BTC';
+      }
+      // Special case: XDG -> DOGE
+      if (baseSymbol === 'XDG') {
+        baseSymbol = 'DOGE';
+      }
+
+      // Normalize quote currency (remove Z prefix for fiat)
+      let quoteCurrency = pairInfo.quote;
+      if (quoteCurrency.startsWith('Z') && quoteCurrency.length === 4) {
+        quoteCurrency = quoteCurrency.substring(1);
+      }
+
+      // Create lookup key: SYMBOL:CURRENCY (e.g., BTC:EUR)
+      const lookupKey = `${baseSymbol}:${quoteCurrency}`;
+
+      pairs.set(lookupKey, {
+        pair: pairKey,
+        base: baseSymbol,
+        quote: quoteCurrency,
+        altname: pairInfo.altname,
+      });
+    }
+
+    cachedAssetPairs = pairs;
+    cachedAssetPairsTimestamp = now;
+    return pairs;
+  } catch (error) {
+    console.error('Error fetching Kraken asset pairs:', error);
+    return cachedAssetPairs || new Map();
+  }
+}
+
+async function getKrakenPair(symbol: string, currency: string): Promise<string | null> {
+  const pairs = await fetchAssetPairs();
+  const normalized = normalizeSymbol(symbol);
   const currUpper = currency.toUpperCase();
-  return symbolToKrakenPair[upper]?.[currUpper] || null;
+
+  // Try exact match first
+  const lookupKey = `${normalized}:${currUpper}`;
+  const pairInfo = pairs.get(lookupKey);
+  if (pairInfo) {
+    return pairInfo.pair;
+  }
+
+  // Also try with the original symbol (for symbols that don't need normalization)
+  const originalKey = `${symbol.toUpperCase()}:${currUpper}`;
+  const originalPairInfo = pairs.get(originalKey);
+  if (originalPairInfo) {
+    return originalPairInfo.pair;
+  }
+
+  return null;
 }
 
 export async function fetchKrakenPrice(
   symbol: string,
   preferredCurrency?: string
 ): Promise<{ price: number; currency: string } | null> {
-  // Try preferred currency first, then USD as fallback
+  // Try preferred currency first, then EUR, then USD as fallback
   const currencies = preferredCurrency
-    ? [preferredCurrency.toUpperCase(), 'USD']
-    : ['USD'];
+    ? [preferredCurrency.toUpperCase(), 'EUR', 'USD']
+    : ['EUR', 'USD'];
 
   for (const currency of currencies) {
-    const pair = getKrakenPair(symbol, currency);
+    const pair = await getKrakenPair(symbol, currency);
     if (!pair) {
       continue;
     }
@@ -96,17 +189,18 @@ export async function fetchKrakenPrices(
   preferredCurrency?: string
 ): Promise<Map<string, { price: number; currency: string }>> {
   const results = new Map<string, { price: number; currency: string }>();
-  const currency = preferredCurrency?.toUpperCase() || 'USD';
+  const currency = preferredCurrency?.toUpperCase() || 'EUR';
 
   // Build pairs list
   const pairs: string[] = [];
-  const symbolToPair = new Map<string, string>();
+  const pairToSymbol = new Map<string, string>();
 
+  // Resolve all pairs first
   for (const symbol of symbols) {
-    const pair = getKrakenPair(symbol, currency);
+    const pair = await getKrakenPair(symbol, currency);
     if (pair) {
       pairs.push(pair);
-      symbolToPair.set(pair, symbol.toUpperCase());
+      pairToSymbol.set(pair, symbol.toUpperCase());
     }
   }
 
@@ -130,8 +224,19 @@ export async function fetchKrakenPrices(
     }
 
     for (const [pairKey, ticker] of Object.entries(data.result)) {
-      // Kraken may return different key format, try to match
-      const symbol = symbolToPair.get(pairKey);
+      // Kraken may return different key format, try to match by iterating stored pairs
+      let symbol = pairToSymbol.get(pairKey);
+
+      // If no direct match, try to find by comparing pair names
+      if (!symbol) {
+        for (const [storedPair, storedSymbol] of pairToSymbol.entries()) {
+          if (pairKey === storedPair || pairKey.includes(storedPair.replace('/', ''))) {
+            symbol = storedSymbol;
+            break;
+          }
+        }
+      }
+
       if (symbol && ticker?.c?.[0]) {
         results.set(symbol, {
           price: parseFloat(ticker.c[0]),
@@ -147,6 +252,69 @@ export async function fetchKrakenPrices(
 }
 
 // Check if Kraken supports this symbol
-export function isKrakenSupported(symbol: string): boolean {
-  return symbol.toUpperCase() in symbolToKrakenPair;
+export async function isKrakenSupported(symbol: string): Promise<boolean> {
+  const pairs = await fetchAssetPairs();
+  const normalized = normalizeSymbol(symbol);
+
+  // Check if any pair exists for this symbol with common quote currencies
+  for (const currency of ['EUR', 'USD']) {
+    const lookupKey = `${normalized}:${currency}`;
+    if (pairs.has(lookupKey)) {
+      return true;
+    }
+    const originalKey = `${symbol.toUpperCase()}:${currency}`;
+    if (pairs.has(originalKey)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+// Search for crypto assets available on Kraken
+export async function searchKrakenAssets(
+  query: string
+): Promise<Array<{ symbol: string; name: string }>> {
+  const pairs = await fetchAssetPairs();
+  const results: Array<{ symbol: string; name: string }> = [];
+  const seenSymbols = new Set<string>();
+  const queryUpper = query.toUpperCase();
+
+  for (const [, pairInfo] of pairs) {
+    // Only include pairs quoted in EUR or USD
+    if (pairInfo.quote !== 'EUR' && pairInfo.quote !== 'USD') {
+      continue;
+    }
+
+    const baseSymbol = pairInfo.base;
+
+    // Skip if we already added this symbol
+    if (seenSymbols.has(baseSymbol)) {
+      continue;
+    }
+
+    // Match if the base symbol or altname contains the query
+    if (
+      baseSymbol.includes(queryUpper) ||
+      pairInfo.altname.toUpperCase().includes(queryUpper)
+    ) {
+      seenSymbols.add(baseSymbol);
+      results.push({
+        symbol: baseSymbol,
+        name: pairInfo.altname,
+      });
+    }
+  }
+
+  // Sort by exact match first, then alphabetically
+  results.sort((a, b) => {
+    const aExact = a.symbol === queryUpper ? 0 : 1;
+    const bExact = b.symbol === queryUpper ? 0 : 1;
+    if (aExact !== bExact) {
+      return aExact - bExact;
+    }
+    return a.symbol.localeCompare(b.symbol);
+  });
+
+  return results.slice(0, 15);
 }

@@ -219,7 +219,7 @@ export default function SettingsScreen() {
               <YStack height={1} backgroundColor="#1F1F1F" marginVertical={8} />
 
               <Text color="#636366" fontSize={13}>
-                Price data provided by Yahoo Finance, CoinGecko, and Frankfurter API.
+                Price data provided by Yahoo Finance, Kraken, and Frankfurter API.
               </Text>
             </YStack>
           </YStack>
