@@ -272,14 +272,34 @@ export async function isKrakenSupported(symbol: string): Promise<boolean> {
 }
 
 // Search for crypto assets available on Kraken
+// Combines name-based search (from static list) with symbol-based search (from API pairs)
 export async function searchKrakenAssets(
   query: string
 ): Promise<Array<{ symbol: string; name: string }>> {
+  const { searchKrakenAssetsByName, getNameFromSymbol } = await import('./krakenAssets');
+
+  // First, search by name using the static asset list
+  const nameResults = searchKrakenAssetsByName(query);
+
+  // Also search in the dynamic pairs for any symbols not in the static list
   const pairs = await fetchAssetPairs();
   const results: Array<{ symbol: string; name: string }> = [];
   const seenSymbols = new Set<string>();
   const queryUpper = query.toUpperCase();
+  const queryLower = query.toLowerCase();
 
+  // Add name-based results first (they have proper names)
+  for (const asset of nameResults) {
+    if (!seenSymbols.has(asset.code)) {
+      seenSymbols.add(asset.code);
+      results.push({
+        symbol: asset.code,
+        name: asset.name,
+      });
+    }
+  }
+
+  // Add any additional matches from pairs that weren't in the name results
   for (const [, pairInfo] of pairs) {
     // Only include pairs quoted in EUR or USD
     if (pairInfo.quote !== 'EUR' && pairInfo.quote !== 'USD') {
@@ -299,21 +319,34 @@ export async function searchKrakenAssets(
       pairInfo.altname.toUpperCase().includes(queryUpper)
     ) {
       seenSymbols.add(baseSymbol);
+      // Try to get a proper name from our static list, fallback to altname
+      const properName = getNameFromSymbol(baseSymbol);
       results.push({
         symbol: baseSymbol,
-        name: pairInfo.altname,
+        name: properName || pairInfo.altname,
       });
     }
   }
 
   // Sort by exact match first, then alphabetically
   results.sort((a, b) => {
-    const aExact = a.symbol === queryUpper ? 0 : 1;
-    const bExact = b.symbol === queryUpper ? 0 : 1;
-    if (aExact !== bExact) {
-      return aExact - bExact;
-    }
-    return a.symbol.localeCompare(b.symbol);
+    // Exact symbol match
+    if (a.symbol === queryUpper) return -1;
+    if (b.symbol === queryUpper) return 1;
+
+    // Symbol starts with query
+    const aSymbolStarts = a.symbol.startsWith(queryUpper);
+    const bSymbolStarts = b.symbol.startsWith(queryUpper);
+    if (aSymbolStarts && !bSymbolStarts) return -1;
+    if (bSymbolStarts && !aSymbolStarts) return 1;
+
+    // Name starts with query
+    const aNameStarts = a.name.toLowerCase().startsWith(queryLower);
+    const bNameStarts = b.name.toLowerCase().startsWith(queryLower);
+    if (aNameStarts && !bNameStarts) return -1;
+    if (bNameStarts && !aNameStarts) return 1;
+
+    return a.name.localeCompare(b.name);
   });
 
   return results.slice(0, 15);
