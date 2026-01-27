@@ -177,7 +177,8 @@ export async function importFromJson(jsonString: string): Promise<{
       asset.symbol,
       asset.type,
       asset.name || undefined,
-      asset.currency
+      asset.currency,
+      asset.tags || []
     );
     assetIdMap.set(asset.id, newAsset.id);
     assetsImported++;

@@ -29,11 +29,12 @@ interface AppState {
     symbol: string,
     type: Asset['type'],
     name?: string,
-    currency?: string
+    currency?: string,
+    tags?: string[]
   ) => Promise<Asset>;
   updateAsset: (
     id: string,
-    updates: { symbol?: string; name?: string; type?: Asset['type']; currency?: string }
+    updates: { symbol?: string; name?: string; type?: Asset['type']; currency?: string; tags?: string[] }
   ) => Promise<void>;
   deleteAsset: (id: string, portfolioId: string) => Promise<void>;
 
@@ -134,11 +135,12 @@ export const useAppStore = create<AppState>((set) => ({
     symbol: string,
     type: Asset['type'],
     name?: string,
-    currency?: string
+    currency?: string,
+    tags?: string[]
   ) => {
     set({ isLoading: true, error: null });
     try {
-      const asset = await db.createAsset(portfolioId, symbol, type, name, currency);
+      const asset = await db.createAsset(portfolioId, symbol, type, name, currency, tags);
       set((state) => {
         const assets = new Map(state.assets);
         const portfolioAssets = assets.get(portfolioId) || [];

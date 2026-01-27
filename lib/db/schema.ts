@@ -62,6 +62,7 @@ async function initializeDatabase(database: SQLite.SQLiteDatabase) {
       name TEXT,
       type TEXT CHECK(type IN ('stock','etf','crypto','bond','commodity','forex','cash','other')) NOT NULL,
       currency TEXT DEFAULT 'EUR',
+      tags TEXT DEFAULT '[]',
       created_at INTEGER NOT NULL
     );
 
@@ -79,7 +80,7 @@ async function initializeDatabase(database: SQLite.SQLiteDatabase) {
       created_at INTEGER NOT NULL
     );
 
-    -- Tags (many-to-many)
+    -- Transaction Tags (many-to-many)
     CREATE TABLE IF NOT EXISTS transaction_tags (
       transaction_id TEXT NOT NULL REFERENCES transactions(id) ON DELETE CASCADE,
       tag TEXT NOT NULL,

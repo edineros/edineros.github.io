@@ -16,6 +16,7 @@ export interface Asset {
   name: string | null;
   type: AssetType;
   currency: string;
+  tags: string[];
   createdAt: Date;
 }
 

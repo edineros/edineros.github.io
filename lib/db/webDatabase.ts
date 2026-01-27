@@ -1,8 +1,10 @@
 // Pure IndexedDB implementation for web platform
 // Bypasses expo-sqlite entirely to avoid OPFS issues
 
+import type { Asset } from '../types';
+
 const DB_NAME = 'portfolio-tracker';
-const DB_VERSION = 1;
+const DB_VERSION = 3;
 
 let idb: IDBDatabase | null = null;
 let idbPromise: Promise<IDBDatabase> | null = null;
@@ -140,7 +142,20 @@ async function removeByIndex(storeName: string, indexName: string, value: IDBVal
   });
 }
 
-// Portfolio operations
+function rowToAsset(row: any): Asset {
+  return {
+    id: row.id,
+    portfolioId: row.portfolio_id,
+    symbol: row.symbol,
+    name: row.name,
+    type: row.type,
+    currency: row.currency,
+    tags: row.tags || [],
+    createdAt: new Date(row.created_at),
+  };
+}
+
+// Database operations
 export const webDb = {
   // Portfolios
   async getAllPortfolios() {
@@ -161,7 +176,6 @@ export const webDb = {
   },
 
   async deletePortfolio(id: string) {
-    // Delete associated assets first
     const assets = await this.getAssetsByPortfolioId(id);
     for (const asset of assets) {
       await this.deleteAsset(asset.id);
@@ -169,17 +183,18 @@ export const webDb = {
     await remove('portfolios', id);
   },
 
-  // Assets
-  async getAssetsByPortfolioId(portfolioId: string) {
+  // Assets (tags stored directly in asset object)
+  async getAssetsByPortfolioId(portfolioId: string): Promise<Asset[]> {
     const assets = await getAllByIndex<any>('assets', 'portfolio_id', portfolioId);
-    return assets.sort((a, b) => a.symbol.localeCompare(b.symbol));
+    return assets.map(rowToAsset).sort((a, b) => a.symbol.localeCompare(b.symbol));
   },
 
-  async getAssetById(id: string) {
-    return getOne<any>('assets', id);
+  async getAssetById(id: string): Promise<Asset | null> {
+    const row = await getOne<any>('assets', id);
+    return row ? rowToAsset(row) : null;
   },
 
-  async getAssetBySymbol(portfolioId: string, symbol: string) {
+  async getAssetBySymbol(portfolioId: string, symbol: string): Promise<Asset | null> {
     const assets = await this.getAssetsByPortfolioId(portfolioId);
     return assets.find(a => a.symbol === symbol) || null;
   },
@@ -193,15 +208,24 @@ export const webDb = {
   },
 
   async deleteAsset(id: string) {
-    // Delete associated transactions first
     await removeByIndex('transactions', 'asset_id', id);
     await remove('assets', id);
+  },
+
+  async getAllAssetTags(): Promise<string[]> {
+    const assets = await getAll<any>('assets');
+    const allTags = new Set<string>();
+    for (const asset of assets) {
+      for (const tag of asset.tags || []) {
+        allTags.add(tag);
+      }
+    }
+    return Array.from(allTags).sort();
   },
 
   // Transactions
   async getTransactionsByAssetId(assetId: string) {
     const transactions = await getAllByIndex<any>('transactions', 'asset_id', assetId);
-    // Get tags for each transaction
     for (const tx of transactions) {
       tx.tags = await this.getTagsForTransaction(tx.id);
     }
@@ -218,7 +242,7 @@ export const webDb = {
 
   async createTransaction(transaction: any) {
     const tags = transaction.tags || [];
-    delete transaction.tags; // Don't store tags in the transaction object
+    delete transaction.tags;
     await put('transactions', transaction);
     for (const tag of tags) {
       await put('transaction_tags', { transaction_id: transaction.id, tag });
@@ -232,19 +256,17 @@ export const webDb = {
     }
 
     const tags = updates.tags;
-    delete updates.tags; // Don't store tags in the transaction object
+    delete updates.tags;
 
     const updated = { ...existing, ...updates };
-    delete updated.tags; // Ensure tags aren't stored
+    delete updated.tags;
     await put('transactions', updated);
 
     if (tags !== undefined) {
-      // Remove old tags
       const oldTags = await this.getTagsForTransaction(id);
       for (const tag of oldTags) {
         await remove('transaction_tags', [id, tag]);
       }
-      // Add new tags
       for (const tag of tags) {
         await put('transaction_tags', { transaction_id: id, tag });
       }

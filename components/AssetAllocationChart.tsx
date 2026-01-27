@@ -4,38 +4,62 @@ import type { AssetType } from '../lib/types';
 import { formatCurrency, formatPercent } from '../lib/utils/format';
 import { getAssetTypeColor, getAssetTypePlural } from '../lib/constants/assetTypes';
 
+export type AllocationMode = 'type' | 'tags';
+
 export interface AllocationData {
   type: AssetType;
   value: number;
   percentage: number;
 }
 
+export interface TagAllocationData {
+  tag: string;
+  value: number;
+  percentage: number;
+  color: string;
+}
+
 interface AssetAllocationChartProps {
   allocations: AllocationData[];
-  totalValue: number;
+  tagAllocations?: TagAllocationData[];
   currency: string;
+  mode: AllocationMode;
 }
 
 export function AssetAllocationChart({
   allocations,
-  totalValue,
+  tagAllocations = [],
   currency,
+  mode,
 }: AssetAllocationChartProps) {
   // Filter out zero allocations and sort by value descending
-  const sortedAllocations = allocations
+  const sortedTypeAllocations = allocations
     .filter((a) => a.value > 0)
     .sort((a, b) => b.value - a.value);
 
-  if (sortedAllocations.length === 0) {
+  const sortedTagAllocations = tagAllocations
+    .filter((a) => a.value > 0)
+    .sort((a, b) => b.value - a.value);
+
+  const showTypeView = mode === 'type';
+  const currentAllocations = showTypeView ? sortedTypeAllocations : sortedTagAllocations;
+
+  if (currentAllocations.length === 0) {
     return null;
   }
 
   // Convert to donut segments
-  const segments: DonutSegment[] = sortedAllocations.map((allocation) => ({
-    value: allocation.value,
-    color: getAssetTypeColor(allocation.type),
-    label: getAssetTypePlural(allocation.type),
-  }));
+  const segments: DonutSegment[] = showTypeView
+    ? sortedTypeAllocations.map((allocation) => ({
+        value: allocation.value,
+        color: getAssetTypeColor(allocation.type),
+        label: getAssetTypePlural(allocation.type),
+      }))
+    : sortedTagAllocations.map((allocation) => ({
+        value: allocation.value,
+        color: allocation.color,
+        label: allocation.tag,
+      }));
 
   return (
     <YStack
@@ -53,33 +77,61 @@ export function AssetAllocationChart({
 
       {/* Legend */}
       <YStack gap={8}>
-        {sortedAllocations.map((allocation) => (
-          <XStack
-            key={allocation.type}
-            justifyContent="space-between"
-            alignItems="center"
-          >
-            <XStack alignItems="center" gap={8}>
-              <YStack
-                width={12}
-                height={12}
-                borderRadius={3}
-                backgroundColor={getAssetTypeColor(allocation.type)}
-              />
-              <Text color="#FFFFFF" fontSize={14}>
-                {getAssetTypePlural(allocation.type)}
-              </Text>
-            </XStack>
-            <XStack alignItems="center" gap={8}>
-              <Text color="#8E8E93" fontSize={14}>
-                {formatCurrency(allocation.value, currency)}
-              </Text>
-              <Text color="#FFFFFF" fontSize={14} fontWeight="500" minWidth={80} textAlign="right">
-                {formatPercent(allocation.percentage, { showSign: false, minimumFractionDigits: 1, maximumFractionDigits: 1 })}
-              </Text>
-            </XStack>
-          </XStack>
-        ))}
+        {showTypeView
+          ? sortedTypeAllocations.map((allocation) => (
+              <XStack
+                key={allocation.type}
+                justifyContent="space-between"
+                alignItems="center"
+              >
+                <XStack alignItems="center" gap={8}>
+                  <YStack
+                    width={12}
+                    height={12}
+                    borderRadius={3}
+                    backgroundColor={getAssetTypeColor(allocation.type)}
+                  />
+                  <Text color="#FFFFFF" fontSize={14}>
+                    {getAssetTypePlural(allocation.type)}
+                  </Text>
+                </XStack>
+                <XStack alignItems="center" gap={8}>
+                  <Text color="#8E8E93" fontSize={14}>
+                    {formatCurrency(allocation.value, currency)}
+                  </Text>
+                  <Text color="#FFFFFF" fontSize={14} fontWeight="500" minWidth={80} textAlign="right">
+                    {formatPercent(allocation.percentage, { showSign: false, minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+                  </Text>
+                </XStack>
+              </XStack>
+            ))
+          : sortedTagAllocations.map((allocation) => (
+              <XStack
+                key={allocation.tag}
+                justifyContent="space-between"
+                alignItems="center"
+              >
+                <XStack alignItems="center" gap={8}>
+                  <YStack
+                    width={12}
+                    height={12}
+                    borderRadius={3}
+                    backgroundColor={allocation.color}
+                  />
+                  <Text color="#FFFFFF" fontSize={14}>
+                    {allocation.tag}
+                  </Text>
+                </XStack>
+                <XStack alignItems="center" gap={8}>
+                  <Text color="#8E8E93" fontSize={14}>
+                    {formatCurrency(allocation.value, currency)}
+                  </Text>
+                  <Text color="#FFFFFF" fontSize={14} fontWeight="500" minWidth={80} textAlign="right">
+                    {formatPercent(allocation.percentage, { showSign: false, minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+                  </Text>
+                </XStack>
+              </XStack>
+            ))}
       </YStack>
     </YStack>
   );
@@ -110,4 +162,78 @@ export function calculateAllocations(
   }
 
   return { allocations, totalValue };
+}
+
+// Color palette for tags (uses asset type colors + additional colors)
+const TAG_COLORS = [
+  '#007AFF', // Blue (Stock)
+  '#5856D6', // Purple (ETF)
+  '#FF9500', // Orange (Crypto)
+  '#34C759', // Green (Bond)
+  '#FFCC00', // Yellow (Commodity)
+  '#00D4AA', // Teal (Forex)
+  '#AF52DE', // Magenta (Other)
+  '#FF3B30', // Red
+  '#30B0C7', // Cyan
+  '#FF2D55', // Pink
+  '#64D2FF', // Light Blue
+  '#BF5AF2', // Violet
+  '#FFD60A', // Bright Yellow
+  '#32D74B', // Bright Green
+  '#FF6961', // Coral
+  '#77DD77', // Pastel Green
+];
+
+// Helper function to calculate tag allocations
+export function calculateTagAllocations(
+  assetStats: Map<string, { tags: string[]; currentValue: number | null }>
+): { tagAllocations: TagAllocationData[]; totalValue: number; hasAnyTags: boolean } {
+  const valuesByTag = new Map<string, number>();
+  let totalValue = 0;
+  let hasAnyTags = false;
+
+  for (const [, stats] of assetStats) {
+    if (stats.currentValue !== null && stats.currentValue > 0) {
+      totalValue += stats.currentValue;
+
+      if (stats.tags && stats.tags.length > 0) {
+        hasAnyTags = true;
+        // Distribute the value equally among all tags for this asset
+        const valuePerTag = stats.currentValue / stats.tags.length;
+        for (const tag of stats.tags) {
+          const currentTagValue = valuesByTag.get(tag) || 0;
+          valuesByTag.set(tag, currentTagValue + valuePerTag);
+        }
+      } else {
+        // Assets without tags go to "Untagged"
+        const untaggedValue = valuesByTag.get('Untagged') || 0;
+        valuesByTag.set('Untagged', untaggedValue + stats.currentValue);
+      }
+    }
+  }
+
+  const tagAllocations: TagAllocationData[] = [];
+  let colorIndex = 0;
+
+  // Sort tags alphabetically, but put "Untagged" last
+  const sortedTags = Array.from(valuesByTag.keys()).sort((a, b) => {
+    if (a === 'Untagged') return 1;
+    if (b === 'Untagged') return -1;
+    return a.localeCompare(b);
+  });
+
+  for (const tag of sortedTags) {
+    const value = valuesByTag.get(tag)!;
+    tagAllocations.push({
+      tag,
+      value,
+      percentage: totalValue > 0 ? (value / totalValue) * 100 : 0,
+      color: tag === 'Untagged' ? '#636366' : TAG_COLORS[colorIndex % TAG_COLORS.length],
+    });
+    if (tag !== 'Untagged') {
+      colorIndex++;
+    }
+  }
+
+  return { tagAllocations, totalValue, hasAnyTags };
 }

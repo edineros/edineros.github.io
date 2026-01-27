@@ -6,8 +6,14 @@ import { useAppStore } from '../../store';
 import { HeaderIconButton } from '../../components/HeaderButtons';
 import { QuantityAtPrice } from '../../components/QuantityAtPrice';
 import { FloatingActionButton } from '../../components/FloatingActionButton';
+import { SegmentedControl } from '../../components/SegmentedControl';
 import { PortfolioSwitcher } from '../../components/PortfolioSwitcher';
-import { AssetAllocationChart, calculateAllocations } from '../../components/AssetAllocationChart';
+import {
+  AssetAllocationChart,
+  calculateAllocations,
+  calculateTagAllocations,
+  AllocationMode,
+} from '../../components/AssetAllocationChart';
 import { formatCurrency, formatPercent, getGainColor } from '../../lib/utils/format';
 import { CONTENT_HORIZONTAL_PADDING } from '../../lib/constants/layout';
 import type { Asset } from '../../lib/types';
@@ -15,6 +21,7 @@ import type { Asset } from '../../lib/types';
 export default function PortfolioDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [refreshing, setRefreshing] = useState(false);
+  const [allocationMode, setAllocationMode] = useState<AllocationMode>('type');
   const {
     portfolios,
     assets,
@@ -65,25 +72,38 @@ export default function PortfolioDetailScreen() {
 
   const allocationData = useMemo(() => {
     if (!id) {
-      return { allocations: [], totalValue: 0 };
+      return { allocations: [], tagAllocations: [], hasAnyTags: false };
     }
 
     const assets_list = assets.get(id);
     if (!assets_list || assets_list.length === 0) {
-      return { allocations: [], totalValue: 0 };
+      return { allocations: [], tagAllocations: [], hasAnyTags: false };
     }
 
     // Build a map with type info from assets and value from assetStats
     const statsWithType = new Map<string, { type: Asset['type']; currentValue: number | null }>();
+    const statsWithTags = new Map<string, { tags: string[]; currentValue: number | null }>();
+
     for (const asset of assets_list) {
       const stat = assetStats.get(asset.id);
       statsWithType.set(asset.id, {
         type: asset.type,
         currentValue: stat?.currentValue ?? null,
       });
+      statsWithTags.set(asset.id, {
+        tags: asset.tags || [],
+        currentValue: stat?.currentValue ?? null,
+      });
     }
 
-    return calculateAllocations(statsWithType);
+    const typeResult = calculateAllocations(statsWithType);
+    const tagResult = calculateTagAllocations(statsWithTags);
+
+    return {
+      allocations: typeResult.allocations,
+      tagAllocations: tagResult.tagAllocations,
+      hasAnyTags: tagResult.hasAnyTags,
+    };
   }, [id, assets, assetStats]);
 
   const renderAsset = ({ item }: { item: Asset }) => {
@@ -259,13 +279,26 @@ export default function PortfolioDetailScreen() {
           ListFooterComponent={
             allocationData.allocations.length > 1 ? (
               <YStack paddingHorizontal={CONTENT_HORIZONTAL_PADDING} paddingTop={16} gap={12}>
-                <Text color="#8E8E93" fontSize={13} fontWeight="600" textTransform="uppercase">
-                  Allocation
-                </Text>
+                <XStack justifyContent="space-between" alignItems="center">
+                  <Text color="#8E8E93" fontSize={13} fontWeight="600" textTransform="uppercase">
+                    Allocation
+                  </Text>
+                  {allocationData.hasAnyTags && (
+                    <SegmentedControl
+                      options={[
+                        { label: 'Type', value: 'type' },
+                        { label: 'Tags', value: 'tags' },
+                      ]}
+                      value={allocationMode}
+                      onChange={setAllocationMode}
+                    />
+                  )}
+                </XStack>
                 <AssetAllocationChart
                   allocations={allocationData.allocations}
-                  totalValue={allocationData.totalValue}
+                  tagAllocations={allocationData.tagAllocations}
                   currency={portfolio.currency}
+                  mode={allocationMode}
                 />
               </YStack>
             ) : null

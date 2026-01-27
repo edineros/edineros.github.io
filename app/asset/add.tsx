@@ -1,12 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ScrollView, Pressable, TextInput } from 'react-native';
 import { alert } from '../../lib/utils/confirm';
 import { router, useLocalSearchParams, Stack } from 'expo-router';
 import { YStack, XStack, Text, Spinner } from 'tamagui';
 import { useAppStore } from '../../store';
 import { CurrencySelect } from '../../components/CurrencySelect';
+import { TagInput, TagInputRef } from '../../components/TagInput';
 import { searchSymbol } from '../../lib/api/prices';
 import { getPortfolioById } from '../../lib/db/portfolios';
+import { getAllAssetTags } from '../../lib/db/assets';
 import { ASSET_TYPE_CONFIGS } from '../../lib/constants/assetTypes';
 import type { AssetType } from '../../lib/types';
 
@@ -16,9 +18,12 @@ export default function AddAssetScreen() {
   const [name, setName] = useState('');
   const [type, setType] = useState<AssetType>('stock');
   const [currency, setCurrency] = useState('EUR');
+  const [tags, setTags] = useState<string[]>([]);
+  const [existingTags, setExistingTags] = useState<string[]>([]);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const tagInputRef = useRef<TagInputRef>(null);
   const { createAsset } = useAppStore();
 
   useEffect(() => {
@@ -29,6 +34,8 @@ export default function AddAssetScreen() {
         }
       });
     }
+    // Load existing tags for autocomplete
+    getAllAssetTags().then(setExistingTags);
   }, [portfolioId]);
 
   useEffect(() => {
@@ -70,12 +77,16 @@ export default function AddAssetScreen() {
 
     setIsCreating(true);
     try {
+      // Commit any pending tag in the input field so that it's not lost if we forgot to explicity save it
+      const finalTags = tagInputRef.current?.commitPending() ?? tags;
+
       const asset = await createAsset(
         portfolioId,
         symbol.trim().toUpperCase(),
         type,
         name.trim() || undefined,
-        currency
+        currency,
+        finalTags
       );
       router.replace(`/asset/${asset.id}?portfolioId=${portfolioId}`);
     } catch (error) {
@@ -222,7 +233,7 @@ export default function AddAssetScreen() {
           </YStack>
 
           {/* Currency selection */}
-          <YStack gap={8} marginBottom={32}>
+          <YStack gap={8} marginBottom={24}>
             <CurrencySelect
               value={currency}
               onChange={setCurrency}
@@ -230,6 +241,23 @@ export default function AddAssetScreen() {
             />
             <Text color="#636366" fontSize={13}>
               Currency the asset is priced in
+            </Text>
+          </YStack>
+
+          {/* Tags */}
+          <YStack gap={8} marginBottom={32}>
+            <Text color="#8E8E93" fontSize={13} fontWeight="600">
+              TAGS (OPTIONAL)
+            </Text>
+            <TagInput
+              ref={tagInputRef}
+              tags={tags}
+              onChange={setTags}
+              existingTags={existingTags}
+              placeholder="Add tags..."
+            />
+            <Text color="#636366" fontSize={13}>
+              Tags help organize and filter your assets
             </Text>
           </YStack>
 

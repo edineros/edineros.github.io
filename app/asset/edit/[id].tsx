@@ -1,19 +1,23 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ScrollView } from 'react-native';
 import { router, useLocalSearchParams, Stack } from 'expo-router';
 import { YStack, Text, Button, Input, Label, Spinner, Separator } from 'tamagui';
 import { useAppStore } from '../../../store';
 import { alert, confirm } from '../../../lib/utils/confirm';
-import { getAssetById } from '../../../lib/db/assets';
+import { getAssetById, getAllAssetTags } from '../../../lib/db/assets';
+import { TagInput, TagInputRef } from '../../../components/TagInput';
 import type { Asset } from '../../../lib/types';
 
 export default function EditAssetScreen() {
   const { id, portfolioId } = useLocalSearchParams<{ id: string; portfolioId: string }>();
   const [asset, setAsset] = useState<Asset | null>(null);
   const [name, setName] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
+  const [existingTags, setExistingTags] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const tagInputRef = useRef<TagInputRef>(null);
   const { updateAsset, deleteAsset } = useAppStore();
 
   useEffect(() => {
@@ -24,11 +28,16 @@ export default function EditAssetScreen() {
 
   const loadAsset = async () => {
     try {
-      const a = await getAssetById(id!);
+      const [a, allTags] = await Promise.all([
+        getAssetById(id!),
+        getAllAssetTags(),
+      ]);
       if (a) {
         setAsset(a);
         setName(a.name || '');
+        setTags(a.tags || []);
       }
+      setExistingTags(allTags);
     } catch (error) {
       alert('Error', (error as Error).message);
     } finally {
@@ -39,7 +48,10 @@ export default function EditAssetScreen() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await updateAsset(id!, { name: name.trim() || undefined });
+      // Commit any pending tag in the input field so that it's not lost if we forgot to explicity save it
+      const finalTags = tagInputRef.current?.commitPending() ?? tags;
+
+      await updateAsset(id!, { name: name.trim() || undefined, tags: finalTags });
       router.back();
     } catch (error) {
       alert('Error', (error as Error).message);
@@ -119,6 +131,20 @@ export default function EditAssetScreen() {
             />
             <Text fontSize="$2" color="$gray10">
               A friendly name to display alongside the symbol
+            </Text>
+          </YStack>
+
+          <YStack gap="$2">
+            <Label>Tags (Optional)</Label>
+            <TagInput
+              ref={tagInputRef}
+              tags={tags}
+              onChange={setTags}
+              existingTags={existingTags}
+              placeholder="Add tags..."
+            />
+            <Text fontSize="$2" color="$gray10">
+              Tags help organize and filter your assets
             </Text>
           </YStack>
 
