@@ -6,7 +6,7 @@ import { useAppStore } from '../../store';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { HeaderIconButton } from '../../components/HeaderButtons';
 import { QuantityAtPrice } from '../../components/QuantityAtPrice';
-import { FloatingActionButton } from '../../components/FloatingActionButton';
+import { AddAssetMenu } from '../../components/AddAssetMenu';
 import { SegmentedControl } from '../../components/SegmentedControl';
 import { PortfolioSwitcher } from '../../components/PortfolioSwitcher';
 import {
@@ -315,7 +315,7 @@ export default function PortfolioDetailScreen() {
           }
         />
 
-        <FloatingActionButton href={`/asset/add?portfolioId=${id}`} />
+        <AddAssetMenu portfolioId={id!} />
       </YStack>
   );
 }

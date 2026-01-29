@@ -11,14 +11,14 @@ import { TagInput, TagInputRef } from '../../components/TagInput';
 import { searchSymbol } from '../../lib/api/prices';
 import { getPortfolioById } from '../../lib/db/portfolios';
 import { getAllAssetTags } from '../../lib/db/assets';
-import { ASSET_TYPE_CONFIGS } from '../../lib/constants/assetTypes';
+import { getAssetTypeLabel } from '../../lib/constants/assetTypes';
 import type { AssetType } from '../../lib/types';
 
 export default function AddAssetScreen() {
-  const { portfolioId } = useLocalSearchParams<{ portfolioId: string }>();
+  const { portfolioId, type: typeParam } = useLocalSearchParams<{ portfolioId: string; type: string }>();
+  const type = (typeParam as AssetType) || 'stock';
   const [symbol, setSymbol] = useState('');
   const [name, setName] = useState('');
-  const [type, setType] = useState<AssetType>('stock');
   const [currency, setCurrency] = useState('EUR');
   const [tags, setTags] = useState<string[]>([]);
   const [existingTags, setExistingTags] = useState<string[]>([]);
@@ -98,47 +98,17 @@ export default function AddAssetScreen() {
     }
   };
 
+  const headerTitle = `Add ${getAssetTypeLabel(type)}`;
+
   return (
     <YStack flex={1} backgroundColor="#000000">
-      <ScreenHeader title="Add Asset" showBack fallbackPath={portfolioId ? `/portfolio/${portfolioId}` : '/'} />
+      <ScreenHeader title={headerTitle} showBack fallbackPath={portfolioId ? `/portfolio/${portfolioId}` : '/'} />
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
       >
         <YStack flex={1} padding={16}>
-          {/* Asset type */}
-          <YStack gap={8} marginBottom={24}>
-            <Text color="#8E8E93" fontSize={13} fontWeight="600">
-              TYPE
-            </Text>
-            <XStack flexWrap="wrap" gap={8}>
-              {ASSET_TYPE_CONFIGS.map((item) => (
-                <TouchableOpacity
-                  key={item.value}
-                  activeOpacity={0.7}
-                  onPress={() => setType(item.value)}
-                  style={{
-                    backgroundColor: type === item.value ? '#007AFF' : '#111111',
-                    borderWidth: 1,
-                    borderColor: type === item.value ? '#007AFF' : '#1F1F1F',
-                    paddingVertical: 8,
-                    paddingHorizontal: 12,
-                    borderRadius: 8,
-                  }}
-                >
-                  <Text
-                    color={type === item.value ? '#FFFFFF' : '#8E8E93'}
-                    fontSize={14}
-                    fontWeight="600"
-                  >
-                    {item.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </XStack>
-          </YStack>
-
           {/* Symbol input */}
           <YStack gap={8} marginBottom={24}>
             <Text color="#8E8E93" fontSize={13} fontWeight="600">

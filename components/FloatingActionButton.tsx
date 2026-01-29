@@ -3,18 +3,27 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 interface FloatingActionButtonProps {
-  href: string;
+  href?: string;
+  onPress?: () => void;
 }
 
 /**
  * Floating action button with + icon for adding items.
  * Positioned at the bottom right of the screen.
  */
-export function FloatingActionButton({ href }: FloatingActionButtonProps) {
+export function FloatingActionButton({ href, onPress }: FloatingActionButtonProps) {
   const router = useRouter();
 
+  const handlePress = () => {
+    if (onPress) {
+      onPress();
+    } else if (href) {
+      router.push(href);
+    }
+  };
+
   return (
-    <TouchableOpacity style={styles.button} onPress={() => router.push(href)}>
+    <TouchableOpacity style={styles.button} onPress={handlePress}>
       <Ionicons name="add" size={28} color="#FFFFFF" />
     </TouchableOpacity>
   );
