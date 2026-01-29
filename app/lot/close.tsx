@@ -145,39 +145,13 @@ export default function CloseLotScreen() {
       <ScreenHeader title="Sell Position" showBack fallbackPath={fallbackPath} />
       <Form
         footer={
-          <YStack gap={16}>
-            {gainInfo && (
-              <YStack
-                backgroundColor="#111111"
-                borderRadius={12}
-                borderWidth={1}
-                borderColor="#1F1F1F"
-                padding={16}
-                gap={12}
-              >
-                <InfoLabel>Sale Summary</InfoLabel>
-                <Separator backgroundColor="#1F1F1F" />
-                <YStack gap={8}>
-                  <InfoRow label="Sell Value" value={formatCurrency(gainInfo.sellValue, asset.currency)} />
-                  <InfoRow label="Cost Basis" value={formatCurrency(gainInfo.costBasis, asset.currency)} />
-                  <Separator backgroundColor="#1F1F1F" />
-                  <InfoRow
-                    label="Realized Gain/Loss"
-                    value={`${formatCurrency(gainInfo.gain, asset.currency, { showSign: true })} (${formatPercent(gainInfo.gainPercent)})`}
-                    valueColor={gainInfo.gain >= 0 ? '#00D897' : '#FF6B6B'}
-                    bold
-                  />
-                </YStack>
-              </YStack>
-            )}
-            <LongButton
-              onPress={handleClose}
-              disabled={isCreating || !quantity || !pricePerUnit}
-              variant="destructive"
-            >
-              {isCreating ? 'Closing...' : 'Close Lot'}
-            </LongButton>
-          </YStack>
+          <LongButton
+            onPress={handleClose}
+            disabled={isCreating || !quantity || !pricePerUnit}
+            variant="destructive"
+          >
+            {isCreating ? 'Closing...' : 'Close Lot'}
+          </LongButton>
         }
       >
         {/* Lot Info Card */}
@@ -239,6 +213,31 @@ export default function CloseLotScreen() {
           multiline
           numberOfLines={3}
         />
+
+        {gainInfo && (
+          <YStack
+            backgroundColor="#111111"
+            borderRadius={12}
+            borderWidth={1}
+            borderColor="#1F1F1F"
+            padding={16}
+            gap={12}
+          >
+            <InfoLabel>Sale Summary</InfoLabel>
+            <Separator backgroundColor="#1F1F1F" />
+            <YStack gap={8}>
+              <InfoRow label="Sell Value" value={formatCurrency(gainInfo.sellValue, asset.currency)} />
+              <InfoRow label="Cost Basis" value={formatCurrency(gainInfo.costBasis, asset.currency)} />
+              <Separator backgroundColor="#1F1F1F" />
+              <InfoRow
+                label="Realized Gain/Loss"
+                value={`${formatCurrency(gainInfo.gain, asset.currency, { showSign: true })} (${formatPercent(gainInfo.gainPercent)})`}
+                valueColor={gainInfo.gain >= 0 ? '#00D897' : '#FF6B6B'}
+                bold
+              />
+            </YStack>
+          </YStack>
+        )}
       </Form>
     </YStack>
   );

@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { alert } from '../../lib/utils/confirm';
 import { router, useLocalSearchParams } from 'expo-router';
-import { YStack, XStack, Text } from 'tamagui';
+import { YStack } from 'tamagui';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { Form } from '../../components/Form';
 import { FormField } from '../../components/FormField';
 import { LongButton } from '../../components/LongButton';
+import { InfoRow } from '../../components/InfoRow';
 import { getAssetById } from '../../lib/db/assets';
 import { createTransaction } from '../../lib/db/transactions';
 import { formatCurrency, parseDecimal } from '../../lib/utils/format';
@@ -97,20 +98,11 @@ export default function AddLotScreen() {
       <Form
         footer={
           <YStack gap={16}>
-            <XStack
-              justifyContent="space-between"
-              alignItems="center"
-              paddingVertical={12}
-              borderTopWidth={1}
-              borderTopColor="#1F1F1F"
-            >
-              <Text fontSize={15} color="#8E8E93">
-                {isSimple ? 'Amount' : 'Total'}
-              </Text>
-              <Text fontSize={20} fontWeight="600" color="#FFFFFF">
-                {formatCurrency(total(), asset.currency)}
-              </Text>
-            </XStack>
+            <InfoRow
+              label={isSimple ? 'Amount' : 'Total'}
+              value={formatCurrency(total(), asset.currency)}
+              bold
+            />
             <LongButton
               onPress={handleCreate}
               disabled={isCreating || !quantity || (!isSimple && !pricePerUnit)}

@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { ScrollView } from 'react-native';
 import { alert } from '../../lib/utils/confirm';
 import { router, useLocalSearchParams } from 'expo-router';
-import { YStack, XStack, Text, Spinner } from 'tamagui';
+import { YStack, Text, Spinner } from 'tamagui';
 import { ScreenHeader } from '../../components/ScreenHeader';
+import { Form } from '../../components/Form';
 import { LongButton } from '../../components/LongButton';
 import { FormField } from '../../components/FormField';
+import { InfoRow } from '../../components/InfoRow';
 import { getAssetById } from '../../lib/db/assets';
 import { getTransactionById, updateTransaction } from '../../lib/db/transactions';
 import { formatCurrency, parseDecimal } from '../../lib/utils/format';
@@ -126,72 +127,63 @@ export default function EditLotScreen() {
   return (
     <YStack flex={1} backgroundColor="#000000">
       <ScreenHeader title="Edit Lot" showBack fallbackPath={fallbackPath} />
-      <ScrollView style={{ flex: 1 }}>
-        <YStack flex={1} padding={16} gap={16}>
-          <FormField
-            label="Quantity"
-            value={quantity}
-            onChangeText={setQuantity}
-            placeholder="0"
-            keyboardType="decimal-pad"
-          />
+      <Form
+        footer={
+          <YStack gap={16}>
+            <InfoRow
+              label="Total"
+              value={formatCurrency(total(), asset.currency)}
+              bold
+            />
+            <LongButton
+              onPress={handleSave}
+              disabled={isSaving || !quantity || !pricePerUnit}
+            >
+              {isSaving ? 'Saving...' : 'Save Changes'}
+            </LongButton>
+          </YStack>
+        }
+      >
+        <FormField
+          label="Quantity"
+          value={quantity}
+          onChangeText={setQuantity}
+          placeholder="0"
+          keyboardType="decimal-pad"
+        />
 
-          <FormField
-            label={`Price per Unit (${asset.currency})`}
-            value={pricePerUnit}
-            onChangeText={setPricePerUnit}
-            placeholder="0.00"
-            keyboardType="decimal-pad"
-          />
+        <FormField
+          label={`Price per Unit (${asset.currency})`}
+          value={pricePerUnit}
+          onChangeText={setPricePerUnit}
+          placeholder="0.00"
+          keyboardType="decimal-pad"
+        />
 
-          <FormField
-            label={`Fee (${asset.currency})`}
-            value={fee}
-            onChangeText={setFee}
-            placeholder="0.00"
-            keyboardType="decimal-pad"
-          />
+        <FormField
+          label={`Fee (${asset.currency})`}
+          value={fee}
+          onChangeText={setFee}
+          placeholder="0.00"
+          keyboardType="decimal-pad"
+        />
 
-          <FormField
-            label="Date"
-            value={date}
-            onChangeText={setDate}
-            placeholder="YYYY-MM-DD"
-          />
+        <FormField
+          label="Date"
+          value={date}
+          onChangeText={setDate}
+          placeholder="YYYY-MM-DD"
+        />
 
-          <FormField
-            label="Notes (optional)"
-            value={notes}
-            onChangeText={setNotes}
-            placeholder="Add any notes..."
-            multiline
-            numberOfLines={3}
-          />
-
-          <XStack
-            justifyContent="space-between"
-            alignItems="center"
-            paddingVertical="$3"
-            borderTopWidth={1}
-            borderTopColor="$borderColor"
-          >
-            <Text fontSize="$4" color="$gray10">
-              Total
-            </Text>
-            <Text fontSize="$6" fontWeight="600">
-              {formatCurrency(total(), asset.currency)}
-            </Text>
-          </XStack>
-
-          <LongButton
-            onPress={handleSave}
-            disabled={isSaving || !quantity || !pricePerUnit}
-            topSpacing="small"
-          >
-            {isSaving ? 'Saving...' : 'Save Changes'}
-          </LongButton>
-        </YStack>
-      </ScrollView>
+        <FormField
+          label="Notes (optional)"
+          value={notes}
+          onChangeText={setNotes}
+          placeholder="Add any notes..."
+          multiline
+          numberOfLines={3}
+        />
+      </Form>
     </YStack>
   );
 }

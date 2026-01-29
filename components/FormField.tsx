@@ -71,6 +71,10 @@ export function FormField(props: FormFieldProps) {
         keyboardType={keyboardType}
         autoFocus={autoFocus}
         autoCapitalize={autoCapitalize}
+        // Disable the autocomplete because it causes keyboard/layout jumps when moving between inputs
+        autoComplete="off"
+        autoCorrect={false}
+        spellCheck={false}
         multiline={multiline}
         numberOfLines={numberOfLines}
         style={{

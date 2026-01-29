@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { ScrollView } from 'react-native';
+import { ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { YStack } from 'tamagui';
 
 interface FormProps {
@@ -9,15 +9,30 @@ interface FormProps {
 
 export function Form({ children, footer }: FormProps) {
   return (
-    <ScrollView
+    <KeyboardAvoidingView
       style={{ flex: 1 }}
-      contentContainerStyle={{ flexGrow: 1 }}
-      keyboardShouldPersistTaps="handled"
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <YStack flex={1} padding={16} gap={24} justifyContent="space-between">
-        <YStack gap={24}>{children}</YStack>
-        {footer && <YStack paddingBottom={24}>{footer}</YStack>}
-      </YStack>
-    </ScrollView>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: footer ? 16 : 0 }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <YStack flex={1} padding={16} gap={24}>
+          {children}
+        </YStack>
+      </ScrollView>
+      {footer && (
+        <YStack
+          padding={16}
+          paddingBottom={24}
+          backgroundColor="#000000"
+          borderTopWidth={1}
+          borderTopColor="#1F1F1F"
+        >
+          {footer}
+        </YStack>
+      )}
+    </KeyboardAvoidingView>
   );
 }
