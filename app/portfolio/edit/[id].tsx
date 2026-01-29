@@ -9,6 +9,7 @@ import { LongButton } from '../../../components/LongButton';
 import { alert, confirm } from '../../../lib/utils/confirm';
 import { getPortfolioById } from '../../../lib/db/portfolios';
 import type { Portfolio } from '../../../lib/types';
+import { HeaderIconButton } from '../../../components/HeaderButtons';
 
 export default function EditPortfolioScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -102,23 +103,23 @@ export default function EditPortfolioScreen() {
 
   return (
     <YStack flex={1} backgroundColor="#000000">
-      <ScreenHeader title="Edit Portfolio" showBack fallbackPath={`/portfolio/${id}`} />
+      <ScreenHeader
+        title="Edit Portfolio"
+        showBack
+        fallbackPath={`/portfolio/${id}`}
+        rightComponent={
+          <HeaderIconButton
+            color="#FF3B30"
+            icon="trash-outline"
+            onPress={handleDelete}
+          />
+        }
+      />
       <Form
         footer={
-          <YStack gap={24}>
-            <LongButton onPress={handleSave} disabled={isSaving || !name.trim()}>
-              {isSaving ? 'Saving...' : 'Save Changes'}
-            </LongButton>
-            <Separator />
-            <LongButton
-              label="Danger Zone"
-              onPress={handleDelete}
-              disabled={isDeleting}
-              variant="destructive"
-            >
-              {isDeleting ? 'Deleting...' : 'Delete Portfolio'}
-            </LongButton>
-          </YStack>
+          <LongButton onPress={handleSave} disabled={isSaving || !name.trim()}>
+            {isSaving ? 'Saving...' : 'Save Changes'}
+          </LongButton>
         }
       >
         <FormField

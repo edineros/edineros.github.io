@@ -11,6 +11,7 @@ import { getAssetById, getAllAssetTags } from '../../../lib/db/assets';
 import { TagInputRef } from '../../../components/TagInput';
 import { isSimpleAssetType } from '../../../lib/constants/assetTypes';
 import type { Asset } from '../../../lib/types';
+import { HeaderIconButton } from '../../../components/HeaderButtons';
 
 export default function EditAssetScreen() {
   const { id, portfolioId } = useLocalSearchParams<{ id: string; portfolioId: string }>();
@@ -112,23 +113,23 @@ export default function EditAssetScreen() {
 
   return (
     <YStack flex={1} backgroundColor="#000000">
-      <ScreenHeader title="Edit Asset" showBack fallbackPath={fallbackPath} />
+      <ScreenHeader
+        title="Edit Asset"
+        showBack
+        fallbackPath={fallbackPath}
+        rightComponent={
+          <HeaderIconButton
+            color="#FF3B30"
+            icon="trash-outline"
+            onPress={handleDelete}
+          />
+        }
+      />
       <Form
         footer={
-          <YStack gap={24}>
-            <LongButton onPress={handleSave} disabled={isSaving}>
-              {isSaving ? 'Saving...' : 'Save Changes'}
-            </LongButton>
-            <Separator />
-            <LongButton
-              label="Danger Zone"
-              onPress={handleDelete}
-              disabled={isDeleting}
-              variant="destructive"
-            >
-              {isDeleting ? 'Deleting...' : 'Delete Asset'}
-            </LongButton>
-          </YStack>
+          <LongButton onPress={handleSave} disabled={isSaving}>
+            {isSaving ? 'Saving...' : 'Save Changes'}
+          </LongButton>
         }
       >
         <FormField
