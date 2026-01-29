@@ -188,9 +188,9 @@ export default function PortfolioListScreen() {
       />
 
       {portfolios.length === 0 ? (
-        <YStack position="absolute" bottom={24} left={CONTENT_HORIZONTAL_PADDING} right={CONTENT_HORIZONTAL_PADDING}>
+        <YStack position="absolute" bottom={40} left={CONTENT_HORIZONTAL_PADDING} right={CONTENT_HORIZONTAL_PADDING}>
           <LongButton onPress={() => router.push(NEW_PORTFOLIO_URL)}>
-            Create Portfoltio
+            Create Portfolio
           </LongButton>
         </YStack>
       ) : (

@@ -7,7 +7,7 @@ import { HeaderIconButton } from '../../components/HeaderButtons';
 import { QuantityAtPrice } from '../../components/QuantityAtPrice';
 import { FloatingActionButton } from '../../components/FloatingActionButton';
 import { CONTENT_HORIZONTAL_PADDING } from '../../lib/constants/layout';
-import { YStack, XStack, Text, Button, Card, Spinner, Separator, Tabs } from 'tamagui';
+import { YStack, XStack, Text, Card, Spinner, Separator, Tabs } from 'tamagui';
 import { getAssetById } from '../../lib/db/assets';
 import { getLotsForAsset, getTransactionsByAssetId, deleteTransaction } from '../../lib/db/transactions';
 import { fetchPrice, refreshPrice } from '../../lib/api/prices';

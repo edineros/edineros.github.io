@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { ScrollView } from 'react-native';
 import { alert } from '../../lib/utils/confirm';
 import { router, useLocalSearchParams } from 'expo-router';
-import { YStack, XStack, Text, Input, Label, Spinner } from 'tamagui';
+import { YStack, XStack, Text, Spinner } from 'tamagui';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { LongButton } from '../../components/LongButton';
+import { FormField } from '../../components/FormField';
 import { getAssetById } from '../../lib/db/assets';
 import { getTransactionById, updateTransaction } from '../../lib/db/transactions';
 import { formatCurrency } from '../../lib/utils/format';
@@ -126,66 +127,46 @@ export default function EditLotScreen() {
     <YStack flex={1} backgroundColor="#000000">
       <ScreenHeader title="Edit Lot" showBack fallbackPath={fallbackPath} />
       <ScrollView style={{ flex: 1 }}>
-        <YStack flex={1} padding="$4" gap="$4">
-          <YStack gap="$2">
-            <Label htmlFor="quantity">Quantity</Label>
-            <Input
-              id="quantity"
-              size="$4"
-              placeholder="0"
-              value={quantity}
-              onChangeText={setQuantity}
-              keyboardType="decimal-pad"
-            />
-          </YStack>
+        <YStack flex={1} padding={16} gap={16}>
+          <FormField
+            label="Quantity"
+            value={quantity}
+            onChangeText={setQuantity}
+            placeholder="0"
+            keyboardType="decimal-pad"
+          />
 
-          <YStack gap="$2">
-            <Label htmlFor="price">Price per Unit ({asset.currency})</Label>
-            <Input
-              id="price"
-              size="$4"
-              placeholder="0.00"
-              value={pricePerUnit}
-              onChangeText={setPricePerUnit}
-              keyboardType="decimal-pad"
-            />
-          </YStack>
+          <FormField
+            label={`Price per Unit (${asset.currency})`}
+            value={pricePerUnit}
+            onChangeText={setPricePerUnit}
+            placeholder="0.00"
+            keyboardType="decimal-pad"
+          />
 
-          <YStack gap="$2">
-            <Label htmlFor="fee">Fee ({asset.currency})</Label>
-            <Input
-              id="fee"
-              size="$4"
-              placeholder="0.00"
-              value={fee}
-              onChangeText={setFee}
-              keyboardType="decimal-pad"
-            />
-          </YStack>
+          <FormField
+            label={`Fee (${asset.currency})`}
+            value={fee}
+            onChangeText={setFee}
+            placeholder="0.00"
+            keyboardType="decimal-pad"
+          />
 
-          <YStack gap="$2">
-            <Label htmlFor="date">Purchase Date</Label>
-            <Input
-              id="date"
-              size="$4"
-              placeholder="YYYY-MM-DD"
-              value={date}
-              onChangeText={setDate}
-            />
-          </YStack>
+          <FormField
+            label="Date"
+            value={date}
+            onChangeText={setDate}
+            placeholder="YYYY-MM-DD"
+          />
 
-          <YStack gap="$2">
-            <Label htmlFor="notes">Notes (optional)</Label>
-            <Input
-              id="notes"
-              size="$4"
-              placeholder="Add any notes..."
-              value={notes}
-              onChangeText={setNotes}
-              multiline
-              numberOfLines={3}
-            />
-          </YStack>
+          <FormField
+            label="Notes (optional)"
+            value={notes}
+            onChangeText={setNotes}
+            placeholder="Add any notes..."
+            multiline
+            numberOfLines={3}
+          />
 
           <XStack
             justifyContent="space-between"

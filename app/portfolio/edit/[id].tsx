@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { ScrollView } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { YStack, Text, Input, Label, Spinner, Separator } from 'tamagui';
+import { YStack, Text, Spinner, Separator } from 'tamagui';
 import { useAppStore } from '../../../store';
 import { ScreenHeader } from '../../../components/ScreenHeader';
+import { Form } from '../../../components/Form';
+import { FormField } from '../../../components/FormField';
 import { LongButton } from '../../../components/LongButton';
-import { CurrencySelect } from '../../../components/CurrencySelect';
 import { alert, confirm } from '../../../lib/utils/confirm';
 import { getPortfolioById } from '../../../lib/db/portfolios';
 import type { Portfolio } from '../../../lib/types';
@@ -103,45 +103,15 @@ export default function EditPortfolioScreen() {
   return (
     <YStack flex={1} backgroundColor="#000000">
       <ScreenHeader title="Edit Portfolio" showBack fallbackPath={`/portfolio/${id}`} />
-      <ScrollView style={{ flex: 1 }}>
-        <YStack flex={1} padding="$4" gap="$4">
-          <YStack gap="$2">
-            <Label htmlFor="name">Portfolio Name</Label>
-            <Input
-              id="name"
-              size="$4"
-              placeholder="My Portfolio"
-              value={name}
-              onChangeText={setName}
-            />
-          </YStack>
-
-          <YStack gap="$2">
-            <CurrencySelect
-              value={currency}
-              onChange={setCurrency}
-              label="BASE CURRENCY"
-            />
-            <Text fontSize="$3" color="$gray10">
-              Changing currency will affect how values are displayed
-            </Text>
-          </YStack>
-
-          <LongButton
-            onPress={handleSave}
-            disabled={isSaving || !name.trim()}
-            topSpacing="medium"
-          >
-            {isSaving ? 'Saving...' : 'Save Changes'}
-          </LongButton>
-
-          <Separator marginVertical="$6" />
-
-          <YStack gap="$2">
-            <Text fontSize="$3" color="$gray10">
-              Danger Zone
-            </Text>
+      <Form
+        footer={
+          <YStack gap={24}>
+            <LongButton onPress={handleSave} disabled={isSaving || !name.trim()}>
+              {isSaving ? 'Saving...' : 'Save Changes'}
+            </LongButton>
+            <Separator />
             <LongButton
+              label="Danger Zone"
               onPress={handleDelete}
               disabled={isDeleting}
               variant="destructive"
@@ -149,8 +119,22 @@ export default function EditPortfolioScreen() {
               {isDeleting ? 'Deleting...' : 'Delete Portfolio'}
             </LongButton>
           </YStack>
-        </YStack>
-      </ScrollView>
+        }
+      >
+        <FormField
+          label="Portfolio Name"
+          value={name}
+          onChangeText={setName}
+          placeholder="My Portfolio"
+        />
+        <FormField
+          type="currency"
+          label="Base Currency"
+          value={currency}
+          onChangeText={setCurrency}
+          helperText="Changing currency will affect how values are displayed"
+        />
+      </Form>
     </YStack>
   );
 }

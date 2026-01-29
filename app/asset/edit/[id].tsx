@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
-import { ScrollView } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { YStack, Text, Input, Label, Spinner, Separator } from 'tamagui';
+import { YStack, Text, Spinner, Separator } from 'tamagui';
 import { useAppStore } from '../../../store';
 import { ScreenHeader } from '../../../components/ScreenHeader';
+import { Form } from '../../../components/Form';
+import { FormField } from '../../../components/FormField';
 import { LongButton } from '../../../components/LongButton';
 import { alert, confirm } from '../../../lib/utils/confirm';
 import { getAssetById, getAllAssetTags } from '../../../lib/db/assets';
-import { TagInput, TagInputRef } from '../../../components/TagInput';
+import { TagInputRef } from '../../../components/TagInput';
 import { isSimpleAssetType } from '../../../lib/constants/assetTypes';
 import type { Asset } from '../../../lib/types';
 
@@ -112,51 +113,15 @@ export default function EditAssetScreen() {
   return (
     <YStack flex={1} backgroundColor="#000000">
       <ScreenHeader title="Edit Asset" showBack fallbackPath={fallbackPath} />
-      <ScrollView style={{ flex: 1 }}>
-        <YStack flex={1} padding="$4" gap="$4">
-          <YStack gap="$2">
-            <Label htmlFor="name">{isSimple ? 'Name' : 'Display Name (Optional)'}</Label>
-            <Input
-              id="name"
-              size="$4"
-              placeholder={isSimple ? 'e.g., My Savings Account' : 'e.g., Apple Inc.'}
-              value={name}
-              onChangeText={setName}
-            />
-            <Text fontSize="$2" color="$gray10">
-              A friendly name to display for the asset
-            </Text>
-          </YStack>
-
-          <YStack gap="$2">
-            <Label>Tags (Optional)</Label>
-            <TagInput
-              ref={tagInputRef}
-              tags={tags}
-              onChange={setTags}
-              existingTags={existingTags}
-              placeholder="Add tags..."
-            />
-            <Text fontSize="$2" color="$gray10">
-              Tags help organize and filter your assets
-            </Text>
-          </YStack>
-
-          <LongButton
-            onPress={handleSave}
-            disabled={isSaving}
-            topSpacing="small"
-          >
-            {isSaving ? 'Saving...' : 'Save Changes'}
-          </LongButton>
-
-          <Separator marginVertical="$6" />
-
-          <YStack gap="$2">
-            <Text fontSize="$3" color="$gray10">
-              Danger Zone
-            </Text>
+      <Form
+        footer={
+          <YStack gap={24}>
+            <LongButton onPress={handleSave} disabled={isSaving}>
+              {isSaving ? 'Saving...' : 'Save Changes'}
+            </LongButton>
+            <Separator />
             <LongButton
+              label="Danger Zone"
               onPress={handleDelete}
               disabled={isDeleting}
               variant="destructive"
@@ -164,8 +129,27 @@ export default function EditAssetScreen() {
               {isDeleting ? 'Deleting...' : 'Delete Asset'}
             </LongButton>
           </YStack>
-        </YStack>
-      </ScrollView>
+        }
+      >
+        <FormField
+          label={isSimple ? 'Name' : 'Display Name (Optional)'}
+          value={name}
+          onChangeText={setName}
+          placeholder={isSimple ? 'e.g., My Savings Account' : 'e.g., Apple Inc.'}
+          helperText="A friendly name to display for the asset"
+        />
+
+        <FormField
+          type="tag"
+          label="Tags (Optional)"
+          tags={tags}
+          onTagsChange={setTags}
+          existingTags={existingTags}
+          tagInputRef={tagInputRef}
+          placeholder="Add tags..."
+          helperText="Tags help organize and filter your assets"
+        />
+      </Form>
     </YStack>
   );
 }

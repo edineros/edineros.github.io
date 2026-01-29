@@ -7,10 +7,9 @@ import { CURRENCY_OPTIONS } from '../lib/utils/format';
 interface CurrencySelectProps {
   value: string;
   onChange: (value: string) => void;
-  label?: string;
 }
 
-export function CurrencySelect({ value, onChange, label }: CurrencySelectProps) {
+export function CurrencySelect({ value, onChange }: CurrencySelectProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const selectedOption = CURRENCY_OPTIONS.find((opt) => opt.value === value);
@@ -22,11 +21,6 @@ export function CurrencySelect({ value, onChange, label }: CurrencySelectProps) 
 
   return (
     <>
-      {label && (
-        <Text color="#8E8E93" fontSize={13} fontWeight="600" marginBottom={8}>
-          {label}
-        </Text>
-      )}
       <TouchableOpacity
         activeOpacity={0.7}
         onPress={() => setIsOpen(true)}

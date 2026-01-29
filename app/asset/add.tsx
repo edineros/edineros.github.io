@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
-import { ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { ScrollView, TouchableOpacity } from 'react-native';
 import { alert } from '../../lib/utils/confirm';
 import { router, useLocalSearchParams } from 'expo-router';
 import { YStack, XStack, Text, Spinner } from 'tamagui';
 import { useAppStore } from '../../store';
 import { ScreenHeader } from '../../components/ScreenHeader';
+import { Form } from '../../components/Form';
+import { FormField } from '../../components/FormField';
 import { LongButton } from '../../components/LongButton';
-import { CurrencySelect } from '../../components/CurrencySelect';
-import { TagInput, TagInputRef } from '../../components/TagInput';
+import { TagInputRef } from '../../components/TagInput';
 import { searchSymbol } from '../../lib/api/prices';
 import { getPortfolioById } from '../../lib/db/portfolios';
 import { getAllAssetTags } from '../../lib/db/assets';
@@ -122,151 +123,103 @@ export default function AddAssetScreen() {
   return (
     <YStack flex={1} backgroundColor="#000000">
       <ScreenHeader title={headerTitle} showBack fallbackPath={portfolioId ? `/portfolio/${portfolioId}` : '/'} />
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ flexGrow: 1 }}
-        keyboardShouldPersistTaps="handled"
+      <Form
+        footer={
+          <LongButton onPress={handleCreate} disabled={isCreating || !canCreate}>
+            {isCreating ? 'Adding...' : 'Add Asset'}
+          </LongButton>
+        }
       >
-        <YStack flex={1} padding={16}>
-          {/* Symbol input - only for non-simple assets */}
-          {!isSimple && (
-            <YStack gap={8} marginBottom={24}>
-              <Text color="#8E8E93" fontSize={13} fontWeight="600">
-                SYMBOL
-              </Text>
-              <TextInput
-                value={symbol}
-                onChangeText={setSymbol}
-                placeholder={type === 'crypto' ? 'BTC, ETH...' : 'AAPL, MSFT...'}
-                placeholderTextColor="#636366"
-                autoCapitalize="characters"
-                autoFocus
-                style={{
-                  backgroundColor: '#111111',
-                  borderRadius: 12,
-                  padding: 16,
-                  fontSize: 17,
-                  color: '#FFFFFF',
-                  borderWidth: 1,
-                  borderColor: '#1F1F1F',
-                }}
-              />
-              {isSearching && (
-                <XStack padding={8} alignItems="center" gap={8}>
-                  <Spinner size="small" color="#8E8E93" />
-                  <Text color="#8E8E93" fontSize={13}>Searching...</Text>
-                </XStack>
-              )}
-              {searchResults.length > 0 && (
-                <YStack
-                  backgroundColor="#111111"
-                  borderRadius={12}
-                  borderWidth={1}
-                  borderColor="#1F1F1F"
-                  overflow="hidden"
-                  maxHeight={200}
-                >
-                  <ScrollView keyboardShouldPersistTaps="handled">
-                    {searchResults.map((result, index) => (
-                      <TouchableOpacity
-                        key={`${result.symbol}-${index}`}
-                        activeOpacity={0.7}
-                        onPress={() => handleSelectResult(result)}
-                        style={{
-                          padding: 12,
-                          borderBottomWidth: index < searchResults.length - 1 ? 1 : 0,
-                          borderBottomColor: '#1F1F1F',
-                        }}
-                      >
-                        <XStack justifyContent="space-between" alignItems="center">
-                          <Text color="#FFFFFF" fontWeight="600">{result.symbol}</Text>
-                          <Text
-                            fontSize={11}
-                            fontWeight="600"
-                            color="#8E8E93"
-                            backgroundColor="#1F1F1F"
-                            paddingHorizontal={6}
-                            paddingVertical={2}
-                            borderRadius={4}
-                            textTransform="uppercase"
-                          >
-                            {result.type}
-                          </Text>
-                        </XStack>
-                        <Text color="#636366" fontSize={13} numberOfLines={1}>
-                          {result.name}
+        {/* Symbol input - only for non-simple assets */}
+        {!isSimple && (
+          <FormField
+            label="Symbol"
+            value={symbol}
+            onChangeText={setSymbol}
+            placeholder={type === 'crypto' ? 'BTC, ETH...' : 'AAPL, MSFT...'}
+            autoCapitalize="characters"
+            autoFocus
+          >
+            {isSearching && (
+              <XStack padding={8} alignItems="center" gap={8}>
+                <Spinner size="small" color="#8E8E93" />
+                <Text color="#8E8E93" fontSize={13}>Searching...</Text>
+              </XStack>
+            )}
+            {searchResults.length > 0 && (
+              <YStack
+                backgroundColor="#111111"
+                borderRadius={12}
+                borderWidth={1}
+                borderColor="#1F1F1F"
+                overflow="hidden"
+                maxHeight={200}
+              >
+                <ScrollView keyboardShouldPersistTaps="handled">
+                  {searchResults.map((result, index) => (
+                    <TouchableOpacity
+                      key={`${result.symbol}-${index}`}
+                      activeOpacity={0.7}
+                      onPress={() => handleSelectResult(result)}
+                      style={{
+                        padding: 12,
+                        borderBottomWidth: index < searchResults.length - 1 ? 1 : 0,
+                        borderBottomColor: '#1F1F1F',
+                      }}
+                    >
+                      <XStack justifyContent="space-between" alignItems="center">
+                        <Text color="#FFFFFF" fontWeight="600">{result.symbol}</Text>
+                        <Text
+                          fontSize={11}
+                          fontWeight="600"
+                          color="#8E8E93"
+                          backgroundColor="#1F1F1F"
+                          paddingHorizontal={6}
+                          paddingVertical={2}
+                          borderRadius={4}
+                          textTransform="uppercase"
+                        >
+                          {result.type}
                         </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </YStack>
-              )}
-            </YStack>
-          )}
+                      </XStack>
+                      <Text color="#636366" fontSize={13} numberOfLines={1}>
+                        {result.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </YStack>
+            )}
+          </FormField>
+        )}
 
-          {/* Name input - required for simple assets, optional for others */}
-          <YStack gap={8} marginBottom={24}>
-            <Text color="#8E8E93" fontSize={13} fontWeight="600">
-              {isSimple ? 'NAME' : 'NAME (OPTIONAL)'}
-            </Text>
-            <TextInput
-              value={name}
-              onChangeText={setName}
-              placeholder={isSimple ? 'My savings account...' : 'Apple Inc.'}
-              placeholderTextColor="#636366"
-              autoFocus={isSimple}
-              style={{
-                backgroundColor: '#111111',
-                borderRadius: 12,
-                padding: 16,
-                fontSize: 17,
-                color: '#FFFFFF',
-                borderWidth: 1,
-                borderColor: '#1F1F1F',
-              }}
-            />
-          </YStack>
+        <FormField
+          label={isSimple ? 'Name' : 'Name (Optional)'}
+          value={name}
+          onChangeText={setName}
+          placeholder={isSimple ? 'My savings account...' : 'Apple Inc.'}
+          autoFocus={isSimple}
+        />
 
-          {/* Currency selection */}
-          <YStack gap={8} marginBottom={24}>
-            <CurrencySelect
-              value={currency}
-              onChange={setCurrency}
-              label="CURRENCY"
-            />
-            <Text color="#636366" fontSize={13}>
-              Currency the asset is priced in
-            </Text>
-          </YStack>
+        <FormField
+          type="currency"
+          label="Currency"
+          value={currency}
+          onChangeText={setCurrency}
+          helperText="Currency the asset is priced in"
+        />
 
-          {/* Tags */}
-          <YStack gap={8} marginBottom={32}>
-            <Text color="#8E8E93" fontSize={13} fontWeight="600">
-              TAGS (OPTIONAL)
-            </Text>
-            <TagInput
-              ref={tagInputRef}
-              tags={tags}
-              onChange={setTags}
-              existingTags={existingTags}
-              placeholder="Add tags..."
-            />
-            <Text color="#636366" fontSize={13}>
-              Tags help organize and filter your assets
-            </Text>
-          </YStack>
-
-          {/* Create button */}
-          <YStack flex={1} justifyContent="flex-end" paddingBottom={24}>
-            <LongButton
-              onPress={handleCreate}
-              disabled={isCreating || !canCreate}
-            >
-              {isCreating ? 'Adding...' : 'Add Asset'}
-            </LongButton>
-          </YStack>
-        </YStack>
-      </ScrollView>
+        <FormField
+          type="tag"
+          label="Tags (Optional)"
+          tags={tags}
+          onTagsChange={setTags}
+          existingTags={existingTags}
+          tagInputRef={tagInputRef}
+          placeholder="Add tags..."
+          helperText="Tags help organize and filter your assets"
+        />
+      </Form>
     </YStack>
   );
 }

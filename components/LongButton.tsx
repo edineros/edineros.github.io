@@ -1,4 +1,5 @@
 import { Button, ButtonProps } from 'tamagui';
+import { LabeledElement } from './LabeledElement';
 
 type LongButtonVariant = 'primary' | 'secondary' | 'destructive';
 type LongButtonSize = 'small' | 'medium' | 'large';
@@ -10,6 +11,7 @@ interface LongButtonProps {
   variant?: LongButtonVariant;
   size?: LongButtonSize;
   topSpacing?: LongButtonTopSpacing;
+  label?: string;
   children: string;
 }
 
@@ -47,6 +49,7 @@ export function LongButton({
   variant = 'primary',
   size = 'medium',
   topSpacing,
+  label,
   children,
 }: LongButtonProps) {
   const variantStyles = VARIANT_STYLES[variant];
@@ -54,16 +57,18 @@ export function LongButton({
   const marginTop = topSpacing ? TOP_SPACING_MAP[topSpacing] : undefined;
 
   return (
-    <Button
-      size={tamaguiSize}
-      onPress={onPress}
-      disabled={disabled}
-      color="#FFFFFF"
-      fontWeight="600"
-      marginTop={marginTop}
-      {...variantStyles}
-    >
-      {children}
-    </Button>
+    <LabeledElement label={label}>
+      <Button
+        size={tamaguiSize}
+        onPress={onPress}
+        disabled={disabled}
+        color="#FFFFFF"
+        fontWeight="600"
+        marginTop={marginTop}
+        {...variantStyles}
+      >
+        {children}
+      </Button>
+    </LabeledElement>
   );
 }

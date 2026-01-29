@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { ScrollView } from 'react-native';
 import { alert } from '../../lib/utils/confirm';
 import { router, useLocalSearchParams } from 'expo-router';
-import { YStack, XStack, Text, Input, Label } from 'tamagui';
+import { YStack, XStack, Text } from 'tamagui';
 import { ScreenHeader } from '../../components/ScreenHeader';
+import { Form } from '../../components/Form';
+import { FormField } from '../../components/FormField';
 import { LongButton } from '../../components/LongButton';
 import { getAssetById } from '../../lib/db/assets';
 import { createTransaction } from '../../lib/db/transactions';
@@ -93,97 +94,77 @@ export default function AddLotScreen() {
   return (
     <YStack flex={1} backgroundColor="#000000">
       <ScreenHeader title="Add Lot" showBack fallbackPath={fallbackPath} />
-      <ScrollView style={{ flex: 1 }}>
-        <YStack flex={1} padding="$4" gap="$4">
-          <YStack gap="$2">
-            <Label htmlFor="quantity">{isSimple ? `Amount (${asset.currency})` : 'Quantity'}</Label>
-            <Input
-              id="quantity"
-              size="$4"
-              placeholder="0"
-              value={quantity}
-              onChangeText={setQuantity}
+      <Form
+        footer={
+          <YStack gap={16}>
+            <XStack
+              justifyContent="space-between"
+              alignItems="center"
+              paddingVertical={12}
+              borderTopWidth={1}
+              borderTopColor="#1F1F1F"
+            >
+              <Text fontSize={15} color="#8E8E93">
+                {isSimple ? 'Amount' : 'Total'}
+              </Text>
+              <Text fontSize={20} fontWeight="600" color="#FFFFFF">
+                {formatCurrency(total(), asset.currency)}
+              </Text>
+            </XStack>
+            <LongButton
+              onPress={handleCreate}
+              disabled={isCreating || !quantity || (!isSimple && !pricePerUnit)}
+            >
+              {isCreating ? 'Adding...' : 'Add Lot'}
+            </LongButton>
+          </YStack>
+        }
+      >
+        <FormField
+          label={isSimple ? `Amount (${asset.currency})` : 'Quantity'}
+          value={quantity}
+          onChangeText={setQuantity}
+          placeholder="0"
+          keyboardType="decimal-pad"
+          autoFocus
+        />
+
+        {!isSimple && (
+          <>
+            <FormField
+              label={`Price per Unit (${asset.currency})`}
+              value={pricePerUnit}
+              onChangeText={setPricePerUnit}
+              placeholder="0.00"
               keyboardType="decimal-pad"
-              autoFocus
             />
-          </YStack>
 
-          {!isSimple && (
-            <>
-              <YStack gap="$2">
-                <Label htmlFor="price">Price per Unit ({asset.currency})</Label>
-                <Input
-                  id="price"
-                  size="$4"
-                  placeholder="0.00"
-                  value={pricePerUnit}
-                  onChangeText={setPricePerUnit}
-                  keyboardType="decimal-pad"
-                />
-              </YStack>
-
-              <YStack gap="$2">
-                <Label htmlFor="fee">Fee ({asset.currency})</Label>
-                <Input
-                  id="fee"
-                  size="$4"
-                  placeholder="0.00"
-                  value={fee}
-                  onChangeText={setFee}
-                  keyboardType="decimal-pad"
-                />
-              </YStack>
-            </>
-          )}
-
-          <YStack gap="$2">
-            <Label htmlFor="date">Date</Label>
-            <Input
-              id="date"
-              size="$4"
-              placeholder="YYYY-MM-DD"
-              value={date}
-              onChangeText={setDate}
+            <FormField
+              label={`Fee (${asset.currency})`}
+              value={fee}
+              onChangeText={setFee}
+              placeholder="0.00"
+              keyboardType="decimal-pad"
             />
-          </YStack>
+          </>
+        )}
 
-          <YStack gap="$2">
-            <Label htmlFor="notes">Notes (optional)</Label>
-            <Input
-              id="notes"
-              size="$4"
-              placeholder="Add any notes..."
-              value={notes}
-              onChangeText={setNotes}
-              multiline
-              numberOfLines={3}
-            />
-          </YStack>
+        <FormField
+          label="Date"
+          value={date}
+          onChangeText={setDate}
+          placeholder="YYYY-MM-DD"
+        />
 
-          <XStack
-            justifyContent="space-between"
-            alignItems="center"
-            paddingVertical="$3"
-            borderTopWidth={1}
-            borderTopColor="$borderColor"
-          >
-            <Text fontSize="$4" color="$gray10">
-              {isSimple ? 'Amount' : 'Total'}
-            </Text>
-            <Text fontSize="$6" fontWeight="600">
-              {formatCurrency(total(), asset.currency)}
-            </Text>
-          </XStack>
-
-          <LongButton
-            onPress={handleCreate}
-            disabled={isCreating || !quantity || (!isSimple && !pricePerUnit)}
-            topSpacing="small"
-          >
-            {isCreating ? 'Adding...' : 'Add Lot'}
-          </LongButton>
-        </YStack>
-      </ScrollView>
+        <FormField
+          label="Notes (optional)"
+          value={notes}
+          onChangeText={setNotes}
+          placeholder="Add any notes..."
+          multiline
+          numberOfLines={3}
+        />
+      </Form>
     </YStack>
   );
 }
