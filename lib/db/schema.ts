@@ -60,7 +60,7 @@ async function initializeDatabase(database: SQLite.SQLiteDatabase) {
       portfolio_id TEXT NOT NULL REFERENCES portfolios(id) ON DELETE CASCADE,
       symbol TEXT NOT NULL,
       name TEXT,
-      type TEXT CHECK(type IN ('stock','etf','crypto','bond','commodity','forex','cash','other')) NOT NULL,
+      type TEXT CHECK(type IN ('stock','etf','crypto','bond','commodity','cash','real-estate','other')) NOT NULL,
       currency TEXT DEFAULT 'EUR',
       tags TEXT DEFAULT '[]',
       created_at INTEGER NOT NULL

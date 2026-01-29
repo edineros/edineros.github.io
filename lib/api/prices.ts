@@ -16,8 +16,8 @@ const PRICE_TTL: Record<AssetType, number> = {
   crypto: 5,
   bond: 60,
   commodity: 15,
-  forex: 60,
   cash: 1440, // 24 hours
+  'real-estate': 1440, // 24 hours - manually valued
   other: 30,
 };
 

@@ -39,16 +39,16 @@ export const ASSET_TYPE_CONFIGS: AssetTypeConfig[] = [
     color: '#FFCC00',
   },
   {
-    value: 'forex',
-    label: 'Forex',
-    plural: 'Forex',
-    color: '#00D4AA',
-  },
-  {
     value: 'cash',
     label: 'Cash',
     plural: 'Cash',
     color: '#8E8E93',
+  },
+  {
+    value: 'real-estate',
+    label: 'Real Estate',
+    plural: 'Real Estate',
+    color: '#00D4AA',
   },
   {
     value: 'other',

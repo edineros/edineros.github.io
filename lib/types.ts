@@ -1,4 +1,4 @@
-export type AssetType = 'stock' | 'etf' | 'crypto' | 'bond' | 'commodity' | 'forex' | 'cash' | 'other';
+export type AssetType = 'stock' | 'etf' | 'crypto' | 'bond' | 'commodity' | 'cash' | 'real-estate' | 'other';
 export type TransactionType = 'buy' | 'sell';
 
 export interface Portfolio {
