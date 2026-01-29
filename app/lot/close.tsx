@@ -12,7 +12,7 @@ import { TextButton } from '../../components/TextButton';
 import { getAssetById } from '../../lib/db/assets';
 import { getLotsForAsset, createTransaction } from '../../lib/db/transactions';
 import { fetchPrice } from '../../lib/api/prices';
-import { formatCurrency, formatQuantity, formatDate, formatPercent } from '../../lib/utils/format';
+import { formatCurrency, formatQuantity, formatDate, formatPercent, parseDecimal } from '../../lib/utils/format';
 import type { Asset, Lot } from '../../lib/types';
 
 export default function CloseLotScreen() {
@@ -63,9 +63,9 @@ export default function CloseLotScreen() {
   const calculateGain = () => {
     if (!lot) return null;
 
-    const qty = parseFloat(quantity) || 0;
-    const price = parseFloat(pricePerUnit) || 0;
-    const feeVal = parseFloat(fee) || 0;
+    const qty = parseDecimal(quantity) || 0;
+    const price = parseDecimal(pricePerUnit) || 0;
+    const feeVal = parseDecimal(fee) || 0;
 
     const sellValue = qty * price - feeVal;
     const costBasis = qty * lot.purchasePrice;
@@ -76,9 +76,9 @@ export default function CloseLotScreen() {
   };
 
   const handleClose = async () => {
-    const qty = parseFloat(quantity);
-    const price = parseFloat(pricePerUnit);
-    const feeVal = parseFloat(fee) || 0;
+    const qty = parseDecimal(quantity);
+    const price = parseDecimal(pricePerUnit);
+    const feeVal = parseDecimal(fee) || 0;
 
     if (!qty || qty <= 0) {
       alert('Error', 'Please enter a valid quantity');

@@ -8,7 +8,7 @@ import { LongButton } from '../../components/LongButton';
 import { FormField } from '../../components/FormField';
 import { getAssetById } from '../../lib/db/assets';
 import { getTransactionById, updateTransaction } from '../../lib/db/transactions';
-import { formatCurrency } from '../../lib/utils/format';
+import { formatCurrency, parseDecimal } from '../../lib/utils/format';
 import type { Asset, Transaction } from '../../lib/types';
 
 export default function EditLotScreen() {
@@ -56,16 +56,16 @@ export default function EditLotScreen() {
   };
 
   const total = () => {
-    const qty = parseFloat(quantity) || 0;
-    const price = parseFloat(pricePerUnit) || 0;
-    const feeVal = parseFloat(fee) || 0;
+    const qty = parseDecimal(quantity) || 0;
+    const price = parseDecimal(pricePerUnit) || 0;
+    const feeVal = parseDecimal(fee) || 0;
     return qty * price + feeVal;
   };
 
   const handleSave = async () => {
-    const qty = parseFloat(quantity);
-    const price = parseFloat(pricePerUnit);
-    const feeVal = parseFloat(fee) || 0;
+    const qty = parseDecimal(quantity);
+    const price = parseDecimal(pricePerUnit);
+    const feeVal = parseDecimal(fee) || 0;
 
     if (!qty || qty <= 0) {
       alert('Error', 'Please enter a valid quantity');

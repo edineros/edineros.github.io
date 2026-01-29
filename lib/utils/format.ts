@@ -1,5 +1,18 @@
 import { format, formatDistanceToNow } from 'date-fns';
 
+/**
+ * Parses a decimal string that may use either '.' or ',' as decimal separator.
+ * Handles locale-specific input (e.g., "0,5" in European locales).
+ */
+export function parseDecimal(value: string): number {
+  if (!value || typeof value !== 'string') {
+    return NaN;
+  }
+  // Replace comma with period for consistent parsing
+  const normalized = value.replace(',', '.');
+  return parseFloat(normalized);
+}
+
 const currencySymbols: Record<string, string> = {
   USD: '$',
   EUR: '€',

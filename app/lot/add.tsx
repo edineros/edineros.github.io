@@ -8,7 +8,7 @@ import { FormField } from '../../components/FormField';
 import { LongButton } from '../../components/LongButton';
 import { getAssetById } from '../../lib/db/assets';
 import { createTransaction } from '../../lib/db/transactions';
-import { formatCurrency } from '../../lib/utils/format';
+import { formatCurrency, parseDecimal } from '../../lib/utils/format';
 import { isSimpleAssetType } from '../../lib/constants/assetTypes';
 import type { Asset } from '../../lib/types';
 
@@ -34,16 +34,16 @@ export default function AddLotScreen() {
   }, [assetId]);
 
   const total = () => {
-    const qty = parseFloat(quantity) || 0;
-    const price = isSimple ? 1 : (parseFloat(pricePerUnit) || 0);
-    const feeVal = isSimple ? 0 : (parseFloat(fee) || 0);
+    const qty = parseDecimal(quantity) || 0;
+    const price = isSimple ? 1 : (parseDecimal(pricePerUnit) || 0);
+    const feeVal = isSimple ? 0 : (parseDecimal(fee) || 0);
     return qty * price + feeVal;
   };
 
   const handleCreate = async () => {
-    const qty = parseFloat(quantity);
-    const price = isSimple ? 1 : parseFloat(pricePerUnit);
-    const feeVal = isSimple ? 0 : (parseFloat(fee) || 0);
+    const qty = parseDecimal(quantity);
+    const price = isSimple ? 1 : parseDecimal(pricePerUnit);
+    const feeVal = isSimple ? 0 : (parseDecimal(fee) || 0);
 
     if (!qty || qty <= 0) {
       alert('Error', 'Please enter a valid quantity');
