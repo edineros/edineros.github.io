@@ -21,6 +21,7 @@ import {
 } from '../../lib/utils/format';
 import { calculateLotStats } from '../../lib/utils/calculations';
 import type { Asset, Lot, Transaction } from '../../lib/types';
+import { MicroButton } from '../../components/MicroButton';
 
 export default function AssetDetailScreen() {
   const { id, portfolioId } = useLocalSearchParams<{ id: string; portfolioId: string }>();
@@ -164,20 +165,12 @@ export default function AssetDetailScreen() {
           </YStack>
         </XStack>
         <XStack marginTop="$3" gap="$2" justifyContent="flex-end">
-          <Button
-            size="$2"
-            variant="outlined"
-            onPress={() => router.push(`/lot/edit?lotId=${item.id}&assetId=${id}&portfolioId=${portfolioId}`)}
-          >
+          <MicroButton href={`/lot/edit?lotId=${item.id}&assetId=${id}&portfolioId=${portfolioId}`}>
             Edit
-          </Button>
-          <Button
-            size="$2"
-            variant="outlined"
-            onPress={() => router.push(`/lot/close?assetId=${id}&lotId=${item.id}&portfolioId=${portfolioId}`)}
-          >
+          </MicroButton>
+          <MicroButton href={`/lot/close?assetId=${id}&lotId=${item.id}&portfolioId=${portfolioId}`}>
             Close Lot
-          </Button>
+          </MicroButton>
         </XStack>
       </Card>
     );
@@ -232,14 +225,12 @@ export default function AssetDetailScreen() {
         </YStack>
       </XStack>
       <XStack marginTop="$2" justifyContent="flex-end">
-        <Button
-          size="$2"
-          variant="outlined"
+        <MicroButton
           theme="red"
           onPress={() => handleDeleteTransaction(item)}
         >
           Delete
-        </Button>
+        </MicroButton>
       </XStack>
     </Card>
   );
@@ -256,166 +247,166 @@ export default function AssetDetailScreen() {
   }
 
   return (
-      <YStack flex={1} backgroundColor="$background">
-        <ScreenHeader
-          title={asset?.name ?? asset?.symbol}
-          showBack
-          fallbackPath={portfolioId ? `/portfolio/${portfolioId}` : '/'}
-          rightComponent={
-            <HeaderIconButton
-              icon="settings-outline"
-              href={`/asset/edit/${id}?portfolioId=${portfolioId}`}
-            />
-          }
-        />
-        {/* Asset Summary Card */}
-        <Card elevate bordered marginHorizontal={CONTENT_HORIZONTAL_PADDING} marginVertical={8} padding={16} backgroundColor="$background">
-          <XStack justifyContent="space-between" alignItems="flex-start">
-            <YStack>
-              <XStack alignItems="center" gap="$2">
-                <Text fontSize="$7" fontWeight="700" color="$color">
-                  {asset.symbol}
+    <YStack flex={1} backgroundColor="$background">
+      <ScreenHeader
+        title={asset?.name ?? asset?.symbol}
+        showBack
+        fallbackPath={portfolioId ? `/portfolio/${portfolioId}` : '/'}
+        rightComponent={
+          <HeaderIconButton
+            icon="settings-outline"
+            href={`/asset/edit/${id}?portfolioId=${portfolioId}`}
+          />
+        }
+      />
+      {/* Asset Summary Card */}
+      <Card elevate bordered marginHorizontal={CONTENT_HORIZONTAL_PADDING} marginVertical={8} padding={16} backgroundColor="$background">
+        <XStack justifyContent="space-between" alignItems="flex-start">
+          <YStack>
+            <XStack alignItems="center" gap="$2">
+              <Text fontSize="$7" fontWeight="700" color="$color">
+                {asset.symbol}
+              </Text>
+              <Text
+                fontSize="$2"
+                backgroundColor="$gray5"
+                paddingHorizontal="$2"
+                paddingVertical="$1"
+                borderRadius="$2"
+                color="$gray11"
+              >
+                {asset.type.toUpperCase()}
+              </Text>
+            </XStack>
+            {asset.name && (
+              <Text fontSize="$3" color="$gray10">
+                {asset.name}
+              </Text>
+            )}
+          </YStack>
+          <YStack alignItems="flex-end">
+            {currentPrice !== null ? (
+              <>
+                <Text fontSize="$6" fontWeight="600" color="$color">
+                  {formatCurrency(currentPrice, asset.currency)}
+                </Text>
+                {priceLastUpdated && (
+                  <Text fontSize="$2" color="$gray9">
+                    {formatRelativeTime(priceLastUpdated)}
+                  </Text>
+                )}
+              </>
+            ) : (
+              <Text color="$gray10">Price unavailable</Text>
+            )}
+          </YStack>
+        </XStack>
+
+        <Separator marginVertical="$3" />
+
+        <XStack justifyContent="space-between">
+          <YStack>
+            <Text fontSize="$2" color="$gray10">
+              Holdings
+            </Text>
+            <Text fontSize="$5" fontWeight="600">
+              {formatQuantity(totalQuantity)}
+            </Text>
+            <Text fontSize="$2" color="$gray10">
+              Avg. Cost: {formatCurrency(averageCost, asset.currency)}
+            </Text>
+          </YStack>
+          <YStack alignItems="flex-end">
+            <Text fontSize="$2" color="$gray10">
+              Total Value
+            </Text>
+            {currentValue !== null ? (
+              <>
+                <Text fontSize="$5" fontWeight="600">
+                  {formatCurrency(currentValue, asset.currency)}
                 </Text>
                 <Text
-                  fontSize="$2"
-                  backgroundColor="$gray5"
-                  paddingHorizontal="$2"
-                  paddingVertical="$1"
-                  borderRadius="$2"
-                  color="$gray11"
+                  fontSize="$3"
+                  color={
+                    getGainColor(unrealizedGain) === 'gain'
+                      ? '$green10'
+                      : getGainColor(unrealizedGain) === 'loss'
+                        ? '$red10'
+                        : '$gray10'
+                  }
                 >
-                  {asset.type.toUpperCase()}
+                  {formatCurrency(unrealizedGain, asset.currency, { showSign: true })}{' '}
+                  ({formatPercent(unrealizedGainPercent)})
                 </Text>
-              </XStack>
-              {asset.name && (
-                <Text fontSize="$3" color="$gray10">
-                  {asset.name}
+              </>
+            ) : (
+              <Text fontSize="$5" color="$gray10">
+                —
+              </Text>
+            )}
+          </YStack>
+        </XStack>
+      </Card>
+
+      {/* Tabs */}
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        flexDirection="column"
+        flex={1}
+      >
+        <Tabs.List paddingHorizontal={CONTENT_HORIZONTAL_PADDING} justifyContent="space-between">
+          <Tabs.Tab value="lots" width="49%">
+            <Text>Lots ({lots.length})</Text>
+          </Tabs.Tab>
+          <Tabs.Tab value="transactions" width="49%">
+            <Text>Transactions ({transactions.length})</Text>
+          </Tabs.Tab>
+        </Tabs.List>
+
+        <Tabs.Content value="lots" flex={1}>
+          <FlatList
+            data={lots}
+            keyExtractor={(item) => item.id}
+            renderItem={renderLot}
+            contentContainerStyle={{ paddingVertical: 8, flexGrow: 1 }}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+            ListEmptyComponent={
+              <YStack flex={1} padding="$8" alignItems="center" justifyContent="center">
+                <Text fontSize="$5" color="$gray10" textAlign="center">
+                  No lots yet
                 </Text>
-              )}
-            </YStack>
-            <YStack alignItems="flex-end">
-              {currentPrice !== null ? (
-                <>
-                  <Text fontSize="$6" fontWeight="600" color="$color">
-                    {formatCurrency(currentPrice, asset.currency)}
-                  </Text>
-                  {priceLastUpdated && (
-                    <Text fontSize="$2" color="$gray9">
-                      {formatRelativeTime(priceLastUpdated)}
-                    </Text>
-                  )}
-                </>
-              ) : (
-                <Text color="$gray10">Price unavailable</Text>
-              )}
-            </YStack>
-          </XStack>
-
-          <Separator marginVertical="$3" />
-
-          <XStack justifyContent="space-between">
-            <YStack>
-              <Text fontSize="$2" color="$gray10">
-                Holdings
-              </Text>
-              <Text fontSize="$5" fontWeight="600">
-                {formatQuantity(totalQuantity)}
-              </Text>
-              <Text fontSize="$2" color="$gray10">
-                Avg. Cost: {formatCurrency(averageCost, asset.currency)}
-              </Text>
-            </YStack>
-            <YStack alignItems="flex-end">
-              <Text fontSize="$2" color="$gray10">
-                Total Value
-              </Text>
-              {currentValue !== null ? (
-                <>
-                  <Text fontSize="$5" fontWeight="600">
-                    {formatCurrency(currentValue, asset.currency)}
-                  </Text>
-                  <Text
-                    fontSize="$3"
-                    color={
-                      getGainColor(unrealizedGain) === 'gain'
-                        ? '$green10'
-                        : getGainColor(unrealizedGain) === 'loss'
-                          ? '$red10'
-                          : '$gray10'
-                    }
-                  >
-                    {formatCurrency(unrealizedGain, asset.currency, { showSign: true })}{' '}
-                    ({formatPercent(unrealizedGainPercent)})
-                  </Text>
-                </>
-              ) : (
-                <Text fontSize="$5" color="$gray10">
-                  —
+                <Text fontSize="$3" color="$gray9" textAlign="center" marginTop="$2">
+                  Add a lot to track your holdings
                 </Text>
-              )}
-            </YStack>
-          </XStack>
-        </Card>
+              </YStack>
+            }
+          />
+        </Tabs.Content>
 
-        {/* Tabs */}
-        <Tabs
-          value={activeTab}
-          onValueChange={setActiveTab}
-          flexDirection="column"
-          flex={1}
-        >
-          <Tabs.List paddingHorizontal={CONTENT_HORIZONTAL_PADDING} justifyContent="space-between">
-            <Tabs.Tab value="lots" width="49%">
-              <Text>Lots ({lots.length})</Text>
-            </Tabs.Tab>
-            <Tabs.Tab value="transactions" width="49%">
-              <Text>Transactions ({transactions.length})</Text>
-            </Tabs.Tab>
-          </Tabs.List>
+        <Tabs.Content value="transactions" flex={1}>
+          <FlatList
+            data={transactions}
+            keyExtractor={(item) => item.id}
+            renderItem={renderTransaction}
+            contentContainerStyle={{ paddingVertical: 8, flexGrow: 1 }}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+            ListEmptyComponent={
+              <YStack flex={1} padding="$8" alignItems="center" justifyContent="center">
+                <Text fontSize="$5" color="$gray10" textAlign="center">
+                  No transactions yet
+                </Text>
+              </YStack>
+            }
+          />
+        </Tabs.Content>
+      </Tabs>
 
-          <Tabs.Content value="lots" flex={1}>
-            <FlatList
-              data={lots}
-              keyExtractor={(item) => item.id}
-              renderItem={renderLot}
-              contentContainerStyle={{ paddingVertical: 8, flexGrow: 1 }}
-              refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-              }
-              ListEmptyComponent={
-                <YStack flex={1} padding="$8" alignItems="center" justifyContent="center">
-                  <Text fontSize="$5" color="$gray10" textAlign="center">
-                    No lots yet
-                  </Text>
-                  <Text fontSize="$3" color="$gray9" textAlign="center" marginTop="$2">
-                    Add a lot to track your holdings
-                  </Text>
-                </YStack>
-              }
-            />
-          </Tabs.Content>
-
-          <Tabs.Content value="transactions" flex={1}>
-            <FlatList
-              data={transactions}
-              keyExtractor={(item) => item.id}
-              renderItem={renderTransaction}
-              contentContainerStyle={{ paddingVertical: 8, flexGrow: 1 }}
-              refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-              }
-              ListEmptyComponent={
-                <YStack flex={1} padding="$8" alignItems="center" justifyContent="center">
-                  <Text fontSize="$5" color="$gray10" textAlign="center">
-                    No transactions yet
-                  </Text>
-                </YStack>
-              }
-            />
-          </Tabs.Content>
-        </Tabs>
-
-        <FloatingActionButton href={`/lot/add?assetId=${id}&portfolioId=${portfolioId}`} />
-      </YStack>
+      <FloatingActionButton href={`/lot/add?assetId=${id}&portfolioId=${portfolioId}`} />
+    </YStack>
   );
 }
