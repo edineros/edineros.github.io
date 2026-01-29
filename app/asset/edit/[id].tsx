@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { ScrollView } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { YStack, Text, Button, Input, Label, Spinner, Separator } from 'tamagui';
+import { YStack, Text, Input, Label, Spinner, Separator } from 'tamagui';
 import { useAppStore } from '../../../store';
 import { ScreenHeader } from '../../../components/ScreenHeader';
+import { LongButton } from '../../../components/LongButton';
 import { alert, confirm } from '../../../lib/utils/confirm';
 import { getAssetById, getAllAssetTags } from '../../../lib/db/assets';
 import { TagInput, TagInputRef } from '../../../components/TagInput';
@@ -151,17 +152,13 @@ export default function EditAssetScreen() {
             </Text>
           </YStack>
 
-          <Button
-            size="$5"
-            backgroundColor="$blue10"
-            color="white"
-            fontWeight="600"
+          <LongButton
             onPress={handleSave}
             disabled={isSaving}
-            marginTop="$4"
+            topSpacing="small"
           >
             {isSaving ? 'Saving...' : 'Save Changes'}
-          </Button>
+          </LongButton>
 
           <Separator marginVertical="$6" />
 
@@ -169,16 +166,13 @@ export default function EditAssetScreen() {
             <Text fontSize="$3" color="$gray10">
               Danger Zone
             </Text>
-            <Button
-              size="$5"
-              backgroundColor="$red10"
-              color="white"
-              fontWeight="600"
+            <LongButton
               onPress={handleDelete}
               disabled={isDeleting}
+              variant="destructive"
             >
               {isDeleting ? 'Deleting...' : 'Delete Asset'}
-            </Button>
+            </LongButton>
           </YStack>
         </YStack>
       </ScrollView>

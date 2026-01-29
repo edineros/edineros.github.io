@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { ScrollView } from 'react-native';
 import { alert } from '../../lib/utils/confirm';
 import { router, useLocalSearchParams } from 'expo-router';
-import { YStack, XStack, Text, Button, Input, Label, Spinner } from 'tamagui';
+import { YStack, XStack, Text, Input, Label, Spinner } from 'tamagui';
 import { ScreenHeader } from '../../components/ScreenHeader';
+import { LongButton } from '../../components/LongButton';
 import { getAssetById } from '../../lib/db/assets';
 import { getTransactionById, updateTransaction } from '../../lib/db/transactions';
 import { formatCurrency } from '../../lib/utils/format';
@@ -201,17 +202,13 @@ export default function EditLotScreen() {
             </Text>
           </XStack>
 
-          <Button
-            size="$5"
-            backgroundColor="$blue10"
-            color="white"
-            fontWeight="600"
+          <LongButton
             onPress={handleSave}
             disabled={isSaving || !quantity || !pricePerUnit}
-            marginTop="$2"
+            topSpacing="small"
           >
             {isSaving ? 'Saving...' : 'Save Changes'}
-          </Button>
+          </LongButton>
         </YStack>
       </ScrollView>
     </YStack>

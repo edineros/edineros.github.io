@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { ScrollView } from 'react-native';
 import { alert } from '../../lib/utils/confirm';
 import { router, useLocalSearchParams } from 'expo-router';
-import { YStack, XStack, Text, Button, Input, Label } from 'tamagui';
+import { YStack, XStack, Text, Input, Label } from 'tamagui';
 import { ScreenHeader } from '../../components/ScreenHeader';
+import { LongButton } from '../../components/LongButton';
 import { getAssetById } from '../../lib/db/assets';
 import { createTransaction } from '../../lib/db/transactions';
 import { formatCurrency } from '../../lib/utils/format';
@@ -166,17 +167,13 @@ export default function AddLotScreen() {
             </Text>
           </XStack>
 
-          <Button
-            size="$5"
-            backgroundColor="$blue10"
-            color="white"
-            fontWeight="600"
+          <LongButton
             onPress={handleCreate}
             disabled={isCreating || !quantity || !pricePerUnit}
-            marginTop="$2"
+            topSpacing="small"
           >
             {isCreating ? 'Adding...' : 'Add Lot'}
-          </Button>
+          </LongButton>
         </YStack>
       </ScrollView>
     </YStack>

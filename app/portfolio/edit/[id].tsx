@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { ScrollView } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { YStack, Text, Button, Input, Label, Spinner, Separator } from 'tamagui';
+import { YStack, Text, Input, Label, Spinner, Separator } from 'tamagui';
 import { useAppStore } from '../../../store';
 import { ScreenHeader } from '../../../components/ScreenHeader';
+import { LongButton } from '../../../components/LongButton';
 import { CurrencySelect } from '../../../components/CurrencySelect';
 import { alert, confirm } from '../../../lib/utils/confirm';
 import { getPortfolioById } from '../../../lib/db/portfolios';
@@ -103,60 +104,53 @@ export default function EditPortfolioScreen() {
     <YStack flex={1} backgroundColor="#000000">
       <ScreenHeader title="Edit Portfolio" showBack fallbackPath={`/portfolio/${id}`} />
       <ScrollView style={{ flex: 1 }}>
-      <YStack flex={1} padding="$4" gap="$4">
-        <YStack gap="$2">
-          <Label htmlFor="name">Portfolio Name</Label>
-          <Input
-            id="name"
-            size="$4"
-            placeholder="My Portfolio"
-            value={name}
-            onChangeText={setName}
-          />
-        </YStack>
+        <YStack flex={1} padding="$4" gap="$4">
+          <YStack gap="$2">
+            <Label htmlFor="name">Portfolio Name</Label>
+            <Input
+              id="name"
+              size="$4"
+              placeholder="My Portfolio"
+              value={name}
+              onChangeText={setName}
+            />
+          </YStack>
 
-        <YStack gap="$2">
-          <CurrencySelect
-            value={currency}
-            onChange={setCurrency}
-            label="BASE CURRENCY"
-          />
-          <Text fontSize="$3" color="$gray10">
-            Changing currency will affect how values are displayed
-          </Text>
-        </YStack>
+          <YStack gap="$2">
+            <CurrencySelect
+              value={currency}
+              onChange={setCurrency}
+              label="BASE CURRENCY"
+            />
+            <Text fontSize="$3" color="$gray10">
+              Changing currency will affect how values are displayed
+            </Text>
+          </YStack>
 
-        <Button
-          size="$5"
-          backgroundColor="$blue10"
-          color="white"
-          fontWeight="600"
-          onPress={handleSave}
-          disabled={isSaving || !name.trim()}
-          marginTop="$4"
-        >
-          {isSaving ? 'Saving...' : 'Save Changes'}
-        </Button>
-
-        <Separator marginVertical="$6" />
-
-        <YStack gap="$2">
-          <Text fontSize="$3" color="$gray10">
-            Danger Zone
-          </Text>
-          <Button
-            size="$5"
-            backgroundColor="$red10"
-            color="white"
-            fontWeight="600"
-            onPress={handleDelete}
-            disabled={isDeleting}
+          <LongButton
+            onPress={handleSave}
+            disabled={isSaving || !name.trim()}
+            topSpacing="medium"
           >
-            {isDeleting ? 'Deleting...' : 'Delete Portfolio'}
-          </Button>
+            {isSaving ? 'Saving...' : 'Save Changes'}
+          </LongButton>
+
+          <Separator marginVertical="$6" />
+
+          <YStack gap="$2">
+            <Text fontSize="$3" color="$gray10">
+              Danger Zone
+            </Text>
+            <LongButton
+              onPress={handleDelete}
+              disabled={isDeleting}
+              variant="destructive"
+            >
+              {isDeleting ? 'Deleting...' : 'Delete Portfolio'}
+            </LongButton>
+          </YStack>
         </YStack>
-      </YStack>
-    </ScrollView>
+      </ScrollView>
     </YStack>
   );
 }

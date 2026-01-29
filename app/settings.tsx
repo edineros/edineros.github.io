@@ -1,9 +1,10 @@
 import { useState, useRef } from 'react';
 import { Alert, ScrollView, Platform } from 'react-native';
-import { YStack, XStack, Text, Button } from 'tamagui';
+import { YStack, XStack, Text } from 'tamagui';
 import { exportToJson, exportTransactionsToCsv, shareFile, importFromJson } from '../lib/utils/export';
 import { useAppStore } from '../store';
 import { ScreenHeader } from '../components/ScreenHeader';
+import { LongButton } from '../components/LongButton';
 import { CONTENT_HORIZONTAL_PADDING } from '../lib/constants/layout';
 
 export default function SettingsScreen() {
@@ -140,29 +141,20 @@ export default function SettingsScreen() {
             </Text>
 
             <YStack gap={12}>
-              <Button
-                size="$4"
+              <LongButton
                 onPress={handleExportJson}
                 disabled={isExporting}
-                backgroundColor="#007AFF"
-                color="#FFFFFF"
-                fontWeight="600"
               >
                 {isExporting ? 'Exporting...' : 'Export as JSON (Full Backup)'}
-              </Button>
+              </LongButton>
 
-              <Button
-                size="$4"
+              <LongButton
                 onPress={handleExportCsv}
                 disabled={isExporting}
-                backgroundColor="transparent"
-                borderColor="#1F1F1F"
-                borderWidth={1}
-                color="#FFFFFF"
-                fontWeight="600"
+                variant="secondary"
               >
                 {isExporting ? 'Exporting...' : 'Export Transactions as CSV'}
-              </Button>
+              </LongButton>
             </YStack>
           </YStack>
 
@@ -181,16 +173,12 @@ export default function SettingsScreen() {
               affecting existing data.
             </Text>
 
-            <Button
-              size="$4"
+            <LongButton
               onPress={handleImport}
               disabled={isImporting}
-              backgroundColor="#007AFF"
-              color="#FFFFFF"
-              fontWeight="600"
             >
               {isImporting ? 'Importing...' : 'Import from JSON'}
-            </Button>
+            </LongButton>
           </YStack>
 
           <YStack

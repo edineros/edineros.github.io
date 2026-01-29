@@ -5,6 +5,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { YStack, XStack, Text, Spinner } from 'tamagui';
 import { useAppStore } from '../../store';
 import { ScreenHeader } from '../../components/ScreenHeader';
+import { LongButton } from '../../components/LongButton';
 import { CurrencySelect } from '../../components/CurrencySelect';
 import { TagInput, TagInputRef } from '../../components/TagInput';
 import { searchSymbol } from '../../lib/api/prices';
@@ -265,22 +266,12 @@ export default function AddAssetScreen() {
 
           {/* Create button */}
           <YStack flex={1} justifyContent="flex-end" paddingBottom={24}>
-            <TouchableOpacity
-              activeOpacity={0.8}
+            <LongButton
               onPress={handleCreate}
               disabled={isCreating || !symbol.trim()}
-              style={{
-                backgroundColor: '#007AFF',
-                paddingVertical: 16,
-                borderRadius: 12,
-                alignItems: 'center',
-                opacity: isCreating || !symbol.trim() ? 0.5 : 1,
-              }}
             >
-              <Text color="#FFFFFF" fontSize={17} fontWeight="600">
-                {isCreating ? 'Adding...' : 'Add Asset'}
-              </Text>
-            </TouchableOpacity>
+              {isCreating ? 'Adding...' : 'Add Asset'}
+            </LongButton>
           </YStack>
         </YStack>
       </ScrollView>

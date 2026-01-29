@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { ScrollView, TextInput } from 'react-native';
 import { alert } from '../../lib/utils/confirm';
 import { router } from 'expo-router';
 import { YStack, Text } from 'tamagui';
 import { useAppStore } from '../../store';
 import { ScreenHeader } from '../../components/ScreenHeader';
+import { LongButton } from '../../components/LongButton';
 import { CurrencySelect } from '../../components/CurrencySelect';
 
 export default function CreatePortfolioScreen() {
@@ -76,22 +77,12 @@ export default function CreatePortfolioScreen() {
 
         {/* Create button */}
         <YStack flex={1} justifyContent="flex-end" paddingBottom={24}>
-          <TouchableOpacity
-            activeOpacity={0.8}
+          <LongButton
             onPress={handleCreate}
             disabled={isCreating || !name.trim()}
-            style={{
-              backgroundColor: '#007AFF',
-              paddingVertical: 16,
-              borderRadius: 12,
-              alignItems: 'center',
-              opacity: isCreating || !name.trim() ? 0.5 : 1,
-            }}
           >
-            <Text color="#FFFFFF" fontSize={17} fontWeight="600">
-              {isCreating ? 'Creating...' : 'Create Portfolio'}
-            </Text>
-          </TouchableOpacity>
+            {isCreating ? 'Creating...' : 'Create Portfolio'}
+          </LongButton>
         </YStack>
       </YStack>
     </ScrollView>
