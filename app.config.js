@@ -38,8 +38,8 @@ module.exports = {
         "Cross-Origin-Embedder-Policy": "require-corp"
       },
       // PWA configuration
-      name: "Private Portfolio",
-      shortName: "Portfolio",
+      name: "Edineros",
+      shortName: "Edineros",
       description: "Privacy-first, offline-capable portfolio tracking application",
       themeColor: "#000000",
       backgroundColor: "#000000"

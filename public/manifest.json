@@ -1,6 +1,6 @@
 {
-  "name": "Private Portfolio",
-  "short_name": "Portfolio",
+  "name": "Edineros",
+  "short_name": "Edineros",
   "description": "Privacy-first, offline-capable portfolio tracking application",
   "start_url": "/",
   "scope": "/",
