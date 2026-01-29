@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from 'uuid';
+import { generateUUID } from '../utils/uuid';
 import type { SQLiteDatabase } from 'expo-sqlite';
 import { getDatabase, isWeb } from './schema';
 import { webDb } from './webDatabase';
@@ -104,7 +104,7 @@ export async function createTransaction(
     lotId?: string;
   }
 ): Promise<Transaction> {
-  const id = uuidv4();
+  const id = generateUUID();
   const now = Date.now();
   const { fee = 0, notes = null, tags = [], lotId = null } = options ?? {};
 

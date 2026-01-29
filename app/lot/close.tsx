@@ -3,6 +3,7 @@ import { ScrollView } from 'react-native';
 import { alert } from '../../lib/utils/confirm';
 import { router, useLocalSearchParams } from 'expo-router';
 import { YStack, XStack, Text, Button, Input, Label, Card, Separator } from 'tamagui';
+import { ScreenHeader } from '../../components/ScreenHeader';
 import { getAssetById } from '../../lib/db/assets';
 import { getLotsForAsset, createTransaction } from '../../lib/db/transactions';
 import { fetchPrice } from '../../lib/api/prices';
@@ -122,15 +123,23 @@ export default function CloseLotScreen() {
     }
   };
 
+  const fallbackPath = assetId && portfolioId ? `/asset/${assetId}?portfolioId=${portfolioId}` : '/';
+
   if (!asset || !lot) {
-    return null;
+    return (
+      <YStack flex={1} backgroundColor="#000000">
+        <ScreenHeader title="Sell Position" showBack fallbackPath={fallbackPath} />
+      </YStack>
+    );
   }
 
   const gainInfo = calculateGain();
 
   return (
-    <ScrollView style={{ flex: 1 }}>
-      <YStack flex={1} padding="$4" gap="$4">
+    <YStack flex={1} backgroundColor="#000000">
+      <ScreenHeader title="Sell Position" showBack fallbackPath={fallbackPath} />
+      <ScrollView style={{ flex: 1 }}>
+        <YStack flex={1} padding="$4" gap="$4">
         {/* Lot Info Card */}
         <Card bordered padding="$4">
           <Text fontSize="$5" fontWeight="600" marginBottom="$2">
@@ -271,5 +280,6 @@ export default function CloseLotScreen() {
         </Button>
       </YStack>
     </ScrollView>
+    </YStack>
   );
 }

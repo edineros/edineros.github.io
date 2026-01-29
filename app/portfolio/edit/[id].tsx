@@ -3,6 +3,7 @@ import { ScrollView } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { YStack, Text, Button, Input, Label, Spinner, Separator } from 'tamagui';
 import { useAppStore } from '../../../store';
+import { ScreenHeader } from '../../../components/ScreenHeader';
 import { CurrencySelect } from '../../../components/CurrencySelect';
 import { alert, confirm } from '../../../lib/utils/confirm';
 import { getPortfolioById } from '../../../lib/db/portfolios';
@@ -78,22 +79,30 @@ export default function EditPortfolioScreen() {
 
   if (isLoading) {
     return (
-      <YStack flex={1} justifyContent="center" alignItems="center">
-        <Spinner size="large" />
+      <YStack flex={1} backgroundColor="#000000">
+        <ScreenHeader title="Edit Portfolio" showBack fallbackPath="/" />
+        <YStack flex={1} justifyContent="center" alignItems="center">
+          <Spinner size="large" />
+        </YStack>
       </YStack>
     );
   }
 
   if (!portfolio) {
     return (
-      <YStack flex={1} justifyContent="center" alignItems="center" padding="$4">
-        <Text>Portfolio not found</Text>
+      <YStack flex={1} backgroundColor="#000000">
+        <ScreenHeader title="Edit Portfolio" showBack fallbackPath="/" />
+        <YStack flex={1} justifyContent="center" alignItems="center" padding="$4">
+          <Text>Portfolio not found</Text>
+        </YStack>
       </YStack>
     );
   }
 
   return (
-    <ScrollView style={{ flex: 1 }}>
+    <YStack flex={1} backgroundColor="#000000">
+      <ScreenHeader title="Edit Portfolio" showBack fallbackPath={`/portfolio/${id}`} />
+      <ScrollView style={{ flex: 1 }}>
       <YStack flex={1} padding="$4" gap="$4">
         <YStack gap="$2">
           <Label htmlFor="name">Portfolio Name</Label>
@@ -148,5 +157,6 @@ export default function EditPortfolioScreen() {
         </YStack>
       </YStack>
     </ScrollView>
+    </YStack>
   );
 }

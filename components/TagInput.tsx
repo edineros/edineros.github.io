@@ -1,5 +1,5 @@
 import { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
-import { TextInput, Pressable } from 'react-native';
+import { TextInput, TouchableOpacity } from 'react-native';
 import { YStack, XStack, Text } from 'tamagui';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -87,9 +87,9 @@ export const TagInput = forwardRef<TagInputRef, TagInputProps>(
                 <Text color="#FFFFFF" fontSize={14}>
                   {tag}
                 </Text>
-                <Pressable onPress={() => removeTag(tag)} hitSlop={8}>
+                <TouchableOpacity onPress={() => removeTag(tag)} hitSlop={8}>
                   <Ionicons name="close-circle" size={18} color="#8E8E93" />
-                </Pressable>
+                </TouchableOpacity>
               </XStack>
             ))}
           </XStack>
@@ -126,21 +126,24 @@ export const TagInput = forwardRef<TagInputRef, TagInputProps>(
             overflow="hidden"
           >
             {suggestions.map((suggestion, index) => (
-              <Pressable key={suggestion} onPress={() => addTag(suggestion)}>
-                <XStack
-                  padding={12}
-                  borderBottomWidth={index < suggestions.length - 1 ? 1 : 0}
-                  borderBottomColor="#1F1F1F"
-                  pressStyle={{ backgroundColor: '#1A1A1A' }}
-                  alignItems="center"
-                  gap={8}
-                >
-                  <Ionicons name="pricetag-outline" size={16} color="#8E8E93" />
-                  <Text color="#FFFFFF" fontSize={15}>
-                    {suggestion}
-                  </Text>
-                </XStack>
-              </Pressable>
+              <TouchableOpacity
+                key={suggestion}
+                activeOpacity={0.7}
+                onPress={() => addTag(suggestion)}
+                style={{
+                  padding: 12,
+                  borderBottomWidth: index < suggestions.length - 1 ? 1 : 0,
+                  borderBottomColor: '#1F1F1F',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 8,
+                }}
+              >
+                <Ionicons name="pricetag-outline" size={16} color="#8E8E93" />
+                <Text color="#FFFFFF" fontSize={15}>
+                  {suggestion}
+                </Text>
+              </TouchableOpacity>
             ))}
           </YStack>
         )}
@@ -153,23 +156,25 @@ export const TagInput = forwardRef<TagInputRef, TagInputProps>(
           !tags.some(
             (t) => t.toLowerCase() === inputValue.trim().toLowerCase()
           ) && (
-            <Pressable onPress={handleSubmit}>
-              <XStack
-                backgroundColor="#111111"
-                borderRadius={12}
-                borderWidth={1}
-                borderColor="#1F1F1F"
-                padding={12}
-                alignItems="center"
-                gap={8}
-                pressStyle={{ backgroundColor: '#1A1A1A' }}
-              >
-                <Ionicons name="add-circle-outline" size={16} color="#007AFF" />
-                <Text color="#007AFF" fontSize={15}>
-                  Create "{inputValue.trim()}"
-                </Text>
-              </XStack>
-            </Pressable>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={handleSubmit}
+              style={{
+                backgroundColor: '#111111',
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: '#1F1F1F',
+                padding: 12,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8,
+              }}
+            >
+              <Ionicons name="add-circle-outline" size={16} color="#007AFF" />
+              <Text color="#007AFF" fontSize={15}>
+                Create "{inputValue.trim()}"
+              </Text>
+            </TouchableOpacity>
           )}
       </YStack>
     );

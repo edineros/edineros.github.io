@@ -1,5 +1,4 @@
-import { Pressable } from 'react-native';
-import { Link } from 'expo-router';
+import { TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -30,7 +29,7 @@ interface HeaderBackButtonProps {
  */
 export function HeaderBackButton({ fallbackPath = '/' }: HeaderBackButtonProps) {
   return (
-    <Pressable
+    <TouchableOpacity
       onPress={() => {
         if (router.canGoBack()) {
           router.back();
@@ -42,7 +41,7 @@ export function HeaderBackButton({ fallbackPath = '/' }: HeaderBackButtonProps) 
       hitSlop={HEADER_BUTTON_STYLES.hitSlop}
     >
       <Ionicons name="chevron-back" size={HEADER_BUTTON_STYLES.backIconSize} color="#007AFF" />
-    </Pressable>
+    </TouchableOpacity>
   );
 }
 
@@ -55,7 +54,7 @@ interface HeaderIconButtonProps {
 }
 
 /**
- * Icon button for header. Can be used with onPress or href (Link).
+ * Icon button for header. Can be used with onPress or href.
  */
 export function HeaderIconButton({
   icon,
@@ -66,23 +65,21 @@ export function HeaderIconButton({
 }: HeaderIconButtonProps) {
   const style = position === 'left' ? HEADER_BUTTON_STYLES.left : HEADER_BUTTON_STYLES.right;
 
-  const button = (
-    <Pressable
-      onPress={onPress}
+  const handlePress = () => {
+    if (onPress) {
+      onPress();
+    } else if (href) {
+      router.push(href);
+    }
+  };
+
+  return (
+    <TouchableOpacity
+      onPress={handlePress}
       style={style}
       hitSlop={HEADER_BUTTON_STYLES.hitSlop}
     >
       <Ionicons name={icon} size={HEADER_BUTTON_STYLES.iconSize} color={color} />
-    </Pressable>
+    </TouchableOpacity>
   );
-
-  if (href) {
-    return (
-      <Link href={href} asChild>
-        {button}
-      </Link>
-    );
-  }
-
-  return button;
 }

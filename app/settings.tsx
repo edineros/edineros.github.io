@@ -1,9 +1,10 @@
 import { useState, useRef } from 'react';
 import { Alert, ScrollView, Platform } from 'react-native';
 import { YStack, XStack, Text, Button } from 'tamagui';
-import { exportToJson, exportTransactionsToCsv, shareFile, importFromJson } from '../../lib/utils/export';
-import { useAppStore } from '../../store';
-import { CONTENT_HORIZONTAL_PADDING } from '../../lib/constants/layout';
+import { exportToJson, exportTransactionsToCsv, shareFile, importFromJson } from '../lib/utils/export';
+import { useAppStore } from '../store';
+import { ScreenHeader } from '../components/ScreenHeader';
+import { CONTENT_HORIZONTAL_PADDING } from '../lib/constants/layout';
 
 export default function SettingsScreen() {
   const [isExporting, setIsExporting] = useState(false);
@@ -110,6 +111,7 @@ export default function SettingsScreen() {
 
   return (
     <YStack flex={1} backgroundColor="#000000">
+      <ScreenHeader title="Settings" />
       <ScrollView style={{ flex: 1 }}>
         {/* Hidden file input for web */}
         {Platform.OS === 'web' && (

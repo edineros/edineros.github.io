@@ -1,5 +1,5 @@
-import { Pressable, StyleSheet } from 'react-native';
-import { Link } from 'expo-router';
+import { TouchableOpacity, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 interface FloatingActionButtonProps {
@@ -11,12 +11,12 @@ interface FloatingActionButtonProps {
  * Positioned at the bottom right of the screen.
  */
 export function FloatingActionButton({ href }: FloatingActionButtonProps) {
+  const router = useRouter();
+
   return (
-    <Link href={href} asChild>
-      <Pressable style={styles.button}>
-        <Ionicons name="add" size={28} color="#FFFFFF" />
-      </Pressable>
-    </Link>
+    <TouchableOpacity style={styles.button} onPress={() => router.push(href)}>
+      <Ionicons name="add" size={28} color="#FFFFFF" />
+    </TouchableOpacity>
   );
 }
 

@@ -1,8 +1,9 @@
 import { useCallback, useState, useMemo } from 'react';
-import { FlatList, RefreshControl, Pressable } from 'react-native';
-import { Link, useLocalSearchParams, useFocusEffect, Stack } from 'expo-router';
+import { FlatList, RefreshControl, TouchableOpacity } from 'react-native';
+import { useLocalSearchParams, useFocusEffect, useRouter } from 'expo-router';
 import { YStack, XStack, Text, Spinner } from 'tamagui';
 import { useAppStore } from '../../store';
+import { ScreenHeader } from '../../components/ScreenHeader';
 import { HeaderIconButton } from '../../components/HeaderButtons';
 import { QuantityAtPrice } from '../../components/QuantityAtPrice';
 import { FloatingActionButton } from '../../components/FloatingActionButton';
@@ -20,6 +21,7 @@ import type { Asset } from '../../lib/types';
 
 export default function PortfolioDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
   const [allocationMode, setAllocationMode] = useState<AllocationMode>('type');
   const {
@@ -111,107 +113,105 @@ export default function PortfolioDetailScreen() {
     const gainColor = stats ? getGainColor(stats.unrealizedGain) : 'neutral';
 
     return (
-      <Link href={`/asset/${item.id}?portfolioId=${id}`} asChild>
-        <Pressable>
-          <YStack
-            marginHorizontal={CONTENT_HORIZONTAL_PADDING}
-            marginVertical={4}
-            padding={CONTENT_HORIZONTAL_PADDING}
-            backgroundColor="#111111"
-            borderRadius={12}
-            borderWidth={1}
-            borderColor="#1F1F1F"
-            pressStyle={{ backgroundColor: '#1A1A1A' }}
-          >
-            <XStack justifyContent="space-between" alignItems="flex-start">
-              <YStack flex={1} gap={2}>
-                <XStack alignItems="center" gap={8}>
-                  <Text color="#FFFFFF" fontSize={17} fontWeight="600">
-                    {item.symbol}
-                  </Text>
-                  <Text
-                    fontSize={11}
-                    fontWeight="600"
-                    color="#8E8E93"
-                    backgroundColor="#1F1F1F"
-                    paddingHorizontal={6}
-                    paddingVertical={2}
-                    borderRadius={4}
-                    textTransform="uppercase"
-                  >
-                    {item.type}
-                  </Text>
-                </XStack>
-                {item.name && (
-                  <Text color="#636366" fontSize={13} numberOfLines={1}>
-                    {item.name}
-                  </Text>
-                )}
-                {stats && (
-                  <XStack marginTop={2}>
-                    <QuantityAtPrice
-                      quantity={stats.totalQuantity}
-                      price={stats.averageCost}
-                      currency={item.currency}
-                      fontSize={12}
-                    />
-                  </XStack>
-                )}
-              </YStack>
-              <YStack alignItems="flex-end" gap={2}>
-                {stats?.currentValue !== null && stats?.currentValue !== undefined ? (
-                  <>
-                    <Text color="#FFFFFF" fontSize={17} fontWeight="600">
-                      {formatCurrency(stats.currentValue, portfolio?.currency)}
-                    </Text>
-                    <Text
-                      fontSize={13}
-                      fontWeight="600"
-                      color={gainColor === 'gain' ? '#00D897' : gainColor === 'loss' ? '#FF6B6B' : '#8E8E93'}
-                    >
-                      {formatCurrency(stats.unrealizedGain, portfolio?.currency, { showSign: true })} ({formatPercent(stats.unrealizedGainPercent)})
-                    </Text>
-                  </>
-                ) : (
-                  <Spinner size="small" color="#8E8E93" />
-                )}
-              </YStack>
+      <TouchableOpacity
+        activeOpacity={0.7}
+        onPress={() => router.push(`/asset/${item.id}?portfolioId=${id}`)}
+        style={{
+          marginHorizontal: CONTENT_HORIZONTAL_PADDING,
+          marginVertical: 4,
+          padding: CONTENT_HORIZONTAL_PADDING,
+          backgroundColor: '#111111',
+          borderRadius: 12,
+          borderWidth: 1,
+          borderColor: '#1F1F1F',
+        }}
+      >
+        <XStack justifyContent="space-between" alignItems="flex-start">
+          <YStack flex={1} gap={2}>
+            <XStack alignItems="center" gap={8}>
+              <Text color="#FFFFFF" fontSize={17} fontWeight="600">
+                {item.symbol}
+              </Text>
+              <Text
+                fontSize={11}
+                fontWeight="600"
+                color="#8E8E93"
+                backgroundColor="#1F1F1F"
+                paddingHorizontal={6}
+                paddingVertical={2}
+                borderRadius={4}
+                textTransform="uppercase"
+              >
+                {item.type}
+              </Text>
             </XStack>
+            {item.name && (
+              <Text color="#636366" fontSize={13} numberOfLines={1}>
+                {item.name}
+              </Text>
+            )}
+            {stats && (
+              <XStack marginTop={2}>
+                <QuantityAtPrice
+                  quantity={stats.totalQuantity}
+                  price={stats.averageCost}
+                  currency={item.currency}
+                  fontSize={12}
+                />
+              </XStack>
+            )}
           </YStack>
-        </Pressable>
-      </Link>
+          <YStack alignItems="flex-end" gap={2}>
+            {stats?.currentValue !== null && stats?.currentValue !== undefined ? (
+              <>
+                <Text color="#FFFFFF" fontSize={17} fontWeight="600">
+                  {formatCurrency(stats.currentValue, portfolio?.currency)}
+                </Text>
+                <Text
+                  fontSize={13}
+                  fontWeight="600"
+                  color={gainColor === 'gain' ? '#00D897' : gainColor === 'loss' ? '#FF6B6B' : '#8E8E93'}
+                >
+                  {formatCurrency(stats.unrealizedGain, portfolio?.currency, { showSign: true })} ({formatPercent(stats.unrealizedGainPercent)})
+                </Text>
+              </>
+            ) : (
+              <Spinner size="small" color="#8E8E93" />
+            )}
+          </YStack>
+        </XStack>
+      </TouchableOpacity>
     );
   };
 
   if (!portfolio) {
     return (
-      <>
-        <Stack.Screen options={{ title: '', }} />
-        <YStack flex={1} justifyContent="center" alignItems="center" backgroundColor="#000000">
+      <YStack flex={1} backgroundColor="#000000">
+        <ScreenHeader showBack fallbackPath="/" />
+        <YStack flex={1} justifyContent="center" alignItems="center">
           <Spinner size="large" color="#FFFFFF" />
         </YStack>
-      </>
+      </YStack>
     );
   }
 
   const overallGainColor = stats ? getGainColor(stats.totalGain) : 'neutral';
 
   return (
-    <>
-      <Stack.Screen
-        options={{
-          headerTitle: () => (
+      <YStack flex={1} backgroundColor="#000000">
+        <ScreenHeader
+          showBack
+          fallbackPath="/"
+          titleComponent={
             <PortfolioSwitcher
               currentPortfolio={portfolio}
               portfolios={portfolios}
             />
-          ),
-          headerRight: () => (
+          }
+          rightComponent={
             <HeaderIconButton icon="settings-outline" href={`/portfolio/edit/${id}`} />
-          ),
-        }}
-      />
-      <YStack flex={1} backgroundColor="#000000">
+          }
+        />
         {/* Portfolio Summary */}
         <YStack padding={CONTENT_HORIZONTAL_PADDING} gap={4}>
           <Text color="#8E8E93" fontSize={13}>
@@ -317,6 +317,5 @@ export default function PortfolioDetailScreen() {
 
         <FloatingActionButton href={`/asset/add?portfolioId=${id}`} />
       </YStack>
-    </>
   );
 }

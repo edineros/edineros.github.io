@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { ScrollView } from 'react-native';
 import { alert } from '../../lib/utils/confirm';
-import { router, useLocalSearchParams, Stack } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { YStack, XStack, Text, Button, Input, Label } from 'tamagui';
+import { ScreenHeader } from '../../components/ScreenHeader';
 import { getAssetById } from '../../lib/db/assets';
 import { createTransaction } from '../../lib/db/transactions';
 import { formatCurrency } from '../../lib/utils/format';
@@ -74,13 +75,19 @@ export default function AddLotScreen() {
     }
   };
 
+  const fallbackPath = assetId && portfolioId ? `/asset/${assetId}?portfolioId=${portfolioId}` : '/';
+
   if (!asset) {
-    return <Stack.Screen options={{ title: 'Add Lot' }} />;
+    return (
+      <YStack flex={1} backgroundColor="#000000">
+        <ScreenHeader title="Add Lot" showBack fallbackPath={fallbackPath} />
+      </YStack>
+    );
   }
 
   return (
-    <>
-      <Stack.Screen options={{ title: 'Add Lot' }} />
+    <YStack flex={1} backgroundColor="#000000">
+      <ScreenHeader title="Add Lot" showBack fallbackPath={fallbackPath} />
       <ScrollView style={{ flex: 1 }}>
         <YStack flex={1} padding="$4" gap="$4">
           <YStack gap="$2">
@@ -172,6 +179,6 @@ export default function AddLotScreen() {
           </Button>
         </YStack>
       </ScrollView>
-    </>
+    </YStack>
   );
 }

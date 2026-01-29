@@ -1,12 +1,73 @@
 import { useEffect } from 'react';
-import { Stack } from 'expo-router';
-import { TamaguiProvider, Theme } from 'tamagui';
-import { Platform } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Slot, useRouter, usePathname } from 'expo-router';
+import { TamaguiProvider, Theme, View, Text } from 'tamagui';
+import { Platform, TouchableOpacity } from 'react-native';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
 import config from '../tamagui.config';
 import { getDatabase } from '../lib/db/schema';
-import { HeaderBackButton } from '../components/HeaderButtons';
+
+function TabBar() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const insets = useSafeAreaInsets();
+
+  // Only show tab bar on main screens
+  const showTabBar = pathname === '/' || pathname === '/settings';
+
+  if (!showTabBar) {
+    return null;
+  }
+
+  return (
+    <View
+      flexDirection="row"
+      height={60 + insets.bottom}
+      paddingBottom={insets.bottom}
+      borderTopWidth={1}
+      borderTopColor="#1F1F1F"
+      backgroundColor="#000000"
+    >
+      <TouchableOpacity
+        style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 8 }}
+        onPress={() => router.push('/')}
+      >
+        <Ionicons
+          name="pie-chart"
+          size={24}
+          color={pathname === '/' ? '#FFFFFF' : '#636366'}
+        />
+        <Text
+          fontSize={11}
+          fontWeight="500"
+          marginTop={4}
+          color={pathname === '/' ? '#FFFFFF' : '#636366'}
+        >
+          Portfolios
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 8 }}
+        onPress={() => router.push('/settings')}
+      >
+        <Ionicons
+          name="settings-outline"
+          size={24}
+          color={pathname === '/settings' ? '#FFFFFF' : '#636366'}
+        />
+        <Text
+          fontSize={11}
+          fontWeight="500"
+          marginTop={4}
+          color={pathname === '/settings' ? '#FFFFFF' : '#636366'}
+        >
+          Settings
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
 
 export default function RootLayout() {
   useEffect(() => {
@@ -21,79 +82,10 @@ export default function RootLayout() {
       <Theme name="dark">
         <SafeAreaProvider>
           <StatusBar style="light" />
-          <Stack
-            screenOptions={{
-              headerStyle: { backgroundColor: '#000000' },
-              headerTintColor: '#007AFF',
-              headerTitleStyle: {
-                fontWeight: '600',
-                color: '#FFFFFF',
-              },
-              headerShadowVisible: false,
-              headerTitleAlign: 'center',
-              contentStyle: { backgroundColor: '#000000' },
-              animation: 'slide_from_right',
-            }}
-          >
-            <Stack.Screen
-              name="(tabs)"
-              options={{ headerShown: false }}
-            />
-            <Stack.Screen
-              name="portfolio/[id]"
-              options={{
-                title: 'Portfolio',
-                headerLeft: () => <HeaderBackButton fallbackPath="/" />,
-              }}
-            />
-            <Stack.Screen
-              name="portfolio/create"
-              options={{
-                title: '',
-                presentation: 'modal',
-                headerLeft: () => <HeaderBackButton fallbackPath="/" />,
-              }}
-            />
-            <Stack.Screen
-              name="portfolio/edit/[id]"
-              options={{
-                title: 'Edit Portfolio',
-                presentation: 'modal',
-                headerLeft: () => <HeaderBackButton fallbackPath="/" />,
-              }}
-            />
-            <Stack.Screen
-              name="asset/[id]"
-              options={{
-                title: 'Asset',
-                headerLeft: () => <HeaderBackButton fallbackPath="/" />,
-              }}
-            />
-            <Stack.Screen
-              name="asset/add"
-              options={{
-                title: '',
-                presentation: 'modal',
-                headerLeft: () => <HeaderBackButton fallbackPath="/" />,
-              }}
-            />
-            <Stack.Screen
-              name="lot/add"
-              options={{
-                title: 'Add Transaction',
-                presentation: 'modal',
-                headerLeft: () => <HeaderBackButton fallbackPath="/" />,
-              }}
-            />
-            <Stack.Screen
-              name="lot/close"
-              options={{
-                title: 'Sell Position',
-                presentation: 'modal',
-                headerLeft: () => <HeaderBackButton fallbackPath="/" />,
-              }}
-            />
-          </Stack>
+          <View flex={1} backgroundColor="#000000">
+            <Slot />
+            <TabBar />
+          </View>
         </SafeAreaProvider>
       </Theme>
     </TamaguiProvider>

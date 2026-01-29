@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { ScrollView, Pressable, TextInput } from 'react-native';
+import { ScrollView, TouchableOpacity, TextInput } from 'react-native';
 import { alert } from '../../lib/utils/confirm';
-import { router, Stack } from 'expo-router';
+import { router } from 'expo-router';
 import { YStack, Text } from 'tamagui';
 import { useAppStore } from '../../store';
+import { ScreenHeader } from '../../components/ScreenHeader';
 import { CurrencySelect } from '../../components/CurrencySelect';
 
 export default function CreatePortfolioScreen() {
@@ -30,14 +31,14 @@ export default function CreatePortfolioScreen() {
   };
 
   return (
-    <>
-      <Stack.Screen options={{ title: 'New Portfolio' }} />
+    <YStack flex={1} backgroundColor="#000000">
+      <ScreenHeader title="New Portfolio" showBack fallbackPath="/" />
       <ScrollView
-        style={{ flex: 1, backgroundColor: '#000000' }}
+        style={{ flex: 1 }}
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
       >
-        <YStack flex={1} padding={16} backgroundColor="#000000">
+        <YStack flex={1} padding={16}>
           {/* Name input */}
         <YStack gap={8} marginBottom={24}>
           <Text color="#8E8E93" fontSize={13} fontWeight="600">
@@ -75,26 +76,25 @@ export default function CreatePortfolioScreen() {
 
         {/* Create button */}
         <YStack flex={1} justifyContent="flex-end" paddingBottom={24}>
-          <Pressable
+          <TouchableOpacity
+            activeOpacity={0.8}
             onPress={handleCreate}
             disabled={isCreating || !name.trim()}
+            style={{
+              backgroundColor: '#007AFF',
+              paddingVertical: 16,
+              borderRadius: 12,
+              alignItems: 'center',
+              opacity: isCreating || !name.trim() ? 0.5 : 1,
+            }}
           >
-            <YStack
-              backgroundColor="#007AFF"
-              paddingVertical={16}
-              borderRadius={12}
-              alignItems="center"
-              opacity={isCreating || !name.trim() ? 0.5 : 1}
-              pressStyle={{ opacity: 0.8 }}
-            >
-              <Text color="#FFFFFF" fontSize={17} fontWeight="600">
-                {isCreating ? 'Creating...' : 'Create Portfolio'}
-              </Text>
-            </YStack>
-          </Pressable>
+            <Text color="#FFFFFF" fontSize={17} fontWeight="600">
+              {isCreating ? 'Creating...' : 'Create Portfolio'}
+            </Text>
+          </TouchableOpacity>
         </YStack>
       </YStack>
     </ScrollView>
-    </>
+    </YStack>
   );
 }

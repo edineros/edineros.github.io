@@ -1,7 +1,8 @@
 import { useState, useCallback } from 'react';
 import { FlatList, RefreshControl } from 'react-native';
-import { Link, useLocalSearchParams, useFocusEffect, Stack } from 'expo-router';
+import { useLocalSearchParams, useFocusEffect, useRouter } from 'expo-router';
 import { confirm } from '../../lib/utils/confirm';
+import { ScreenHeader } from '../../components/ScreenHeader';
 import { HeaderIconButton } from '../../components/HeaderButtons';
 import { QuantityAtPrice } from '../../components/QuantityAtPrice';
 import { FloatingActionButton } from '../../components/FloatingActionButton';
@@ -23,6 +24,7 @@ import type { Asset, Lot, Transaction } from '../../lib/types';
 
 export default function AssetDetailScreen() {
   const { id, portfolioId } = useLocalSearchParams<{ id: string; portfolioId: string }>();
+  const router = useRouter();
   const [asset, setAsset] = useState<Asset | null>(null);
   const [lots, setLots] = useState<Lot[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -162,22 +164,20 @@ export default function AssetDetailScreen() {
           </YStack>
         </XStack>
         <XStack marginTop="$3" gap="$2" justifyContent="flex-end">
-          <Link
-            href={`/lot/edit?lotId=${item.id}&assetId=${id}&portfolioId=${portfolioId}`}
-            asChild
+          <Button
+            size="$2"
+            variant="outlined"
+            onPress={() => router.push(`/lot/edit?lotId=${item.id}&assetId=${id}&portfolioId=${portfolioId}`)}
           >
-            <Button size="$2" variant="outlined">
-              Edit
-            </Button>
-          </Link>
-          <Link
-            href={`/lot/close?assetId=${id}&lotId=${item.id}&portfolioId=${portfolioId}`}
-            asChild
+            Edit
+          </Button>
+          <Button
+            size="$2"
+            variant="outlined"
+            onPress={() => router.push(`/lot/close?assetId=${id}&lotId=${item.id}&portfolioId=${portfolioId}`)}
           >
-            <Button size="$2" variant="outlined">
-              Close Lot
-            </Button>
-          </Link>
+            Close Lot
+          </Button>
         </XStack>
       </Card>
     );
@@ -246,29 +246,28 @@ export default function AssetDetailScreen() {
 
   if (isLoading || !asset) {
     return (
-      <>
-        <Stack.Screen options={{ title: '' }} />
-        <YStack flex={1} justifyContent="center" alignItems="center" backgroundColor="#000000">
+      <YStack flex={1} backgroundColor="#000000">
+        <ScreenHeader showBack fallbackPath={portfolioId ? `/portfolio/${portfolioId}` : '/'} />
+        <YStack flex={1} justifyContent="center" alignItems="center">
           <Spinner size="large" color="#FFFFFF" />
         </YStack>
-      </>
+      </YStack>
     );
   }
 
   return (
-    <>
-      <Stack.Screen
-        options={{
-          title: asset?.name ?? asset?.symbol,
-          headerRight: () => (
+      <YStack flex={1} backgroundColor="$background">
+        <ScreenHeader
+          title={asset?.name ?? asset?.symbol}
+          showBack
+          fallbackPath={portfolioId ? `/portfolio/${portfolioId}` : '/'}
+          rightComponent={
             <HeaderIconButton
               icon="settings-outline"
               href={`/asset/edit/${id}?portfolioId=${portfolioId}`}
             />
-          ),
-        }}
-      />
-      <YStack flex={1} backgroundColor="$background">
+          }
+        />
         {/* Asset Summary Card */}
         <Card elevate bordered marginHorizontal={CONTENT_HORIZONTAL_PADDING} marginVertical={8} padding={16} backgroundColor="$background">
           <XStack justifyContent="space-between" alignItems="flex-start">
@@ -418,6 +417,5 @@ export default function AssetDetailScreen() {
 
         <FloatingActionButton href={`/lot/add?assetId=${id}&portfolioId=${portfolioId}`} />
       </YStack>
-    </>
   );
 }

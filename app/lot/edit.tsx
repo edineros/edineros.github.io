@@ -1,17 +1,19 @@
 import { useState, useEffect } from 'react';
 import { ScrollView } from 'react-native';
 import { alert } from '../../lib/utils/confirm';
-import { router, useLocalSearchParams, Stack } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { YStack, XStack, Text, Button, Input, Label, Spinner } from 'tamagui';
+import { ScreenHeader } from '../../components/ScreenHeader';
 import { getAssetById } from '../../lib/db/assets';
 import { getTransactionById, updateTransaction } from '../../lib/db/transactions';
 import { formatCurrency } from '../../lib/utils/format';
 import type { Asset, Transaction } from '../../lib/types';
 
 export default function EditLotScreen() {
-  const { lotId, assetId } = useLocalSearchParams<{
+  const { lotId, assetId, portfolioId } = useLocalSearchParams<{
     lotId: string;
     assetId: string;
+    portfolioId?: string;
   }>();
   const [asset, setAsset] = useState<Asset | null>(null);
   const [transaction, setTransaction] = useState<Transaction | null>(null);
@@ -95,31 +97,33 @@ export default function EditLotScreen() {
     }
   };
 
+  const fallbackPath = assetId && portfolioId ? `/asset/${assetId}?portfolioId=${portfolioId}` : '/';
+
   if (isLoading) {
     return (
-      <>
-        <Stack.Screen options={{ title: 'Edit Lot' }} />
+      <YStack flex={1} backgroundColor="#000000">
+        <ScreenHeader title="Edit Lot" showBack fallbackPath={fallbackPath} />
         <YStack flex={1} justifyContent="center" alignItems="center">
           <Spinner size="large" />
         </YStack>
-      </>
+      </YStack>
     );
   }
 
   if (!asset || !transaction) {
     return (
-      <>
-        <Stack.Screen options={{ title: 'Edit Lot' }} />
+      <YStack flex={1} backgroundColor="#000000">
+        <ScreenHeader title="Edit Lot" showBack fallbackPath={fallbackPath} />
         <YStack flex={1} justifyContent="center" alignItems="center" padding="$4">
           <Text>Lot not found</Text>
         </YStack>
-      </>
+      </YStack>
     );
   }
 
   return (
-    <>
-      <Stack.Screen options={{ title: 'Edit Lot' }} />
+    <YStack flex={1} backgroundColor="#000000">
+      <ScreenHeader title="Edit Lot" showBack fallbackPath={fallbackPath} />
       <ScrollView style={{ flex: 1 }}>
         <YStack flex={1} padding="$4" gap="$4">
           <YStack gap="$2">
@@ -210,6 +214,6 @@ export default function EditLotScreen() {
           </Button>
         </YStack>
       </ScrollView>
-    </>
+    </YStack>
   );
 }

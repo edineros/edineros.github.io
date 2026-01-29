@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from 'uuid';
+import { generateUUID } from '../utils/uuid';
 import { getDatabase, isWeb } from './schema';
 import { webDb } from './webDatabase';
 import type { Asset, AssetType } from '../types';
@@ -91,7 +91,7 @@ export async function createAsset(
   currency: string = 'EUR',
   tags: string[] = []
 ): Promise<Asset> {
-  const id = uuidv4();
+  const id = generateUUID();
   const now = Date.now();
 
   if (isWeb()) {

@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { ScrollView, Pressable, TextInput } from 'react-native';
+import { ScrollView, TouchableOpacity, TextInput } from 'react-native';
 import { alert } from '../../lib/utils/confirm';
-import { router, useLocalSearchParams, Stack } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { YStack, XStack, Text, Spinner } from 'tamagui';
 import { useAppStore } from '../../store';
+import { ScreenHeader } from '../../components/ScreenHeader';
 import { CurrencySelect } from '../../components/CurrencySelect';
 import { TagInput, TagInputRef } from '../../components/TagInput';
 import { searchSymbol } from '../../lib/api/prices';
@@ -97,14 +98,14 @@ export default function AddAssetScreen() {
   };
 
   return (
-    <>
-      <Stack.Screen options={{ title: 'Add Asset' }} />
+    <YStack flex={1} backgroundColor="#000000">
+      <ScreenHeader title="Add Asset" showBack fallbackPath={portfolioId ? `/portfolio/${portfolioId}` : '/'} />
       <ScrollView
-        style={{ flex: 1, backgroundColor: '#000000' }}
+        style={{ flex: 1 }}
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
       >
-        <YStack flex={1} padding={16} backgroundColor="#000000">
+        <YStack flex={1} padding={16}>
           {/* Asset type */}
           <YStack gap={8} marginBottom={24}>
             <Text color="#8E8E93" fontSize={13} fontWeight="600">
@@ -112,25 +113,27 @@ export default function AddAssetScreen() {
             </Text>
             <XStack flexWrap="wrap" gap={8}>
               {ASSET_TYPE_CONFIGS.map((item) => (
-                <Pressable key={item.value} onPress={() => setType(item.value)}>
-                  <YStack
-                    backgroundColor={type === item.value ? '#007AFF' : '#111111'}
-                    borderWidth={1}
-                    borderColor={type === item.value ? '#007AFF' : '#1F1F1F'}
-                    paddingVertical={8}
-                    paddingHorizontal={12}
-                    borderRadius={8}
-                    pressStyle={{ opacity: 0.8 }}
+                <TouchableOpacity
+                  key={item.value}
+                  activeOpacity={0.7}
+                  onPress={() => setType(item.value)}
+                  style={{
+                    backgroundColor: type === item.value ? '#007AFF' : '#111111',
+                    borderWidth: 1,
+                    borderColor: type === item.value ? '#007AFF' : '#1F1F1F',
+                    paddingVertical: 8,
+                    paddingHorizontal: 12,
+                    borderRadius: 8,
+                  }}
+                >
+                  <Text
+                    color={type === item.value ? '#FFFFFF' : '#8E8E93'}
+                    fontSize={14}
+                    fontWeight="600"
                   >
-                    <Text
-                      color={type === item.value ? '#FFFFFF' : '#8E8E93'}
-                      fontSize={14}
-                      fontWeight="600"
-                    >
-                      {item.label}
-                    </Text>
-                  </YStack>
-                </Pressable>
+                    {item.label}
+                  </Text>
+                </TouchableOpacity>
               ))}
             </XStack>
           </YStack>
@@ -172,38 +175,37 @@ export default function AddAssetScreen() {
                 overflow="hidden"
                 maxHeight={200}
               >
-                <ScrollView>
+                <ScrollView keyboardShouldPersistTaps="handled">
                   {searchResults.map((result, index) => (
-                    <Pressable
+                    <TouchableOpacity
                       key={`${result.symbol}-${index}`}
+                      activeOpacity={0.7}
                       onPress={() => handleSelectResult(result)}
+                      style={{
+                        padding: 12,
+                        borderBottomWidth: index < searchResults.length - 1 ? 1 : 0,
+                        borderBottomColor: '#1F1F1F',
+                      }}
                     >
-                      <YStack
-                        padding={12}
-                        borderBottomWidth={index < searchResults.length - 1 ? 1 : 0}
-                        borderBottomColor="#1F1F1F"
-                        pressStyle={{ backgroundColor: '#1A1A1A' }}
-                      >
-                        <XStack justifyContent="space-between" alignItems="center">
-                          <Text color="#FFFFFF" fontWeight="600">{result.symbol}</Text>
-                          <Text
-                            fontSize={11}
-                            fontWeight="600"
-                            color="#8E8E93"
-                            backgroundColor="#1F1F1F"
-                            paddingHorizontal={6}
-                            paddingVertical={2}
-                            borderRadius={4}
-                            textTransform="uppercase"
-                          >
-                            {result.type}
-                          </Text>
-                        </XStack>
-                        <Text color="#636366" fontSize={13} numberOfLines={1}>
-                          {result.name}
+                      <XStack justifyContent="space-between" alignItems="center">
+                        <Text color="#FFFFFF" fontWeight="600">{result.symbol}</Text>
+                        <Text
+                          fontSize={11}
+                          fontWeight="600"
+                          color="#8E8E93"
+                          backgroundColor="#1F1F1F"
+                          paddingHorizontal={6}
+                          paddingVertical={2}
+                          borderRadius={4}
+                          textTransform="uppercase"
+                        >
+                          {result.type}
                         </Text>
-                      </YStack>
-                    </Pressable>
+                      </XStack>
+                      <Text color="#636366" fontSize={13} numberOfLines={1}>
+                        {result.name}
+                      </Text>
+                    </TouchableOpacity>
                   ))}
                 </ScrollView>
               </YStack>
@@ -263,26 +265,25 @@ export default function AddAssetScreen() {
 
           {/* Create button */}
           <YStack flex={1} justifyContent="flex-end" paddingBottom={24}>
-            <Pressable
+            <TouchableOpacity
+              activeOpacity={0.8}
               onPress={handleCreate}
               disabled={isCreating || !symbol.trim()}
+              style={{
+                backgroundColor: '#007AFF',
+                paddingVertical: 16,
+                borderRadius: 12,
+                alignItems: 'center',
+                opacity: isCreating || !symbol.trim() ? 0.5 : 1,
+              }}
             >
-              <YStack
-                backgroundColor="#007AFF"
-                paddingVertical={16}
-                borderRadius={12}
-                alignItems="center"
-                opacity={isCreating || !symbol.trim() ? 0.5 : 1}
-                pressStyle={{ opacity: 0.8 }}
-              >
-                <Text color="#FFFFFF" fontSize={17} fontWeight="600">
-                  {isCreating ? 'Adding...' : 'Add Asset'}
-                </Text>
-              </YStack>
-            </Pressable>
+              <Text color="#FFFFFF" fontSize={17} fontWeight="600">
+                {isCreating ? 'Adding...' : 'Add Asset'}
+              </Text>
+            </TouchableOpacity>
           </YStack>
         </YStack>
       </ScrollView>
-    </>
+    </YStack>
   );
 }

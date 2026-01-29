@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { ScrollView } from 'react-native';
-import { router, useLocalSearchParams, Stack } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { YStack, Text, Button, Input, Label, Spinner, Separator } from 'tamagui';
 import { useAppStore } from '../../../store';
+import { ScreenHeader } from '../../../components/ScreenHeader';
 import { alert, confirm } from '../../../lib/utils/confirm';
 import { getAssetById, getAllAssetTags } from '../../../lib/db/assets';
 import { TagInput, TagInputRef } from '../../../components/TagInput';
@@ -80,31 +81,33 @@ export default function EditAssetScreen() {
     }
   };
 
+  const fallbackPath = portfolioId ? `/asset/${id}?portfolioId=${portfolioId}` : '/';
+
   if (isLoading) {
     return (
-      <>
-        <Stack.Screen options={{ title: 'Edit Asset' }} />
+      <YStack flex={1} backgroundColor="#000000">
+        <ScreenHeader title="Edit Asset" showBack fallbackPath={fallbackPath} />
         <YStack flex={1} justifyContent="center" alignItems="center">
           <Spinner size="large" />
         </YStack>
-      </>
+      </YStack>
     );
   }
 
   if (!asset) {
     return (
-      <>
-        <Stack.Screen options={{ title: 'Edit Asset' }} />
+      <YStack flex={1} backgroundColor="#000000">
+        <ScreenHeader title="Edit Asset" showBack fallbackPath={fallbackPath} />
         <YStack flex={1} justifyContent="center" alignItems="center" padding="$4">
           <Text>Asset not found</Text>
         </YStack>
-      </>
+      </YStack>
     );
   }
 
   return (
-    <>
-      <Stack.Screen options={{ title: 'Edit Asset' }} />
+    <YStack flex={1} backgroundColor="#000000">
+      <ScreenHeader title="Edit Asset" showBack fallbackPath={fallbackPath} />
       <ScrollView style={{ flex: 1 }}>
         <YStack flex={1} padding="$4" gap="$4">
           <YStack gap="$2">
@@ -179,6 +182,6 @@ export default function EditAssetScreen() {
           </YStack>
         </YStack>
       </ScrollView>
-    </>
+    </YStack>
   );
 }
