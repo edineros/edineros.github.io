@@ -23,8 +23,8 @@ export function FloatingActionButton({ href }: FloatingActionButtonProps) {
 const styles = StyleSheet.create({
   button: {
     position: 'absolute',
-    bottom: 24,
-    right: 16,
+    bottom: 48,
+    right: 36,
     width: 56,
     height: 56,
     borderRadius: 28,

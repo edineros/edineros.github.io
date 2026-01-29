@@ -7,6 +7,10 @@ import { ScreenHeader } from '../components/ScreenHeader';
 import { formatCurrency, formatPercent, getGainColor } from '../lib/utils/format';
 import { CONTENT_HORIZONTAL_PADDING } from '../lib/constants/layout';
 import type { Portfolio } from '../lib/types';
+import { FloatingActionButton } from '../components/FloatingActionButton';
+import { LongButton } from '../components/LongButton';
+
+const NEW_PORTFOLIO_URL = '/portfolio/create';
 
 export default function PortfolioListScreen() {
   const router = useRouter();
@@ -168,23 +172,15 @@ export default function PortfolioListScreen() {
         }
       />
 
-      {/* Floating action button */}
-      <YStack position="absolute" bottom={24} left={CONTENT_HORIZONTAL_PADDING} right={CONTENT_HORIZONTAL_PADDING}>
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={() => router.push('/portfolio/create')}
-          style={{
-            backgroundColor: '#007AFF',
-            paddingVertical: CONTENT_HORIZONTAL_PADDING,
-            borderRadius: 12,
-            alignItems: 'center',
-          }}
-        >
-          <Text color="#FFFFFF" fontSize={17} fontWeight="600">
-            Create Portfolio
-          </Text>
-        </TouchableOpacity>
-      </YStack>
+      {portfolios.length === 0 ? (
+        <YStack position="absolute" bottom={24} left={CONTENT_HORIZONTAL_PADDING} right={CONTENT_HORIZONTAL_PADDING}>
+          <LongButton onPress={() => router.push(NEW_PORTFOLIO_URL)}>
+            Create Portfoltio
+          </LongButton>
+        </YStack>
+      ) : (
+        <FloatingActionButton href={NEW_PORTFOLIO_URL} />
+      )}
     </YStack>
   );
 }
