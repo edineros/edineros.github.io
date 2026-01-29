@@ -8,6 +8,7 @@ import { LongButton } from '../../components/LongButton';
 import { getAssetById } from '../../lib/db/assets';
 import { createTransaction } from '../../lib/db/transactions';
 import { formatCurrency } from '../../lib/utils/format';
+import { isSimpleAssetType } from '../../lib/constants/assetTypes';
 import type { Asset } from '../../lib/types';
 
 export default function AddLotScreen() {
@@ -23,6 +24,8 @@ export default function AddLotScreen() {
   const [notes, setNotes] = useState('');
   const [isCreating, setIsCreating] = useState(false);
 
+  const isSimple = asset ? isSimpleAssetType(asset.type) : false;
+
   useEffect(() => {
     if (assetId) {
       getAssetById(assetId).then(setAsset);
@@ -31,21 +34,22 @@ export default function AddLotScreen() {
 
   const total = () => {
     const qty = parseFloat(quantity) || 0;
-    const price = parseFloat(pricePerUnit) || 0;
-    const feeVal = parseFloat(fee) || 0;
+    const price = isSimple ? 1 : (parseFloat(pricePerUnit) || 0);
+    const feeVal = isSimple ? 0 : (parseFloat(fee) || 0);
     return qty * price + feeVal;
   };
 
   const handleCreate = async () => {
     const qty = parseFloat(quantity);
-    const price = parseFloat(pricePerUnit);
-    const feeVal = parseFloat(fee) || 0;
+    const price = isSimple ? 1 : parseFloat(pricePerUnit);
+    const feeVal = isSimple ? 0 : (parseFloat(fee) || 0);
+
     if (!qty || qty <= 0) {
       alert('Error', 'Please enter a valid quantity');
       return;
     }
 
-    if (!price || price <= 0) {
+    if (!isSimple && (!price || price <= 0)) {
       alert('Error', 'Please enter a valid price');
       return;
     }
@@ -92,7 +96,7 @@ export default function AddLotScreen() {
       <ScrollView style={{ flex: 1 }}>
         <YStack flex={1} padding="$4" gap="$4">
           <YStack gap="$2">
-            <Label htmlFor="quantity">Quantity</Label>
+            <Label htmlFor="quantity">{isSimple ? `Amount (${asset.currency})` : 'Quantity'}</Label>
             <Input
               id="quantity"
               size="$4"
@@ -104,32 +108,36 @@ export default function AddLotScreen() {
             />
           </YStack>
 
-          <YStack gap="$2">
-            <Label htmlFor="price">Price per Unit ({asset.currency})</Label>
-            <Input
-              id="price"
-              size="$4"
-              placeholder="0.00"
-              value={pricePerUnit}
-              onChangeText={setPricePerUnit}
-              keyboardType="decimal-pad"
-            />
-          </YStack>
+          {!isSimple && (
+            <>
+              <YStack gap="$2">
+                <Label htmlFor="price">Price per Unit ({asset.currency})</Label>
+                <Input
+                  id="price"
+                  size="$4"
+                  placeholder="0.00"
+                  value={pricePerUnit}
+                  onChangeText={setPricePerUnit}
+                  keyboardType="decimal-pad"
+                />
+              </YStack>
+
+              <YStack gap="$2">
+                <Label htmlFor="fee">Fee ({asset.currency})</Label>
+                <Input
+                  id="fee"
+                  size="$4"
+                  placeholder="0.00"
+                  value={fee}
+                  onChangeText={setFee}
+                  keyboardType="decimal-pad"
+                />
+              </YStack>
+            </>
+          )}
 
           <YStack gap="$2">
-            <Label htmlFor="fee">Fee ({asset.currency})</Label>
-            <Input
-              id="fee"
-              size="$4"
-              placeholder="0.00"
-              value={fee}
-              onChangeText={setFee}
-              keyboardType="decimal-pad"
-            />
-          </YStack>
-
-          <YStack gap="$2">
-            <Label htmlFor="date">Purchase Date</Label>
+            <Label htmlFor="date">Date</Label>
             <Input
               id="date"
               size="$4"
@@ -160,7 +168,7 @@ export default function AddLotScreen() {
             borderTopColor="$borderColor"
           >
             <Text fontSize="$4" color="$gray10">
-              Total
+              {isSimple ? 'Amount' : 'Total'}
             </Text>
             <Text fontSize="$6" fontWeight="600">
               {formatCurrency(total(), asset.currency)}
@@ -169,7 +177,7 @@ export default function AddLotScreen() {
 
           <LongButton
             onPress={handleCreate}
-            disabled={isCreating || !quantity || !pricePerUnit}
+            disabled={isCreating || !quantity || (!isSimple && !pricePerUnit)}
             topSpacing="small"
           >
             {isCreating ? 'Adding...' : 'Add Lot'}

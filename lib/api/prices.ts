@@ -8,6 +8,7 @@ import {
 import { fetchYahooPrice, searchYahooSymbol } from './providers/yahoo';
 import { fetchKrakenPrice, searchKrakenAssets } from './providers/kraken';
 import { fetchExchangeRate } from './providers/frankfurter';
+import { isSimpleAssetType } from '../constants/assetTypes';
 
 // TTL in minutes for different asset types
 const PRICE_TTL: Record<AssetType, number> = {
@@ -40,8 +41,10 @@ async function fetchFromProvider(
     return await fetchKrakenPrice(symbol, preferredCurrency);
   }
 
-  if (assetType === 'cash') {
-    return { price: 1, currency: symbol.toUpperCase() };
+  // Simple asset types (cash, real-estate, other) don't fetch prices
+  // Price is always 1 in the asset's currency (value comes from quantity in lots)
+  if (isSimpleAssetType(assetType)) {
+    return { price: 1, currency: preferredCurrency || 'EUR' };
   }
 
   // Stocks, ETFs, bonds, commodities - use Yahoo Finance

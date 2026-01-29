@@ -80,3 +80,13 @@ export function getAssetTypePlural(type: AssetType): string {
 export function getAssetTypeColor(type: AssetType): string {
   return colorMap.get(type) || '#8E8E93';
 }
+
+/**
+ * Simple asset types don't require a symbol and don't fetch prices.
+ * Their value is calculated as: quantity × 1 (in asset currency).
+ */
+export const SIMPLE_ASSET_TYPES: AssetType[] = ['cash', 'real-estate', 'other'];
+
+export function isSimpleAssetType(type: AssetType): boolean {
+  return SIMPLE_ASSET_TYPES.includes(type);
+}

@@ -8,6 +8,7 @@ import { LongButton } from '../../../components/LongButton';
 import { alert, confirm } from '../../../lib/utils/confirm';
 import { getAssetById, getAllAssetTags } from '../../../lib/db/assets';
 import { TagInput, TagInputRef } from '../../../components/TagInput';
+import { isSimpleAssetType } from '../../../lib/constants/assetTypes';
 import type { Asset } from '../../../lib/types';
 
 export default function EditAssetScreen() {
@@ -106,35 +107,24 @@ export default function EditAssetScreen() {
     );
   }
 
+  const isSimple = isSimpleAssetType(asset.type);
+
   return (
     <YStack flex={1} backgroundColor="#000000">
       <ScreenHeader title="Edit Asset" showBack fallbackPath={fallbackPath} />
       <ScrollView style={{ flex: 1 }}>
         <YStack flex={1} padding="$4" gap="$4">
           <YStack gap="$2">
-            <Label>Symbol</Label>
-            <Input
-              size="$4"
-              value={asset.symbol}
-              disabled
-              backgroundColor="$gray3"
-            />
-            <Text fontSize="$2" color="$gray10">
-              Symbol cannot be changed
-            </Text>
-          </YStack>
-
-          <YStack gap="$2">
-            <Label htmlFor="name">Display Name (Optional)</Label>
+            <Label htmlFor="name">{isSimple ? 'Name' : 'Display Name (Optional)'}</Label>
             <Input
               id="name"
               size="$4"
-              placeholder="e.g., Apple Inc."
+              placeholder={isSimple ? 'e.g., My Savings Account' : 'e.g., Apple Inc.'}
               value={name}
               onChangeText={setName}
             />
             <Text fontSize="$2" color="$gray10">
-              A friendly name to display alongside the symbol
+              A friendly name to display for the asset
             </Text>
           </YStack>
 
