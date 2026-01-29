@@ -31,11 +31,18 @@ module.exports = {
     web: {
       favicon: "./assets/favicon.png",
       bundler: "metro",
+      output: "static",
       // Headers for OPFS support
       headers: {
         "Cross-Origin-Opener-Policy": "same-origin",
         "Cross-Origin-Embedder-Policy": "require-corp"
-      }
+      },
+      // PWA configuration
+      name: "Private Portfolio",
+      shortName: "Portfolio",
+      description: "Privacy-first, offline-capable portfolio tracking application",
+      themeColor: "#000000",
+      backgroundColor: "#000000"
     },
     plugins: [
       "expo-router",
