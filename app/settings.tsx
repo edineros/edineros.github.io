@@ -112,7 +112,7 @@ export default function SettingsScreen() {
 
   return (
     <YStack flex={1} backgroundColor="#000000">
-      <ScreenHeader title="Settings" />
+      <ScreenHeader title="Settings" showBack fallbackPath="/" />
       <ScrollView style={{ flex: 1 }}>
         {/* Hidden file input for web */}
         {Platform.OS === 'web' && (

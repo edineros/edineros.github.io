@@ -2,6 +2,7 @@ import { useEffect, useCallback, useState } from 'react';
 import { FlatList, RefreshControl, TouchableOpacity } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { YStack, XStack, Text, Spinner } from 'tamagui';
+import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../store';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { formatCurrency, formatPercent, getGainColor } from '../lib/utils/format';
@@ -11,6 +12,20 @@ import { FloatingActionButton } from '../components/FloatingActionButton';
 import { LongButton } from '../components/LongButton';
 
 const NEW_PORTFOLIO_URL = '/portfolio/create';
+
+function MenuButton() {
+  const router = useRouter();
+
+  return (
+    <TouchableOpacity
+      onPress={() => router.push('/settings')}
+      style={{ paddingHorizontal: 8, paddingVertical: 8 }}
+      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+    >
+      <Ionicons name="menu" size={24} color="#FFFFFF" />
+    </TouchableOpacity>
+  );
+}
 
 export default function PortfolioListScreen() {
   const router = useRouter();
@@ -113,7 +128,7 @@ export default function PortfolioListScreen() {
   if (isLoading && portfolios.length === 0) {
     return (
       <YStack flex={1} backgroundColor="#000000">
-        <ScreenHeader title="Portfolios" />
+        <ScreenHeader title="Portfolios" leftComponent={<MenuButton />} />
         <YStack flex={1} justifyContent="center" alignItems="center">
           <Spinner size="large" color="#FFFFFF" />
         </YStack>
@@ -123,7 +138,7 @@ export default function PortfolioListScreen() {
 
   return (
     <YStack flex={1} backgroundColor="#000000">
-      <ScreenHeader title="Portfolios" />
+      <ScreenHeader title="Portfolios" leftComponent={<MenuButton />} />
 
       {/* Total across all portfolios */}
       {portfolios.length > 0 && (

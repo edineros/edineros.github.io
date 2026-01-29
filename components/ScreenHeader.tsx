@@ -9,6 +9,7 @@ interface ScreenHeaderProps {
   titleComponent?: React.ReactNode;
   showBack?: boolean;
   fallbackPath?: string;
+  leftComponent?: React.ReactNode;
   rightComponent?: React.ReactNode;
 }
 
@@ -17,6 +18,7 @@ export function ScreenHeader({
   titleComponent,
   showBack = false,
   fallbackPath = '/',
+  leftComponent,
   rightComponent,
 }: ScreenHeaderProps) {
   const router = useRouter();
@@ -38,9 +40,9 @@ export function ScreenHeader({
         justifyContent="center"
         paddingHorizontal={8}
       >
-        {/* Left side - back button or spacer */}
+        {/* Left side - back button, custom component, or spacer */}
         <View width={60} alignItems="flex-start">
-          {showBack && (
+          {showBack ? (
             <TouchableOpacity
               onPress={handleBack}
               style={{ paddingHorizontal: 8, paddingVertical: 8 }}
@@ -48,7 +50,7 @@ export function ScreenHeader({
             >
               <Ionicons name="chevron-back" size={28} color="#007AFF" />
             </TouchableOpacity>
-          )}
+          ) : leftComponent}
         </View>
 
         {/* Center - title */}
