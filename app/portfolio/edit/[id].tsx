@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
-import { YStack, Text, Spinner, Separator } from 'tamagui';
+import { YStack, Text, Spinner } from 'tamagui';
 import { useAppStore } from '../../../store';
-import { ScreenHeader } from '../../../components/ScreenHeader';
+import { Page } from '../../../components/Page';
 import { Form } from '../../../components/Form';
 import { FormField } from '../../../components/FormField';
 import { LongButton } from '../../../components/LongButton';
@@ -83,40 +83,36 @@ export default function EditPortfolioScreen() {
 
   if (isLoading) {
     return (
-      <YStack flex={1} backgroundColor={colors.background}>
-        <ScreenHeader title="Edit Portfolio" showBack fallbackPath="/" />
+      <Page title="Edit Portfolio" fallbackPath="/">
         <YStack flex={1} justifyContent="center" alignItems="center">
           <Spinner size="large" color={colors.text} />
         </YStack>
-      </YStack>
+      </Page>
     );
   }
 
   if (!portfolio) {
     return (
-      <YStack flex={1} backgroundColor={colors.background}>
-        <ScreenHeader title="Edit Portfolio" showBack fallbackPath="/" />
+      <Page title="Edit Portfolio" fallbackPath="/">
         <YStack flex={1} justifyContent="center" alignItems="center" padding="$4">
           <Text color={colors.text}>Portfolio not found</Text>
         </YStack>
-      </YStack>
+      </Page>
     );
   }
 
   return (
-    <YStack flex={1} backgroundColor={colors.background}>
-      <ScreenHeader
-        title="Edit Portfolio"
-        showBack
-        fallbackPath={`/portfolio/${id}`}
-        rightComponent={
-          <HeaderIconButton
-            color={colors.destructive}
-            icon="trash-outline"
-            onPress={handleDelete}
-          />
-        }
-      />
+    <Page
+      title="Edit Portfolio"
+      fallbackPath={`/portfolio/${id}`}
+      rightComponent={
+        <HeaderIconButton
+          color={colors.destructive}
+          icon="trash-outline"
+          onPress={handleDelete}
+        />
+      }
+    >
       <Form
         footer={
           <LongButton onPress={handleSave} disabled={isSaving || !name.trim()}>
@@ -138,6 +134,6 @@ export default function EditPortfolioScreen() {
           helperText="Changing currency will affect how values are displayed"
         />
       </Form>
-    </YStack>
+    </Page>
   );
 }

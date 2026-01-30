@@ -4,7 +4,7 @@ import { alert } from '../../lib/utils/confirm';
 import { router, useLocalSearchParams } from 'expo-router';
 import { YStack, XStack, Text, Spinner } from 'tamagui';
 import { useAppStore } from '../../store';
-import { ScreenHeader } from '../../components/ScreenHeader';
+import { Page } from '../../components/Page';
 import { Form } from '../../components/Form';
 import { FormField } from '../../components/FormField';
 import { LongButton } from '../../components/LongButton';
@@ -123,8 +123,7 @@ export default function AddAssetScreen() {
   const canCreate = isSimple ? name.trim() : symbol.trim();
 
   return (
-    <YStack flex={1} backgroundColor={colors.background}>
-      <ScreenHeader title={headerTitle} showBack fallbackPath={portfolioId ? `/portfolio/${portfolioId}` : '/'} />
+    <Page title={headerTitle} fallbackPath={portfolioId ? `/portfolio/${portfolioId}` : '/'}>
       <Form
         footer={
           <LongButton onPress={handleCreate} disabled={isCreating || !canCreate}>
@@ -222,6 +221,6 @@ export default function AddAssetScreen() {
           helperText="Tags help organize and filter your assets"
         />
       </Form>
-    </YStack>
+    </Page>
   );
 }

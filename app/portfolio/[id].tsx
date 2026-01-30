@@ -4,7 +4,7 @@ import { useLocalSearchParams, useFocusEffect, useRouter } from 'expo-router';
 import { YStack, XStack, Text, Spinner } from 'tamagui';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../../store';
-import { ScreenHeader } from '../../components/ScreenHeader';
+import { Page } from '../../components/Page';
 import { HeaderIconButton } from '../../components/HeaderButtons';
 import { QuantityAtPrice } from '../../components/QuantityAtPrice';
 import { AddAssetMenu } from '../../components/AddAssetMenu';
@@ -196,39 +196,38 @@ export default function PortfolioDetailScreen() {
 
   if (!portfolio) {
     return (
-      <YStack flex={1} backgroundColor={colors.background}>
-        <ScreenHeader showBack fallbackPath="/" />
+      <Page fallbackPath="/" showBack={false} >
         <YStack flex={1} justifyContent="center" alignItems="center">
           <Spinner size="large" color={colors.text} />
         </YStack>
-      </YStack>
+      </Page>
     );
   }
 
   const overallGainColor = stats ? getGainColor(stats.totalGain) : 'neutral';
 
   return (
-    <YStack flex={1} backgroundColor={colors.background}>
-      <ScreenHeader
-        leftComponent={
-          <TouchableOpacity
-            onPress={() => router.push('/settings')}
-            style={{ paddingHorizontal: 8, paddingVertical: 8 }}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Ionicons name="menu" size={24} color={colors.text} />
-          </TouchableOpacity>
-        }
-        titleComponent={
-          <PortfolioSwitcher
-            currentPortfolio={portfolio}
-            portfolios={portfolios}
-          />
-        }
-        rightComponent={
-          <HeaderIconButton icon="pencil" color={colors.text} href={`/portfolio/edit/${id}`} />
-        }
-      />
+    <Page
+      showBack={false}
+      leftComponent={
+        <TouchableOpacity
+          onPress={() => router.push('/settings')}
+          style={{ paddingHorizontal: 8, paddingVertical: 8 }}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons name="menu" size={24} color={colors.text} />
+        </TouchableOpacity>
+      }
+      titleComponent={
+        <PortfolioSwitcher
+          currentPortfolio={portfolio}
+          portfolios={portfolios}
+        />
+      }
+      rightComponent={
+        <HeaderIconButton icon="pencil" color={colors.text} href={`/portfolio/edit/${id}`} />
+      }
+    >
       {/* Portfolio Summary */}
       <YStack padding={CONTENT_HORIZONTAL_PADDING} gap={4}>
         <XStack alignItems="center" gap={8}>
@@ -348,6 +347,6 @@ export default function PortfolioDetailScreen() {
       />
 
       <AddAssetMenu portfolioId={id!} />
-    </YStack>
+    </Page>
   );
 }

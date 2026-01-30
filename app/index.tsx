@@ -4,7 +4,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { YStack, Text, Spinner } from 'tamagui';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../store';
-import { ScreenHeader } from '../components/ScreenHeader';
+import { Page } from '../components/Page';
 import { CONTENT_HORIZONTAL_PADDING } from '../lib/constants/layout';
 import { LongButton } from '../components/LongButton';
 import { useColors } from '../lib/theme/store';
@@ -58,20 +58,17 @@ export default function HomeScreen() {
   // Show loading state
   if (isLoading || portfolios.length > 0) {
     return (
-      <YStack flex={1} backgroundColor={colors.background}>
-        <ScreenHeader title="Portfolios" leftComponent={<MenuButton />} />
+      <Page title="Portfolios" showBack={false} leftComponent={<MenuButton />}>
         <YStack flex={1} justifyContent="center" alignItems="center">
           <Spinner size="large" color={colors.text} />
         </YStack>
-      </YStack>
+      </Page>
     );
   }
 
   // Empty state - no portfolios yet
   return (
-    <YStack flex={1} backgroundColor={colors.background}>
-      <ScreenHeader title="Portfolios" leftComponent={<MenuButton />} />
-
+    <Page title="Portfolios" showBack={false} leftComponent={<MenuButton />}>
       <YStack flex={1} padding={32} alignItems="center" justifyContent="center">
         <Text color={colors.text} fontSize={20} fontWeight="600" textAlign="center">
           No portfolios yet
@@ -86,6 +83,6 @@ export default function HomeScreen() {
           Create Portfolio
         </LongButton>
       </YStack>
-    </YStack>
+    </Page>
   );
 }

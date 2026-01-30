@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { alert } from '../../lib/utils/confirm';
 import { router, useLocalSearchParams } from 'expo-router';
 import { YStack } from 'tamagui';
-import { ScreenHeader } from '../../components/ScreenHeader';
+import { Page } from '../../components/Page';
 import { Form } from '../../components/Form';
 import { FormField } from '../../components/FormField';
 import { LongButton } from '../../components/LongButton';
@@ -88,15 +88,14 @@ export default function AddLotScreen() {
 
   if (!asset) {
     return (
-      <YStack flex={1} backgroundColor={colors.background}>
-        <ScreenHeader title="Add Lot" showBack fallbackPath={fallbackPath} />
-      </YStack>
+      <Page title="Add Lot" fallbackPath={fallbackPath}>
+        <YStack flex={1} />
+      </Page>
     );
   }
 
   return (
-    <YStack flex={1} backgroundColor={colors.background}>
-      <ScreenHeader title="Add Lot" showBack fallbackPath={fallbackPath} />
+    <Page title="Add Lot" fallbackPath={fallbackPath}>
       <Form
         footer={
           <YStack gap={16}>
@@ -159,6 +158,6 @@ export default function AddLotScreen() {
           numberOfLines={3}
         />
       </Form>
-    </YStack>
+    </Page>
   );
 }

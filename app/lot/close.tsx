@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { alert } from '../../lib/utils/confirm';
 import { router, useLocalSearchParams } from 'expo-router';
 import { YStack, Separator } from 'tamagui';
-import { ScreenHeader } from '../../components/ScreenHeader';
+import { Page } from '../../components/Page';
 import { Form } from '../../components/Form';
 import { FormField } from '../../components/FormField';
 import { LongButton } from '../../components/LongButton';
@@ -134,17 +134,16 @@ export default function CloseLotScreen() {
 
   if (!asset || !lot) {
     return (
-      <YStack flex={1} backgroundColor={colors.background}>
-        <ScreenHeader title="Sell Position" showBack fallbackPath={fallbackPath} />
-      </YStack>
+      <Page title="Sell Position" fallbackPath={fallbackPath}>
+        <YStack flex={1} />
+      </Page>
     );
   }
 
   const gainInfo = calculateGain();
 
   return (
-    <YStack flex={1} backgroundColor={colors.background}>
-      <ScreenHeader title="Sell Position" showBack fallbackPath={fallbackPath} />
+    <Page title="Sell Position" fallbackPath={fallbackPath}>
       <Form
         footer={
           <LongButton
@@ -241,6 +240,6 @@ export default function CloseLotScreen() {
           </YStack>
         )}
       </Form>
-    </YStack>
+    </Page>
   );
 }

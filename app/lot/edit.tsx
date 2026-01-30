@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { alert } from '../../lib/utils/confirm';
 import { router, useLocalSearchParams } from 'expo-router';
 import { YStack, Text, Spinner } from 'tamagui';
-import { ScreenHeader } from '../../components/ScreenHeader';
+import { Page } from '../../components/Page';
 import { Form } from '../../components/Form';
 import { LongButton } from '../../components/LongButton';
 import { FormField } from '../../components/FormField';
@@ -106,29 +106,26 @@ export default function EditLotScreen() {
 
   if (isLoading) {
     return (
-      <YStack flex={1} backgroundColor={colors.background}>
-        <ScreenHeader title="Edit Lot" showBack fallbackPath={fallbackPath} />
+      <Page title="Edit Lot" fallbackPath={fallbackPath}>
         <YStack flex={1} justifyContent="center" alignItems="center">
           <Spinner size="large" color={colors.text} />
         </YStack>
-      </YStack>
+      </Page>
     );
   }
 
   if (!asset || !transaction) {
     return (
-      <YStack flex={1} backgroundColor={colors.background}>
-        <ScreenHeader title="Edit Lot" showBack fallbackPath={fallbackPath} />
+      <Page title="Edit Lot" fallbackPath={fallbackPath}>
         <YStack flex={1} justifyContent="center" alignItems="center" padding="$4">
           <Text color={colors.text}>Lot not found</Text>
         </YStack>
-      </YStack>
+      </Page>
     );
   }
 
   return (
-    <YStack flex={1} backgroundColor={colors.background}>
-      <ScreenHeader title="Edit Lot" showBack fallbackPath={fallbackPath} />
+    <Page title="Edit Lot" fallbackPath={fallbackPath}>
       <Form
         footer={
           <YStack gap={16}>
@@ -186,6 +183,6 @@ export default function EditLotScreen() {
           numberOfLines={3}
         />
       </Form>
-    </YStack>
+    </Page>
   );
 }

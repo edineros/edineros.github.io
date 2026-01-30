@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { exportToJson, shareFile, importFromJson } from '../lib/utils/export';
 import { alert, alertAsync } from '../lib/utils/confirm';
 import { useAppStore } from '../store';
-import { ScreenHeader } from '../components/ScreenHeader';
+import { Page } from '../components/Page';
 import { LongButton } from '../components/LongButton';
 import { CONTENT_HORIZONTAL_PADDING } from '../lib/constants/layout';
 import { useThemeStore, useColors, type ThemeMode } from '../lib/theme/store';
@@ -114,8 +114,7 @@ export default function SettingsScreen() {
   const handleImport = Platform.OS === 'web' ? handleImportWeb : handleImportNative;
 
   return (
-    <YStack flex={1} backgroundColor={colors.background}>
-      <ScreenHeader title="Settings" showBack fallbackPath="/" />
+    <Page title="Settings" fallbackPath="/">
       <ScrollView style={{ flex: 1 }}>
         {/* Hidden file input for web */}
         {Platform.OS === 'web' && (
@@ -255,6 +254,6 @@ export default function SettingsScreen() {
           </YStack>
         </YStack>
       </ScrollView>
-    </YStack>
+    </Page>
   );
 }

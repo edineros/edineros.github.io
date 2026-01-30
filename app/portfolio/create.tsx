@@ -1,20 +1,17 @@
 import { useState } from 'react';
 import { alert } from '../../lib/utils/confirm';
 import { router } from 'expo-router';
-import { YStack } from 'tamagui';
 import { useAppStore } from '../../store';
-import { ScreenHeader } from '../../components/ScreenHeader';
+import { Page } from '../../components/Page';
 import { Form } from '../../components/Form';
 import { FormField } from '../../components/FormField';
 import { LongButton } from '../../components/LongButton';
-import { useColors } from '../../lib/theme/store';
 
 export default function CreatePortfolioScreen() {
   const [name, setName] = useState('');
   const [currency, setCurrency] = useState('EUR');
   const [isCreating, setIsCreating] = useState(false);
   const { createPortfolio } = useAppStore();
-  const colors = useColors();
 
   const handleCreate = async () => {
     if (!name.trim()) {
@@ -34,8 +31,7 @@ export default function CreatePortfolioScreen() {
   };
 
   return (
-    <YStack flex={1} backgroundColor={colors.background}>
-      <ScreenHeader title="New Portfolio" showBack fallbackPath="/" />
+    <Page title="New Portfolio" fallbackPath="/">
       <Form
         footer={
           <LongButton onPress={handleCreate} disabled={isCreating || !name.trim()}>
@@ -58,6 +54,6 @@ export default function CreatePortfolioScreen() {
           helperText="All values will be displayed in this currency"
         />
       </Form>
-    </YStack>
+    </Page>
   );
 }

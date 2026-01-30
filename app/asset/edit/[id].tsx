@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
-import { YStack, Text, Spinner, Separator } from 'tamagui';
+import { YStack, Text, Spinner } from 'tamagui';
 import { useAppStore } from '../../../store';
-import { ScreenHeader } from '../../../components/ScreenHeader';
+import { Page } from '../../../components/Page';
 import { Form } from '../../../components/Form';
 import { FormField } from '../../../components/FormField';
 import { LongButton } from '../../../components/LongButton';
@@ -91,42 +91,38 @@ export default function EditAssetScreen() {
 
   if (isLoading) {
     return (
-      <YStack flex={1} backgroundColor={colors.background}>
-        <ScreenHeader title="Edit Asset" showBack fallbackPath={fallbackPath} />
+      <Page title="Edit Asset" fallbackPath={fallbackPath}>
         <YStack flex={1} justifyContent="center" alignItems="center">
           <Spinner size="large" color={colors.text} />
         </YStack>
-      </YStack>
+      </Page>
     );
   }
 
   if (!asset) {
     return (
-      <YStack flex={1} backgroundColor={colors.background}>
-        <ScreenHeader title="Edit Asset" showBack fallbackPath={fallbackPath} />
+      <Page title="Edit Asset" fallbackPath={fallbackPath}>
         <YStack flex={1} justifyContent="center" alignItems="center" padding="$4">
           <Text color={colors.text}>Asset not found</Text>
         </YStack>
-      </YStack>
+      </Page>
     );
   }
 
   const isSimple = isSimpleAssetType(asset.type);
 
   return (
-    <YStack flex={1} backgroundColor={colors.background}>
-      <ScreenHeader
-        title="Edit Asset"
-        showBack
-        fallbackPath={fallbackPath}
-        rightComponent={
-          <HeaderIconButton
-            color={colors.destructive}
-            icon="trash-outline"
-            onPress={handleDelete}
-          />
-        }
-      />
+    <Page
+      title="Edit Asset"
+      fallbackPath={fallbackPath}
+      rightComponent={
+        <HeaderIconButton
+          color={colors.destructive}
+          icon="trash-outline"
+          onPress={handleDelete}
+        />
+      }
+    >
       <Form
         footer={
           <LongButton onPress={handleSave} disabled={isSaving}>
@@ -153,6 +149,6 @@ export default function EditAssetScreen() {
           helperText="Tags help organize and filter your assets"
         />
       </Form>
-    </YStack>
+    </Page>
   );
 }

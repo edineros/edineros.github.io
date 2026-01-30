@@ -73,6 +73,7 @@ if (!id) {
     └── uuid.ts           # UUID generation
 
 /components                # Reusable UI components
+├── Page.tsx              # Page wrapper (header + content)
 ├── Form.tsx              # Form container
 ├── FormField.tsx         # Form input wrapper
 ├── ScreenHeader.tsx      # Screen header with navigation

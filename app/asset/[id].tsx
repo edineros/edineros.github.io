@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { FlatList, RefreshControl } from 'react-native';
 import { useLocalSearchParams, useFocusEffect, useRouter } from 'expo-router';
 import { confirm } from '../../lib/utils/confirm';
-import { ScreenHeader } from '../../components/ScreenHeader';
+import { Page } from '../../components/Page';
 import { HeaderIconButton } from '../../components/HeaderButtons';
 import { QuantityAtPrice } from '../../components/QuantityAtPrice';
 import { FloatingActionButton } from '../../components/FloatingActionButton';
@@ -238,29 +238,26 @@ export default function AssetDetailScreen() {
 
   if (isLoading || !asset) {
     return (
-      <YStack flex={1} backgroundColor={colors.background}>
-        <ScreenHeader showBack fallbackPath={portfolioId ? `/portfolio/${portfolioId}` : '/'} />
+      <Page fallbackPath={portfolioId ? `/portfolio/${portfolioId}` : '/'}>
         <YStack flex={1} justifyContent="center" alignItems="center">
           <Spinner size="large" color={colors.text} />
         </YStack>
-      </YStack>
+      </Page>
     );
   }
 
   return (
-    <YStack flex={1} backgroundColor="$background">
-      <ScreenHeader
-        title={asset?.name ?? asset?.symbol}
-        showBack
-        fallbackPath={portfolioId ? `/portfolio/${portfolioId}` : '/'}
-        rightComponent={
-          <HeaderIconButton
-            icon="pencil"
-            color={colors.text}
-            href={`/asset/edit/${id}?portfolioId=${portfolioId}`}
-          />
-        }
-      />
+    <Page
+      title={asset?.name ?? asset?.symbol}
+      fallbackPath={portfolioId ? `/portfolio/${portfolioId}` : '/'}
+      rightComponent={
+        <HeaderIconButton
+          icon="pencil"
+          color={colors.text}
+          href={`/asset/edit/${id}?portfolioId=${portfolioId}`}
+        />
+      }
+    >
       {/* Asset Summary Card */}
       <Card elevate bordered marginHorizontal={CONTENT_HORIZONTAL_PADDING} marginVertical={8} padding={16} backgroundColor="$background">
         <XStack justifyContent="space-between" alignItems="flex-start">
@@ -409,6 +406,6 @@ export default function AssetDetailScreen() {
       </Tabs>
 
       <FloatingActionButton href={`/lot/add?assetId=${id}&portfolioId=${portfolioId}`} />
-    </YStack>
+    </Page>
   );
 }
