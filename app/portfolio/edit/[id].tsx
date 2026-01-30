@@ -8,11 +8,13 @@ import { FormField } from '../../../components/FormField';
 import { LongButton } from '../../../components/LongButton';
 import { alert, confirm } from '../../../lib/utils/confirm';
 import { getPortfolioById } from '../../../lib/db/portfolios';
+import { useColors } from '../../../lib/theme/store';
 import type { Portfolio } from '../../../lib/types';
 import { HeaderIconButton } from '../../../components/HeaderButtons';
 
 export default function EditPortfolioScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const colors = useColors();
   const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
   const [name, setName] = useState('');
   const [currency, setCurrency] = useState('EUR');
@@ -81,10 +83,10 @@ export default function EditPortfolioScreen() {
 
   if (isLoading) {
     return (
-      <YStack flex={1} backgroundColor="#000000">
+      <YStack flex={1} backgroundColor={colors.background}>
         <ScreenHeader title="Edit Portfolio" showBack fallbackPath="/" />
         <YStack flex={1} justifyContent="center" alignItems="center">
-          <Spinner size="large" />
+          <Spinner size="large" color={colors.text} />
         </YStack>
       </YStack>
     );
@@ -92,24 +94,24 @@ export default function EditPortfolioScreen() {
 
   if (!portfolio) {
     return (
-      <YStack flex={1} backgroundColor="#000000">
+      <YStack flex={1} backgroundColor={colors.background}>
         <ScreenHeader title="Edit Portfolio" showBack fallbackPath="/" />
         <YStack flex={1} justifyContent="center" alignItems="center" padding="$4">
-          <Text>Portfolio not found</Text>
+          <Text color={colors.text}>Portfolio not found</Text>
         </YStack>
       </YStack>
     );
   }
 
   return (
-    <YStack flex={1} backgroundColor="#000000">
+    <YStack flex={1} backgroundColor={colors.background}>
       <ScreenHeader
         title="Edit Portfolio"
         showBack
         fallbackPath={`/portfolio/${id}`}
         rightComponent={
           <HeaderIconButton
-            color="#FF3B30"
+            color={colors.destructive}
             icon="trash-outline"
             onPress={handleDelete}
           />

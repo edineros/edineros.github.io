@@ -3,6 +3,7 @@ import { DonutChart, DonutSegment } from './DonutChart';
 import type { AssetType } from '../lib/types';
 import { formatCurrency, formatPercent } from '../lib/utils/format';
 import { getAssetTypeColor, getAssetTypePlural } from '../lib/constants/assetTypes';
+import { useColors } from '../lib/theme/store';
 
 export type AllocationMode = 'type' | 'tags';
 
@@ -32,6 +33,8 @@ export function AssetAllocationChart({
   currency,
   mode,
 }: AssetAllocationChartProps) {
+  const colors = useColors();
+
   // Filter out zero allocations and sort by value descending
   const sortedTypeAllocations = allocations
     .filter((a) => a.value > 0)
@@ -63,10 +66,10 @@ export function AssetAllocationChart({
 
   return (
     <YStack
-      backgroundColor="#111111"
+      backgroundColor={colors.card}
       borderRadius={12}
       borderWidth={1}
-      borderColor="#1F1F1F"
+      borderColor={colors.cardBorder}
       padding={16}
       gap={16}
     >
@@ -91,15 +94,15 @@ export function AssetAllocationChart({
                     borderRadius={3}
                     backgroundColor={getAssetTypeColor(allocation.type)}
                   />
-                  <Text color="#FFFFFF" fontSize={14}>
+                  <Text color={colors.text} fontSize={14}>
                     {getAssetTypePlural(allocation.type)}
                   </Text>
                 </XStack>
                 <XStack alignItems="center" gap={8}>
-                  <Text color="#8E8E93" fontSize={14}>
+                  <Text color={colors.textSecondary} fontSize={14}>
                     {formatCurrency(allocation.value, currency)}
                   </Text>
-                  <Text color="#FFFFFF" fontSize={14} fontWeight="500" minWidth={80} textAlign="right">
+                  <Text color={colors.text} fontSize={14} fontWeight="500" minWidth={80} textAlign="right">
                     {formatPercent(allocation.percentage, { showSign: false, minimumFractionDigits: 1, maximumFractionDigits: 1 })}
                   </Text>
                 </XStack>
@@ -118,15 +121,15 @@ export function AssetAllocationChart({
                     borderRadius={3}
                     backgroundColor={allocation.color}
                   />
-                  <Text color="#FFFFFF" fontSize={14}>
+                  <Text color={colors.text} fontSize={14}>
                     {allocation.tag}
                   </Text>
                 </XStack>
                 <XStack alignItems="center" gap={8}>
-                  <Text color="#8E8E93" fontSize={14}>
+                  <Text color={colors.textSecondary} fontSize={14}>
                     {formatCurrency(allocation.value, currency)}
                   </Text>
-                  <Text color="#FFFFFF" fontSize={14} fontWeight="500" minWidth={80} textAlign="right">
+                  <Text color={colors.text} fontSize={14} fontWeight="500" minWidth={80} textAlign="right">
                     {formatPercent(allocation.percentage, { showSign: false, minimumFractionDigits: 1, maximumFractionDigits: 1 })}
                   </Text>
                 </XStack>

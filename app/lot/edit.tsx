@@ -10,6 +10,7 @@ import { InfoRow } from '../../components/InfoRow';
 import { getAssetById } from '../../lib/db/assets';
 import { getTransactionById, updateTransaction } from '../../lib/db/transactions';
 import { formatCurrency, parseDecimal } from '../../lib/utils/format';
+import { useColors } from '../../lib/theme/store';
 import type { Asset, Transaction } from '../../lib/types';
 
 export default function EditLotScreen() {
@@ -18,6 +19,7 @@ export default function EditLotScreen() {
     assetId: string;
     portfolioId?: string;
   }>();
+  const colors = useColors();
   const [asset, setAsset] = useState<Asset | null>(null);
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [quantity, setQuantity] = useState('');
@@ -104,10 +106,10 @@ export default function EditLotScreen() {
 
   if (isLoading) {
     return (
-      <YStack flex={1} backgroundColor="#000000">
+      <YStack flex={1} backgroundColor={colors.background}>
         <ScreenHeader title="Edit Lot" showBack fallbackPath={fallbackPath} />
         <YStack flex={1} justifyContent="center" alignItems="center">
-          <Spinner size="large" />
+          <Spinner size="large" color={colors.text} />
         </YStack>
       </YStack>
     );
@@ -115,17 +117,17 @@ export default function EditLotScreen() {
 
   if (!asset || !transaction) {
     return (
-      <YStack flex={1} backgroundColor="#000000">
+      <YStack flex={1} backgroundColor={colors.background}>
         <ScreenHeader title="Edit Lot" showBack fallbackPath={fallbackPath} />
         <YStack flex={1} justifyContent="center" alignItems="center" padding="$4">
-          <Text>Lot not found</Text>
+          <Text color={colors.text}>Lot not found</Text>
         </YStack>
       </YStack>
     );
   }
 
   return (
-    <YStack flex={1} backgroundColor="#000000">
+    <YStack flex={1} backgroundColor={colors.background}>
       <ScreenHeader title="Edit Lot" showBack fallbackPath={fallbackPath} />
       <Form
         footer={

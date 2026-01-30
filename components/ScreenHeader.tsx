@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { XStack, Text, View } from 'tamagui';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useColors } from '../lib/theme/store';
 
 interface ScreenHeaderProps {
   title?: string;
@@ -23,6 +24,7 @@ export function ScreenHeader({
 }: ScreenHeaderProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const colors = useColors();
 
   const handleBack = () => {
     if (router.canGoBack()) {
@@ -33,7 +35,7 @@ export function ScreenHeader({
   };
 
   return (
-    <View paddingTop={insets.top} backgroundColor="#000000">
+    <View paddingTop={insets.top} backgroundColor={colors.background}>
       <XStack
         height={44}
         alignItems="center"
@@ -48,7 +50,7 @@ export function ScreenHeader({
               style={{ paddingHorizontal: 8, paddingVertical: 8 }}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Ionicons name="chevron-back" size={28} color="#007AFF" />
+              <Ionicons name="chevron-back" size={28} color={colors.accent} />
             </TouchableOpacity>
           ) : leftComponent}
         </View>
@@ -56,7 +58,7 @@ export function ScreenHeader({
         {/* Center - title */}
         <View flex={1} alignItems="center" justifyContent="center">
           {titleComponent || (
-            <Text color="#FFFFFF" fontSize={17} fontWeight="600" numberOfLines={1}>
+            <Text color={colors.text} fontSize={17} fontWeight="600" numberOfLines={1}>
               {title}
             </Text>
           )}

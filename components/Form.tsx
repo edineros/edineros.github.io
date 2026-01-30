@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { YStack } from 'tamagui';
+import { useColors } from '../lib/theme/store';
 
 interface FormProps {
   children: ReactNode;
@@ -8,6 +9,8 @@ interface FormProps {
 }
 
 export function Form({ children, footer }: FormProps) {
+  const colors = useColors();
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -26,9 +29,9 @@ export function Form({ children, footer }: FormProps) {
         <YStack
           padding={16}
           paddingBottom={24}
-          backgroundColor="#000000"
+          backgroundColor={colors.background}
           borderTopWidth={1}
-          borderTopColor="#1F1F1F"
+          borderTopColor={colors.border}
         >
           {footer}
         </YStack>

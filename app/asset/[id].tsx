@@ -22,10 +22,11 @@ import {
 import { calculateLotStats } from '../../lib/utils/calculations';
 import type { Asset, Lot, Transaction } from '../../lib/types';
 import { MicroButton } from '../../components/MicroButton';
+import { useColors } from '../../lib/theme/store';
 
 export default function AssetDetailScreen() {
   const { id, portfolioId } = useLocalSearchParams<{ id: string; portfolioId: string }>();
-  const router = useRouter();
+  const colors = useColors();
   const [asset, setAsset] = useState<Asset | null>(null);
   const [lots, setLots] = useState<Lot[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -237,10 +238,10 @@ export default function AssetDetailScreen() {
 
   if (isLoading || !asset) {
     return (
-      <YStack flex={1} backgroundColor="#000000">
+      <YStack flex={1} backgroundColor={colors.background}>
         <ScreenHeader showBack fallbackPath={portfolioId ? `/portfolio/${portfolioId}` : '/'} />
         <YStack flex={1} justifyContent="center" alignItems="center">
-          <Spinner size="large" color="#FFFFFF" />
+          <Spinner size="large" color={colors.text} />
         </YStack>
       </YStack>
     );

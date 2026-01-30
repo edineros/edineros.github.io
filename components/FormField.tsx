@@ -4,6 +4,7 @@ import { Text } from 'tamagui';
 import { CurrencySelect } from './CurrencySelect';
 import { TagInput, TagInputRef } from './TagInput';
 import { LabeledElement } from './LabeledElement';
+import { useColors } from '../lib/theme/store';
 
 interface BaseFormFieldProps {
   label: string;
@@ -42,6 +43,7 @@ type FormFieldProps = TextFormFieldProps | CurrencyFormFieldProps | TagFormField
 
 export function FormField(props: FormFieldProps) {
   const { label, labelRight, helperText, placeholder, children, type = 'text' } = props;
+  const colors = useColors();
 
   let input: ReactNode;
 
@@ -67,7 +69,7 @@ export function FormField(props: FormFieldProps) {
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor="#636366"
+        placeholderTextColor={colors.placeholder}
         keyboardType={keyboardType}
         autoFocus={autoFocus}
         autoCapitalize={autoCapitalize}
@@ -78,13 +80,13 @@ export function FormField(props: FormFieldProps) {
         multiline={multiline}
         numberOfLines={numberOfLines}
         style={{
-          backgroundColor: '#111111',
+          backgroundColor: colors.inputBackground,
           borderRadius: 12,
           padding: 16,
           fontSize: 17,
-          color: '#FFFFFF',
+          color: colors.text,
           borderWidth: 1,
-          borderColor: '#1F1F1F',
+          borderColor: colors.inputBorder,
           ...(multiline && { minHeight: 80, textAlignVertical: 'top' }),
         }}
       />
@@ -96,7 +98,7 @@ export function FormField(props: FormFieldProps) {
       {input}
       {children}
       {helperText && (
-        <Text color="#636366" fontSize={13}>
+        <Text color={colors.textTertiary} fontSize={13}>
           {helperText}
         </Text>
       )}

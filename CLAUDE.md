@@ -1,3 +1,6 @@
+# Coding styles
+When refactoring something, change existing comments only if needed
+
 # Private Portfolio Tracker
 
 A privacy-first, offline-capable portfolio tracking application for iOS, Android, and Web.

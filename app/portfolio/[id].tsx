@@ -17,6 +17,7 @@ import {
 } from '../../components/AssetAllocationChart';
 import { formatCurrency, formatPercent, getGainColor } from '../../lib/utils/format';
 import { CONTENT_HORIZONTAL_PADDING } from '../../lib/constants/layout';
+import { useColors } from '../../lib/theme/store';
 import type { Asset } from '../../lib/types';
 
 export default function PortfolioDetailScreen() {
@@ -24,6 +25,7 @@ export default function PortfolioDetailScreen() {
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
   const [allocationMode, setAllocationMode] = useState<AllocationMode>('type');
+  const colors = useColors();
   const {
     portfolios,
     assets,
@@ -120,23 +122,23 @@ export default function PortfolioDetailScreen() {
           marginHorizontal: CONTENT_HORIZONTAL_PADDING,
           marginVertical: 4,
           padding: CONTENT_HORIZONTAL_PADDING,
-          backgroundColor: '#111111',
+          backgroundColor: colors.card,
           borderRadius: 12,
           borderWidth: 1,
-          borderColor: '#1F1F1F',
+          borderColor: colors.cardBorder,
         }}
       >
         <XStack justifyContent="space-between" alignItems="flex-start">
           <YStack flex={1} gap={2}>
             <XStack alignItems="center" gap={8}>
-              <Text color="#FFFFFF" fontSize={17} fontWeight="600">
+              <Text color={colors.text} fontSize={17} fontWeight="600">
                 {item.symbol}
               </Text>
               <Text
                 fontSize={11}
                 fontWeight="600"
-                color="#8E8E93"
-                backgroundColor="#1F1F1F"
+                color={colors.textSecondary}
+                backgroundColor={colors.border}
                 paddingHorizontal={6}
                 paddingVertical={2}
                 borderRadius={4}
@@ -146,7 +148,7 @@ export default function PortfolioDetailScreen() {
               </Text>
             </XStack>
             {item.name && (
-              <Text color="#636366" fontSize={13} numberOfLines={1}>
+              <Text color={colors.textTertiary} fontSize={13} numberOfLines={1}>
                 {item.name}
               </Text>
             )}
@@ -164,19 +166,19 @@ export default function PortfolioDetailScreen() {
           <YStack alignItems="flex-end" gap={2}>
             {stats?.currentValue !== null && stats?.currentValue !== undefined ? (
               <>
-                <Text color="#FFFFFF" fontSize={17} fontWeight="600">
+                <Text color={colors.text} fontSize={17} fontWeight="600">
                   {formatCurrency(stats.currentValue, portfolio?.currency)}
                 </Text>
                 <Text
                   fontSize={13}
                   fontWeight="600"
-                  color={gainColor === 'gain' ? '#00D897' : gainColor === 'loss' ? '#FF6B6B' : '#8E8E93'}
+                  color={gainColor === 'gain' ? colors.gain : gainColor === 'loss' ? colors.loss : colors.textSecondary}
                 >
                   {formatCurrency(stats.unrealizedGain, portfolio?.currency, { showSign: true })} ({formatPercent(stats.unrealizedGainPercent)})
                 </Text>
               </>
             ) : (
-              <Spinner size="small" color="#8E8E93" />
+              <Spinner size="small" color={colors.textSecondary} />
             )}
           </YStack>
         </XStack>
@@ -186,10 +188,10 @@ export default function PortfolioDetailScreen() {
 
   if (!portfolio) {
     return (
-      <YStack flex={1} backgroundColor="#000000">
+      <YStack flex={1} backgroundColor={colors.background}>
         <ScreenHeader showBack fallbackPath="/" />
         <YStack flex={1} justifyContent="center" alignItems="center">
-          <Spinner size="large" color="#FFFFFF" />
+          <Spinner size="large" color={colors.text} />
         </YStack>
       </YStack>
     );
@@ -198,7 +200,7 @@ export default function PortfolioDetailScreen() {
   const overallGainColor = stats ? getGainColor(stats.totalGain) : 'neutral';
 
   return (
-      <YStack flex={1} backgroundColor="#000000">
+      <YStack flex={1} backgroundColor={colors.background}>
         <ScreenHeader
           showBack
           fallbackPath="/"
@@ -214,31 +216,31 @@ export default function PortfolioDetailScreen() {
         />
         {/* Portfolio Summary */}
         <YStack padding={CONTENT_HORIZONTAL_PADDING} gap={4}>
-          <Text color="#8E8E93" fontSize={13}>
+          <Text color={colors.textSecondary} fontSize={13}>
             TOTAL VALUE
           </Text>
           {stats?.totalValue !== null && stats?.totalValue !== undefined ? (
             <>
-              <Text color="#FFFFFF" fontSize={34} fontWeight="700">
+              <Text color={colors.text} fontSize={34} fontWeight="700">
                 {formatCurrency(stats.totalValue, portfolio.currency)}
               </Text>
               <XStack alignItems="center" gap={8} marginTop={4}>
                 <Text
                   fontSize={15}
                   fontWeight="600"
-                  color={overallGainColor === 'gain' ? '#00D897' : overallGainColor === 'loss' ? '#FF6B6B' : '#8E8E93'}
+                  color={overallGainColor === 'gain' ? colors.gain : overallGainColor === 'loss' ? colors.loss : colors.textSecondary}
                 >
                   {formatCurrency(stats.totalGain, portfolio.currency, { showSign: true })}
                 </Text>
                 <Text
                   fontSize={13}
                   fontWeight="600"
-                  color={overallGainColor === 'gain' ? '#00D897' : overallGainColor === 'loss' ? '#FF6B6B' : '#8E8E93'}
+                  color={overallGainColor === 'gain' ? colors.gain : overallGainColor === 'loss' ? colors.loss : colors.textSecondary}
                   backgroundColor={
                     overallGainColor === 'gain'
-                      ? 'rgba(0, 216, 151, 0.15)'
+                      ? colors.gainMuted
                       : overallGainColor === 'loss'
-                        ? 'rgba(255, 107, 107, 0.15)'
+                        ? colors.lossMuted
                         : 'rgba(142, 142, 147, 0.15)'
                   }
                   paddingHorizontal={8}
@@ -250,16 +252,16 @@ export default function PortfolioDetailScreen() {
               </XStack>
             </>
           ) : (
-            <Spinner size="small" color="#FFFFFF" />
+            <Spinner size="small" color={colors.text} />
           )}
         </YStack>
 
         {/* Section header */}
         <XStack paddingHorizontal={CONTENT_HORIZONTAL_PADDING} paddingVertical={12} justifyContent="space-between" alignItems="center">
-          <Text color="#8E8E93" fontSize={13} fontWeight="600">
+          <Text color={colors.textSecondary} fontSize={13} fontWeight="600">
             HOLDINGS
           </Text>
-          <Text color="#636366" fontSize={13}>
+          <Text color={colors.textTertiary} fontSize={13}>
             {portfolioAssets.length} {portfolioAssets.length === 1 ? 'asset' : 'assets'}
           </Text>
         </XStack>
@@ -273,14 +275,14 @@ export default function PortfolioDetailScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor="#FFFFFF"
+              tintColor={colors.text}
             />
           }
           ListFooterComponent={
             allocationData.allocations.length > 1 ? (
               <YStack paddingHorizontal={CONTENT_HORIZONTAL_PADDING} paddingTop={16} gap={12}>
                 <XStack justifyContent="space-between" alignItems="center">
-                  <Text color="#8E8E93" fontSize={13} fontWeight="600" textTransform="uppercase">
+                  <Text color={colors.textSecondary} fontSize={13} fontWeight="600" textTransform="uppercase">
                     Allocation
                   </Text>
                   {allocationData.hasAnyTags && (
@@ -305,10 +307,10 @@ export default function PortfolioDetailScreen() {
           }
           ListEmptyComponent={
             <YStack flex={1} padding={32} alignItems="center" justifyContent="center">
-              <Text color="#FFFFFF" fontSize={18} fontWeight="600" textAlign="center">
+              <Text color={colors.text} fontSize={18} fontWeight="600" textAlign="center">
                 No assets yet
               </Text>
-              <Text color="#8E8E93" fontSize={15} textAlign="center" marginTop={8}>
+              <Text color={colors.textSecondary} fontSize={15} textAlign="center" marginTop={8}>
                 Add your first asset to start tracking
               </Text>
             </YStack>

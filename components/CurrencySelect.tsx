@@ -3,6 +3,7 @@ import { Modal, TouchableOpacity, ScrollView, Platform } from 'react-native';
 import { YStack, XStack, Text } from 'tamagui';
 import { Ionicons } from '@expo/vector-icons';
 import { CURRENCY_OPTIONS } from '../lib/utils/format';
+import { useColors } from '../lib/theme/store';
 
 interface CurrencySelectProps {
   value: string;
@@ -11,6 +12,7 @@ interface CurrencySelectProps {
 
 export function CurrencySelect({ value, onChange }: CurrencySelectProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const colors = useColors();
 
   const selectedOption = CURRENCY_OPTIONS.find((opt) => opt.value === value);
 
@@ -25,10 +27,10 @@ export function CurrencySelect({ value, onChange }: CurrencySelectProps) {
         activeOpacity={0.7}
         onPress={() => setIsOpen(true)}
         style={{
-          backgroundColor: '#111111',
+          backgroundColor: colors.inputBackground,
           borderRadius: 12,
           borderWidth: 1,
-          borderColor: '#1F1F1F',
+          borderColor: colors.inputBorder,
           padding: 16,
           flexDirection: 'row',
           alignItems: 'center',
@@ -36,16 +38,16 @@ export function CurrencySelect({ value, onChange }: CurrencySelectProps) {
         }}
       >
         <XStack alignItems="center" gap={12}>
-          <Text color="#FFFFFF" fontSize={17} fontWeight="600">
+          <Text color={colors.text} fontSize={17} fontWeight="600">
             {value}
           </Text>
           {selectedOption?.label && (
-            <Text color="#636366" fontSize={15}>
+            <Text color={colors.textTertiary} fontSize={15}>
               {selectedOption.label}
             </Text>
           )}
         </XStack>
-        <Ionicons name="chevron-down" size={20} color="#636366" />
+        <Ionicons name="chevron-down" size={20} color={colors.textTertiary} />
       </TouchableOpacity>
 
       <Modal
@@ -55,7 +57,7 @@ export function CurrencySelect({ value, onChange }: CurrencySelectProps) {
         onRequestClose={() => setIsOpen(false)}
       >
         <TouchableOpacity
-          style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.7)' }}
+          style={{ flex: 1, backgroundColor: colors.overlay }}
           onPress={() => setIsOpen(false)}
         >
           <YStack
@@ -66,13 +68,13 @@ export function CurrencySelect({ value, onChange }: CurrencySelectProps) {
           >
             <TouchableOpacity onPress={(e) => e.stopPropagation()}>
               <YStack
-                backgroundColor="#1C1C1E"
+                backgroundColor={colors.modalBackground}
                 borderRadius={14}
                 overflow="hidden"
                 maxHeight={400}
               >
-                <YStack padding={16} borderBottomWidth={1} borderBottomColor="#2C2C2E">
-                  <Text color="#FFFFFF" fontSize={17} fontWeight="600" textAlign="center">
+                <YStack padding={16} borderBottomWidth={1} borderBottomColor={colors.modalBorder}>
+                  <Text color={colors.text} fontSize={17} fontWeight="600" textAlign="center">
                     Select Currency
                   </Text>
                 </YStack>
@@ -88,24 +90,24 @@ export function CurrencySelect({ value, onChange }: CurrencySelectProps) {
                         alignItems: 'center',
                         justifyContent: 'space-between',
                         borderBottomWidth: index < CURRENCY_OPTIONS.length - 1 ? 1 : 0,
-                        borderBottomColor: '#2C2C2E',
-                        backgroundColor: value === option.value ? '#2C2C2E' : 'transparent',
+                        borderBottomColor: colors.modalBorder,
+                        backgroundColor: value === option.value ? colors.modalBorder : 'transparent',
                       }}
                     >
                       <XStack alignItems="center" gap={12}>
                         <Text
-                          color="#FFFFFF"
+                          color={colors.text}
                           fontSize={17}
                           fontWeight={value === option.value ? '600' : '400'}
                         >
                           {option.value}
                         </Text>
-                        <Text color="#8E8E93" fontSize={15}>
+                        <Text color={colors.textSecondary} fontSize={15}>
                           {option.label}
                         </Text>
                       </XStack>
                       {value === option.value && (
-                        <Ionicons name="checkmark" size={22} color="#007AFF" />
+                        <Ionicons name="checkmark" size={22} color={colors.accent} />
                       )}
                     </TouchableOpacity>
                   ))}
@@ -115,14 +117,14 @@ export function CurrencySelect({ value, onChange }: CurrencySelectProps) {
                 activeOpacity={0.7}
                 onPress={() => setIsOpen(false)}
                 style={{
-                  backgroundColor: '#1C1C1E',
+                  backgroundColor: colors.modalBackground,
                   borderRadius: 14,
                   marginTop: 8,
                   padding: 16,
                   alignItems: 'center',
                 }}
               >
-                <Text color="#007AFF" fontSize={17} fontWeight="600">
+                <Text color={colors.accent} fontSize={17} fontWeight="600">
                   Cancel
                 </Text>
               </TouchableOpacity>

@@ -2,6 +2,7 @@ import { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { TextInput, TouchableOpacity } from 'react-native';
 import { YStack, XStack, Text } from 'tamagui';
 import { Ionicons } from '@expo/vector-icons';
+import { useColors } from '../lib/theme/store';
 
 interface TagInputProps {
   tags: string[];
@@ -19,6 +20,7 @@ export const TagInput = forwardRef<TagInputRef, TagInputProps>(
     { tags, onChange, existingTags, placeholder = 'Add tag...' },
     ref
   ) {
+    const colors = useColors();
     const [inputValue, setInputValue] = useState('');
     const [suggestions, setSuggestions] = useState<string[]>([]);
 
@@ -76,7 +78,7 @@ export const TagInput = forwardRef<TagInputRef, TagInputProps>(
             {tags.map((tag) => (
               <XStack
                 key={tag}
-                backgroundColor="#1F1F1F"
+                backgroundColor={colors.border}
                 paddingVertical={6}
                 paddingLeft={10}
                 paddingRight={6}
@@ -84,11 +86,11 @@ export const TagInput = forwardRef<TagInputRef, TagInputProps>(
                 alignItems="center"
                 gap={4}
               >
-                <Text color="#FFFFFF" fontSize={14}>
+                <Text color={colors.text} fontSize={14}>
                   {tag}
                 </Text>
                 <TouchableOpacity onPress={() => removeTag(tag)} hitSlop={8}>
-                  <Ionicons name="close-circle" size={18} color="#8E8E93" />
+                  <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
                 </TouchableOpacity>
               </XStack>
             ))}
@@ -100,29 +102,29 @@ export const TagInput = forwardRef<TagInputRef, TagInputProps>(
           value={inputValue}
           onChangeText={setInputValue}
           placeholder={placeholder}
-          placeholderTextColor="#636366"
+          placeholderTextColor={colors.placeholder}
           onSubmitEditing={handleSubmit}
           returnKeyType="done"
           autoCapitalize="none"
           autoCorrect={false}
           style={{
-            backgroundColor: '#111111',
+            backgroundColor: colors.inputBackground,
             borderRadius: 12,
             padding: 16,
             fontSize: 17,
-            color: '#FFFFFF',
+            color: colors.text,
             borderWidth: 1,
-            borderColor: '#1F1F1F',
+            borderColor: colors.inputBorder,
           }}
         />
 
         {/* Suggestions dropdown */}
         {suggestions.length > 0 && (
           <YStack
-            backgroundColor="#111111"
+            backgroundColor={colors.inputBackground}
             borderRadius={12}
             borderWidth={1}
-            borderColor="#1F1F1F"
+            borderColor={colors.inputBorder}
             overflow="hidden"
           >
             {suggestions.map((suggestion, index) => (
@@ -133,14 +135,14 @@ export const TagInput = forwardRef<TagInputRef, TagInputProps>(
                 style={{
                   padding: 12,
                   borderBottomWidth: index < suggestions.length - 1 ? 1 : 0,
-                  borderBottomColor: '#1F1F1F',
+                  borderBottomColor: colors.border,
                   flexDirection: 'row',
                   alignItems: 'center',
                   gap: 8,
                 }}
               >
-                <Ionicons name="pricetag-outline" size={16} color="#8E8E93" />
-                <Text color="#FFFFFF" fontSize={15}>
+                <Ionicons name="pricetag-outline" size={16} color={colors.textSecondary} />
+                <Text color={colors.text} fontSize={15}>
                   {suggestion}
                 </Text>
               </TouchableOpacity>
@@ -160,18 +162,18 @@ export const TagInput = forwardRef<TagInputRef, TagInputProps>(
               activeOpacity={0.7}
               onPress={handleSubmit}
               style={{
-                backgroundColor: '#111111',
+                backgroundColor: colors.inputBackground,
                 borderRadius: 12,
                 borderWidth: 1,
-                borderColor: '#1F1F1F',
+                borderColor: colors.inputBorder,
                 padding: 12,
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: 8,
               }}
             >
-              <Ionicons name="add-circle-outline" size={16} color="#007AFF" />
-              <Text color="#007AFF" fontSize={15}>
+              <Ionicons name="add-circle-outline" size={16} color={colors.accent} />
+              <Text color={colors.accent} fontSize={15}>
                 Create "{inputValue.trim()}"
               </Text>
             </TouchableOpacity>

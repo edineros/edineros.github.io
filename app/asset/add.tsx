@@ -13,12 +13,14 @@ import { searchSymbol } from '../../lib/api/prices';
 import { getPortfolioById } from '../../lib/db/portfolios';
 import { getAllAssetTags } from '../../lib/db/assets';
 import { getAssetTypeLabel, isSimpleAssetType } from '../../lib/constants/assetTypes';
+import { useColors } from '../../lib/theme/store';
 import type { AssetType } from '../../lib/types';
 
 export default function AddAssetScreen() {
   const { portfolioId, type: typeParam } = useLocalSearchParams<{ portfolioId: string; type: string }>();
   const type = (typeParam as AssetType) || 'stock';
   const isSimple = isSimpleAssetType(type);
+  const colors = useColors();
   const [symbol, setSymbol] = useState('');
   const [name, setName] = useState('');
   const [currency, setCurrency] = useState('EUR');
@@ -121,7 +123,7 @@ export default function AddAssetScreen() {
   const canCreate = isSimple ? name.trim() : symbol.trim();
 
   return (
-    <YStack flex={1} backgroundColor="#000000">
+    <YStack flex={1} backgroundColor={colors.background}>
       <ScreenHeader title={headerTitle} showBack fallbackPath={portfolioId ? `/portfolio/${portfolioId}` : '/'} />
       <Form
         footer={
@@ -142,16 +144,16 @@ export default function AddAssetScreen() {
           >
             {isSearching && (
               <XStack padding={8} alignItems="center" gap={8}>
-                <Spinner size="small" color="#8E8E93" />
-                <Text color="#8E8E93" fontSize={13}>Searching...</Text>
+                <Spinner size="small" color={colors.textSecondary} />
+                <Text color={colors.textSecondary} fontSize={13}>Searching...</Text>
               </XStack>
             )}
             {searchResults.length > 0 && (
               <YStack
-                backgroundColor="#111111"
+                backgroundColor={colors.card}
                 borderRadius={12}
                 borderWidth={1}
-                borderColor="#1F1F1F"
+                borderColor={colors.cardBorder}
                 overflow="hidden"
                 maxHeight={200}
               >
@@ -164,16 +166,16 @@ export default function AddAssetScreen() {
                       style={{
                         padding: 12,
                         borderBottomWidth: index < searchResults.length - 1 ? 1 : 0,
-                        borderBottomColor: '#1F1F1F',
+                        borderBottomColor: colors.cardBorder,
                       }}
                     >
                       <XStack justifyContent="space-between" alignItems="center">
-                        <Text color="#FFFFFF" fontWeight="600">{result.symbol}</Text>
+                        <Text color={colors.text} fontWeight="600">{result.symbol}</Text>
                         <Text
                           fontSize={11}
                           fontWeight="600"
-                          color="#8E8E93"
-                          backgroundColor="#1F1F1F"
+                          color={colors.textSecondary}
+                          backgroundColor={colors.border}
                           paddingHorizontal={6}
                           paddingVertical={2}
                           borderRadius={4}
@@ -182,7 +184,7 @@ export default function AddAssetScreen() {
                           {result.type}
                         </Text>
                       </XStack>
-                      <Text color="#636366" fontSize={13} numberOfLines={1}>
+                      <Text color={colors.textTertiary} fontSize={13} numberOfLines={1}>
                         {result.name}
                       </Text>
                     </TouchableOpacity>

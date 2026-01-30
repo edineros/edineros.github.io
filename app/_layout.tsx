@@ -6,6 +6,27 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import config from '../tamagui.config';
 import { getDatabase } from '../lib/db/schema';
+import { useThemeStore, useColors } from '../lib/theme/store';
+
+function AppContent() {
+  const { resolvedTheme, initializeTheme } = useThemeStore();
+  const colors = useColors();
+
+  useEffect(() => {
+    initializeTheme();
+  }, []);
+
+  return (
+    <Theme name={resolvedTheme}>
+      <SafeAreaProvider>
+        <StatusBar style={resolvedTheme === 'light' ? 'dark' : 'light'} />
+        <View flex={1} backgroundColor={colors.background}>
+          <Slot />
+        </View>
+      </SafeAreaProvider>
+    </Theme>
+  );
+}
 
 export default function RootLayout() {
   useEffect(() => {
@@ -17,14 +38,7 @@ export default function RootLayout() {
 
   return (
     <TamaguiProvider config={config}>
-      <Theme name="dark">
-        <SafeAreaProvider>
-          <StatusBar style="light" />
-          <View flex={1} backgroundColor="#000000">
-            <Slot />
-          </View>
-        </SafeAreaProvider>
-      </Theme>
+      <AppContent />
     </TamaguiProvider>
   );
 }

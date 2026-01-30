@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { YStack, XStack, Text } from 'tamagui';
 import { Ionicons } from '@expo/vector-icons';
 import type { Portfolio } from '../lib/types';
+import { useColors } from '../lib/theme/store';
 
 interface PortfolioSwitcherProps {
   currentPortfolio: Portfolio;
@@ -12,6 +13,7 @@ interface PortfolioSwitcherProps {
 
 export function PortfolioSwitcher({ currentPortfolio, portfolios }: PortfolioSwitcherProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const colors = useColors();
 
   const handleSelect = (portfolio: Portfolio) => {
     setIsOpen(false);
@@ -27,10 +29,10 @@ export function PortfolioSwitcher({ currentPortfolio, portfolios }: PortfolioSwi
         onPress={() => setIsOpen(true)}
         style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
       >
-        <Text color="#FFFFFF" fontSize={17} fontWeight="600">
+        <Text color={colors.text} fontSize={17} fontWeight="600">
           {currentPortfolio.name}
         </Text>
-        <Ionicons name="chevron-down" size={16} color="#8E8E93" />
+        <Ionicons name="chevron-down" size={16} color={colors.textSecondary} />
       </TouchableOpacity>
 
       <Modal
@@ -40,7 +42,7 @@ export function PortfolioSwitcher({ currentPortfolio, portfolios }: PortfolioSwi
         onRequestClose={() => setIsOpen(false)}
       >
         <TouchableOpacity
-          style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.7)' }}
+          style={{ flex: 1, backgroundColor: colors.overlay }}
           onPress={() => setIsOpen(false)}
         >
           <YStack
@@ -51,13 +53,13 @@ export function PortfolioSwitcher({ currentPortfolio, portfolios }: PortfolioSwi
           >
             <TouchableOpacity onPress={(e) => e.stopPropagation()}>
               <YStack
-                backgroundColor="#1C1C1E"
+                backgroundColor={colors.modalBackground}
                 borderRadius={14}
                 overflow="hidden"
                 maxHeight={400}
               >
-                <YStack padding={16} borderBottomWidth={1} borderBottomColor="#2C2C2E">
-                  <Text color="#FFFFFF" fontSize={17} fontWeight="600" textAlign="center">
+                <YStack padding={16} borderBottomWidth={1} borderBottomColor={colors.modalBorder}>
+                  <Text color={colors.text} fontSize={17} fontWeight="600" textAlign="center">
                     Switch Portfolio
                   </Text>
                 </YStack>
@@ -73,24 +75,24 @@ export function PortfolioSwitcher({ currentPortfolio, portfolios }: PortfolioSwi
                         alignItems: 'center',
                         justifyContent: 'space-between',
                         borderBottomWidth: index < portfolios.length - 1 ? 1 : 0,
-                        borderBottomColor: '#2C2C2E',
-                        backgroundColor: portfolio.id === currentPortfolio.id ? '#2C2C2E' : 'transparent',
+                        borderBottomColor: colors.modalBorder,
+                        backgroundColor: portfolio.id === currentPortfolio.id ? colors.modalBorder : 'transparent',
                       }}
                     >
                       <YStack flex={1}>
                         <Text
-                          color="#FFFFFF"
+                          color={colors.text}
                           fontSize={17}
                           fontWeight={portfolio.id === currentPortfolio.id ? '600' : '400'}
                         >
                           {portfolio.name}
                         </Text>
-                        <Text color="#8E8E93" fontSize={13}>
+                        <Text color={colors.textSecondary} fontSize={13}>
                           {portfolio.currency}
                         </Text>
                       </YStack>
                       {portfolio.id === currentPortfolio.id && (
-                        <Ionicons name="checkmark" size={22} color="#007AFF" />
+                        <Ionicons name="checkmark" size={22} color={colors.accent} />
                       )}
                     </TouchableOpacity>
                   ))}
@@ -100,14 +102,14 @@ export function PortfolioSwitcher({ currentPortfolio, portfolios }: PortfolioSwi
                 activeOpacity={0.7}
                 onPress={() => setIsOpen(false)}
                 style={{
-                  backgroundColor: '#1C1C1E',
+                  backgroundColor: colors.modalBackground,
                   borderRadius: 14,
                   marginTop: 8,
                   padding: 16,
                   alignItems: 'center',
                 }}
               >
-                <Text color="#007AFF" fontSize={17} fontWeight="600">
+                <Text color={colors.accent} fontSize={17} fontWeight="600">
                   Cancel
                 </Text>
               </TouchableOpacity>

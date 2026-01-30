@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import { YStack, XStack, Text } from 'tamagui';
+import { useColors } from '../lib/theme/store';
 
 interface LabeledElementProps {
   label?: string;
@@ -8,6 +9,8 @@ interface LabeledElementProps {
 }
 
 export function LabeledElement({ label, labelRight, children }: LabeledElementProps) {
+  const colors = useColors();
+
   if (!label && !labelRight) {
     return <>{children}</>;
   }
@@ -16,7 +19,7 @@ export function LabeledElement({ label, labelRight, children }: LabeledElementPr
     <YStack gap={8}>
       <XStack justifyContent="space-between" alignItems="center">
         {label && (
-          <Text color="#8E8E93" fontSize={13} fontWeight="600">
+          <Text color={colors.textSecondary} fontSize={13} fontWeight="600">
             {label.toUpperCase()}
           </Text>
         )}

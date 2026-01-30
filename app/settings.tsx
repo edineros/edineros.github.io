@@ -1,17 +1,27 @@
 import { useState, useRef } from 'react';
-import { Alert, ScrollView, Platform } from 'react-native';
+import { Alert, ScrollView, Platform, TouchableOpacity } from 'react-native';
 import { YStack, XStack, Text } from 'tamagui';
+import { Ionicons } from '@expo/vector-icons';
 import { exportToJson, exportTransactionsToCsv, shareFile, importFromJson } from '../lib/utils/export';
 import { useAppStore } from '../store';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { LongButton } from '../components/LongButton';
 import { CONTENT_HORIZONTAL_PADDING } from '../lib/constants/layout';
+import { useThemeStore, useColors, type ThemeMode } from '../lib/theme/store';
+
+const THEME_OPTIONS: { value: ThemeMode; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { value: 'light', label: 'Light', icon: 'sunny-outline' },
+  { value: 'dark', label: 'Dark', icon: 'moon-outline' },
+  { value: 'auto', label: 'Auto', icon: 'phone-portrait-outline' },
+];
 
 export default function SettingsScreen() {
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const { loadPortfolios } = useAppStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { mode, setMode } = useThemeStore();
+  const colors = useColors();
 
   const handleExportJson = async () => {
     setIsExporting(true);
@@ -111,7 +121,7 @@ export default function SettingsScreen() {
   const handleImport = Platform.OS === 'web' ? handleImportWeb : handleImportNative;
 
   return (
-    <YStack flex={1} backgroundColor="#000000">
+    <YStack flex={1} backgroundColor={colors.background}>
       <ScreenHeader title="Settings" showBack fallbackPath="/" />
       <ScrollView style={{ flex: 1 }}>
         {/* Hidden file input for web */}
@@ -126,17 +136,64 @@ export default function SettingsScreen() {
         )}
 
         <YStack flex={1} padding={CONTENT_HORIZONTAL_PADDING} gap={16}>
+          {/* Theme Selector */}
           <YStack
-            backgroundColor="#111111"
+            backgroundColor={colors.card}
             borderRadius={12}
             borderWidth={1}
-            borderColor="#1F1F1F"
+            borderColor={colors.cardBorder}
             padding={CONTENT_HORIZONTAL_PADDING}
           >
-            <Text color="#FFFFFF" fontSize={20} fontWeight="600" marginBottom={12}>
+            <Text color={colors.text} fontSize={20} fontWeight="600" marginBottom={12}>
+              Appearance
+            </Text>
+            <Text color={colors.textSecondary} fontSize={15} marginBottom={16}>
+              Choose your preferred theme
+            </Text>
+
+            <XStack gap={8}>
+              {THEME_OPTIONS.map((option) => (
+                <TouchableOpacity
+                  key={option.value}
+                  activeOpacity={0.7}
+                  onPress={() => setMode(option.value)}
+                  style={{
+                    flex: 1,
+                    padding: 12,
+                    borderRadius: 10,
+                    backgroundColor: mode === option.value ? colors.accent : colors.backgroundTertiary,
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <Ionicons
+                    name={option.icon}
+                    size={22}
+                    color={mode === option.value ? '#FFFFFF' : colors.textSecondary}
+                  />
+                  <Text
+                    color={mode === option.value ? '#FFFFFF' : colors.textSecondary}
+                    fontSize={13}
+                    fontWeight={mode === option.value ? '600' : '400'}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </XStack>
+          </YStack>
+
+          <YStack
+            backgroundColor={colors.card}
+            borderRadius={12}
+            borderWidth={1}
+            borderColor={colors.cardBorder}
+            padding={CONTENT_HORIZONTAL_PADDING}
+          >
+            <Text color={colors.text} fontSize={20} fontWeight="600" marginBottom={12}>
               Data Export
             </Text>
-            <Text color="#8E8E93" fontSize={15} marginBottom={16}>
+            <Text color={colors.textSecondary} fontSize={15} marginBottom={16}>
               Export your portfolio data for backup or analysis
             </Text>
 
@@ -159,16 +216,16 @@ export default function SettingsScreen() {
           </YStack>
 
           <YStack
-            backgroundColor="#111111"
+            backgroundColor={colors.card}
             borderRadius={12}
             borderWidth={1}
-            borderColor="#1F1F1F"
+            borderColor={colors.cardBorder}
             padding={CONTENT_HORIZONTAL_PADDING}
           >
-            <Text color="#FFFFFF" fontSize={20} fontWeight="600" marginBottom={12}>
+            <Text color={colors.text} fontSize={20} fontWeight="600" marginBottom={12}>
               Data Import
             </Text>
-            <Text color="#8E8E93" fontSize={15} marginBottom={16}>
+            <Text color={colors.textSecondary} fontSize={15} marginBottom={16}>
               Import data from a previous backup. This will create new entries without
               affecting existing data.
             </Text>
@@ -182,33 +239,33 @@ export default function SettingsScreen() {
           </YStack>
 
           <YStack
-            backgroundColor="#111111"
+            backgroundColor={colors.card}
             borderRadius={12}
             borderWidth={1}
-            borderColor="#1F1F1F"
+            borderColor={colors.cardBorder}
             padding={CONTENT_HORIZONTAL_PADDING}
           >
-            <Text color="#FFFFFF" fontSize={20} fontWeight="600" marginBottom={12}>
+            <Text color={colors.text} fontSize={20} fontWeight="600" marginBottom={12}>
               About
             </Text>
 
             <YStack gap={8}>
               <XStack justifyContent="space-between">
-                <Text color="#8E8E93">Version</Text>
-                <Text color="#FFFFFF">1.0.0</Text>
+                <Text color={colors.textSecondary}>Version</Text>
+                <Text color={colors.text}>1.0.0</Text>
               </XStack>
 
-              <YStack height={1} backgroundColor="#1F1F1F" marginVertical={8} />
+              <YStack height={1} backgroundColor={colors.border} marginVertical={8} />
 
-              <Text color="#8E8E93" fontSize={15}>
+              <Text color={colors.textSecondary} fontSize={15}>
                 Portfolio Tracker is a privacy-first, offline-capable portfolio tracking
                 application. Your data is stored locally on your device and is never sent
                 to any server.
               </Text>
 
-              <YStack height={1} backgroundColor="#1F1F1F" marginVertical={8} />
+              <YStack height={1} backgroundColor={colors.border} marginVertical={8} />
 
-              <Text color="#636366" fontSize={13}>
+              <Text color={colors.textTertiary} fontSize={13}>
                 Price data provided by Yahoo Finance, Kraken, and Frankfurter API.
               </Text>
             </YStack>

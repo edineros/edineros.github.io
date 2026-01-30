@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { TouchableOpacity, StyleSheet, Modal, Pressable } from 'react-native';
+import { TouchableOpacity, Modal, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { YStack, Text } from 'tamagui';
 import { FloatingActionButton } from './FloatingActionButton';
 import { ASSET_TYPE_CONFIGS } from '../lib/constants/assetTypes';
+import { useColors } from '../lib/theme/store';
 
 interface AddAssetMenuProps {
   portfolioId: string;
@@ -12,6 +13,7 @@ interface AddAssetMenuProps {
 export function AddAssetMenu({ portfolioId }: AddAssetMenuProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
+  const colors = useColors();
 
   const handleSelectType = (type: string) => {
     setIsOpen(false);
@@ -28,15 +30,35 @@ export function AddAssetMenu({ portfolioId }: AddAssetMenuProps) {
         animationType="fade"
         onRequestClose={() => setIsOpen(false)}
       >
-        <Pressable style={styles.overlay} onPress={() => setIsOpen(false)}>
-          <YStack style={styles.menu}>
-            <Text color="#8E8E93" fontSize={13} fontWeight="600" marginBottom={8}>
+        <Pressable
+          style={{
+            flex: 1,
+            backgroundColor: colors.overlay,
+            justifyContent: 'flex-end',
+            alignItems: 'flex-end',
+            paddingBottom: 120,
+            paddingRight: 24,
+          }}
+          onPress={() => setIsOpen(false)}
+        >
+          <YStack
+            backgroundColor={colors.modalBackground}
+            borderRadius={12}
+            padding={16}
+            minWidth={180}
+          >
+            <Text color={colors.textSecondary} fontSize={13} fontWeight="600" marginBottom={8}>
               ADD ASSET
             </Text>
             {ASSET_TYPE_CONFIGS.map((config) => (
               <TouchableOpacity
                 key={config.value}
-                style={styles.menuItem}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingVertical: 12,
+                  paddingHorizontal: 4,
+                }}
                 onPress={() => handleSelectType(config.value)}
                 activeOpacity={0.7}
               >
@@ -47,7 +69,7 @@ export function AddAssetMenu({ portfolioId }: AddAssetMenuProps) {
                   backgroundColor={config.color}
                   marginRight={12}
                 />
-                <Text color="#FFFFFF" fontSize={17}>
+                <Text color={colors.text} fontSize={17}>
                   {config.label}
                 </Text>
               </TouchableOpacity>
@@ -58,26 +80,3 @@ export function AddAssetMenu({ portfolioId }: AddAssetMenuProps) {
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'flex-end',
-    alignItems: 'flex-end',
-    paddingBottom: 120,
-    paddingRight: 24,
-  },
-  menu: {
-    backgroundColor: '#1C1C1E',
-    borderRadius: 12,
-    padding: 16,
-    minWidth: 180,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 4,
-  },
-});

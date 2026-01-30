@@ -10,11 +10,13 @@ import { CONTENT_HORIZONTAL_PADDING } from '../lib/constants/layout';
 import type { Portfolio } from '../lib/types';
 import { FloatingActionButton } from '../components/FloatingActionButton';
 import { LongButton } from '../components/LongButton';
+import { useColors } from '../lib/theme/store';
 
 const NEW_PORTFOLIO_URL = '/portfolio/create';
 
 function MenuButton() {
   const router = useRouter();
+  const colors = useColors();
 
   return (
     <TouchableOpacity
@@ -22,7 +24,7 @@ function MenuButton() {
       style={{ paddingHorizontal: 8, paddingVertical: 8 }}
       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
     >
-      <Ionicons name="menu" size={24} color="#FFFFFF" />
+      <Ionicons name="menu" size={24} color={colors.text} />
     </TouchableOpacity>
   );
 }
@@ -32,6 +34,7 @@ export default function PortfolioListScreen() {
   const { portfolios, portfolioStats, isLoading, loadPortfolios, loadPortfolioStats } =
     useAppStore();
   const [refreshing, setRefreshing] = useState(false);
+  const colors = useColors();
 
   useFocusEffect(
     useCallback(() => {
@@ -68,44 +71,44 @@ export default function PortfolioListScreen() {
           marginHorizontal: CONTENT_HORIZONTAL_PADDING,
           marginVertical: 6,
           padding: CONTENT_HORIZONTAL_PADDING,
-          backgroundColor: '#111111',
+          backgroundColor: colors.card,
           borderRadius: 12,
           borderWidth: 1,
-          borderColor: '#1F1F1F',
+          borderColor: colors.cardBorder,
         }}
       >
         <XStack justifyContent="space-between" alignItems="flex-start">
           <YStack flex={1} gap={2}>
-            <Text color="#FFFFFF" fontSize={17} fontWeight="600">
+            <Text color={colors.text} fontSize={17} fontWeight="600">
               {item.name}
             </Text>
-            <Text color="#8E8E93" fontSize={13}>
+            <Text color={colors.textSecondary} fontSize={13}>
               {stats?.assetCount ?? 0} assets
             </Text>
           </YStack>
           <YStack alignItems="flex-end" gap={2}>
             {stats?.totalValue !== null && stats?.totalValue !== undefined ? (
               <>
-                <Text color="#FFFFFF" fontSize={20} fontWeight="700">
+                <Text color={colors.text} fontSize={20} fontWeight="700">
                   {formatCurrency(stats.totalValue, item.currency)}
                 </Text>
                 <XStack alignItems="center" gap={6}>
                   <Text
                     fontSize={13}
                     fontWeight="600"
-                    color={gainColor === 'gain' ? '#00D897' : gainColor === 'loss' ? '#FF6B6B' : '#8E8E93'}
+                    color={gainColor === 'gain' ? colors.gain : gainColor === 'loss' ? colors.loss : colors.textSecondary}
                   >
                     {formatCurrency(stats.totalGain, item.currency, { showSign: true })}
                   </Text>
                   <Text
                     fontSize={12}
                     fontWeight="600"
-                    color={gainColor === 'gain' ? '#00D897' : gainColor === 'loss' ? '#FF6B6B' : '#8E8E93'}
+                    color={gainColor === 'gain' ? colors.gain : gainColor === 'loss' ? colors.loss : colors.textSecondary}
                     backgroundColor={
                       gainColor === 'gain'
-                        ? 'rgba(0, 216, 151, 0.15)'
+                        ? colors.gainMuted
                         : gainColor === 'loss'
-                          ? 'rgba(255, 107, 107, 0.15)'
+                          ? colors.lossMuted
                           : 'rgba(142, 142, 147, 0.15)'
                     }
                     paddingHorizontal={6}
@@ -117,7 +120,7 @@ export default function PortfolioListScreen() {
                 </XStack>
               </>
             ) : (
-              <Spinner size="small" color="#8E8E93" />
+              <Spinner size="small" color={colors.textSecondary} />
             )}
           </YStack>
         </XStack>
@@ -127,26 +130,26 @@ export default function PortfolioListScreen() {
 
   if (isLoading && portfolios.length === 0) {
     return (
-      <YStack flex={1} backgroundColor="#000000">
+      <YStack flex={1} backgroundColor={colors.background}>
         <ScreenHeader title="Portfolios" leftComponent={<MenuButton />} />
         <YStack flex={1} justifyContent="center" alignItems="center">
-          <Spinner size="large" color="#FFFFFF" />
+          <Spinner size="large" color={colors.text} />
         </YStack>
       </YStack>
     );
   }
 
   return (
-    <YStack flex={1} backgroundColor="#000000">
+    <YStack flex={1} backgroundColor={colors.background}>
       <ScreenHeader title="Portfolios" leftComponent={<MenuButton />} />
 
       {/* Total across all portfolios */}
       {portfolios.length > 0 && (
         <YStack paddingHorizontal={CONTENT_HORIZONTAL_PADDING} paddingBottom={20}>
-          <Text color="#8E8E93" fontSize={13} marginBottom={4}>
+          <Text color={colors.textSecondary} fontSize={13} marginBottom={4}>
             TOTAL BALANCE
           </Text>
-          <Text color="#FFFFFF" fontSize={32} fontWeight="700">
+          <Text color={colors.text} fontSize={32} fontWeight="700">
             {(() => {
               let total = 0;
               let hasData = false;
@@ -172,15 +175,15 @@ export default function PortfolioListScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#FFFFFF"
+            tintColor={colors.text}
           />
         }
         ListEmptyComponent={
           <YStack flex={1} padding={32} alignItems="center" justifyContent="center">
-            <Text color="#FFFFFF" fontSize={20} fontWeight="600" textAlign="center">
+            <Text color={colors.text} fontSize={20} fontWeight="600" textAlign="center">
               No portfolios yet
             </Text>
-            <Text color="#8E8E93" fontSize={15} textAlign="center" marginTop={8}>
+            <Text color={colors.textSecondary} fontSize={15} textAlign="center" marginTop={8}>
               Create your first portfolio to start tracking
             </Text>
           </YStack>

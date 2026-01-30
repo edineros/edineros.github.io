@@ -1,5 +1,6 @@
 import { Button, ButtonProps } from 'tamagui';
 import { LabeledElement } from './LabeledElement';
+import { useColors } from '../lib/theme/store';
 
 type LongButtonVariant = 'primary' | 'secondary' | 'destructive';
 type LongButtonSize = 'small' | 'medium' | 'large';
@@ -14,22 +15,6 @@ interface LongButtonProps {
   label?: string;
   children: string;
 }
-
-const VARIANT_STYLES: Record<LongButtonVariant, Partial<ButtonProps>> = {
-  primary: {
-    backgroundColor: '#007AFF',
-    borderWidth: 0,
-  },
-  secondary: {
-    backgroundColor: 'transparent',
-    borderColor: '#1F1F1F',
-    borderWidth: 1,
-  },
-  destructive: {
-    backgroundColor: '#FF3B30',
-    borderWidth: 0,
-  },
-};
 
 const SIZE_MAP: Record<LongButtonSize, ButtonProps['size']> = {
   small: '$3',
@@ -52,7 +37,19 @@ export function LongButton({
   label,
   children,
 }: LongButtonProps) {
-  const variantStyles = VARIANT_STYLES[variant];
+  const colors = useColors();
+
+  const getVariantStyles = (): Partial<ButtonProps> => {
+    switch (variant) {
+      case 'primary':
+        return { backgroundColor: colors.accent, borderWidth: 0 };
+      case 'secondary':
+        return { backgroundColor: 'transparent', borderColor: colors.border, borderWidth: 1 };
+      case 'destructive':
+        return { backgroundColor: colors.destructive, borderWidth: 0 };
+    }
+  };
+
   const tamaguiSize = SIZE_MAP[size];
   const marginTop = topSpacing ? TOP_SPACING_MAP[topSpacing] : undefined;
 
@@ -62,10 +59,10 @@ export function LongButton({
         size={tamaguiSize}
         onPress={onPress}
         disabled={disabled}
-        color="#FFFFFF"
+        color={colors.text}
         fontWeight="600"
         marginTop={marginTop}
-        {...variantStyles}
+        {...getVariantStyles()}
       >
         {children}
       </Button>

@@ -1,6 +1,7 @@
 import { TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useColors } from '../lib/theme/store';
 
 // Consistent spacing for header buttons (matches main content padding of 16px)
 const HEADER_BUTTON_STYLES = {
@@ -28,6 +29,8 @@ interface HeaderBackButtonProps {
  * Handles both navigation history and fallback for direct URL access.
  */
 export function HeaderBackButton({ fallbackPath = '/' }: HeaderBackButtonProps) {
+  const colors = useColors();
+
   return (
     <TouchableOpacity
       onPress={() => {
@@ -40,7 +43,7 @@ export function HeaderBackButton({ fallbackPath = '/' }: HeaderBackButtonProps) 
       style={HEADER_BUTTON_STYLES.left}
       hitSlop={HEADER_BUTTON_STYLES.hitSlop}
     >
-      <Ionicons name="chevron-back" size={HEADER_BUTTON_STYLES.backIconSize} color="#007AFF" />
+      <Ionicons name="chevron-back" size={HEADER_BUTTON_STYLES.backIconSize} color={colors.accent} />
     </TouchableOpacity>
   );
 }
@@ -58,11 +61,13 @@ interface HeaderIconButtonProps {
  */
 export function HeaderIconButton({
   icon,
-  color = '#007AFF',
+  color,
   onPress,
   href,
   position = 'right',
 }: HeaderIconButtonProps) {
+  const colors = useColors();
+  const resolvedColor = color ?? colors.accent;
   const style = position === 'left' ? HEADER_BUTTON_STYLES.left : HEADER_BUTTON_STYLES.right;
 
   const handlePress = () => {
@@ -79,7 +84,7 @@ export function HeaderIconButton({
       style={style}
       hitSlop={HEADER_BUTTON_STYLES.hitSlop}
     >
-      <Ionicons name={icon} size={HEADER_BUTTON_STYLES.iconSize} color={color} />
+      <Ionicons name={icon} size={HEADER_BUTTON_STYLES.iconSize} color={resolvedColor} />
     </TouchableOpacity>
   );
 }

@@ -1,6 +1,7 @@
-import { TouchableOpacity, StyleSheet } from 'react-native';
+import { TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useColors } from '../lib/theme/store';
 
 interface FloatingActionButtonProps {
   href?: string;
@@ -13,6 +14,7 @@ interface FloatingActionButtonProps {
  */
 export function FloatingActionButton({ href, onPress }: FloatingActionButtonProps) {
   const router = useRouter();
+  const colors = useColors();
 
   const handlePress = () => {
     if (onPress) {
@@ -23,27 +25,26 @@ export function FloatingActionButton({ href, onPress }: FloatingActionButtonProp
   };
 
   return (
-    <TouchableOpacity style={styles.button} onPress={handlePress}>
+    <TouchableOpacity
+      style={{
+        position: 'absolute',
+        bottom: 48,
+        right: 36,
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: colors.accent,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: colors.background,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5,
+      }}
+      onPress={handlePress}
+    >
       <Ionicons name="add" size={28} color="#FFFFFF" />
     </TouchableOpacity>
   );
 }
-
-const styles = StyleSheet.create({
-  button: {
-    position: 'absolute',
-    bottom: 48,
-    right: 36,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#007AFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-});

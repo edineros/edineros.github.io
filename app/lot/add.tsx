@@ -11,6 +11,7 @@ import { getAssetById } from '../../lib/db/assets';
 import { createTransaction } from '../../lib/db/transactions';
 import { formatCurrency, parseDecimal } from '../../lib/utils/format';
 import { isSimpleAssetType } from '../../lib/constants/assetTypes';
+import { useColors } from '../../lib/theme/store';
 import type { Asset } from '../../lib/types';
 
 export default function AddLotScreen() {
@@ -18,6 +19,7 @@ export default function AddLotScreen() {
     assetId: string;
     portfolioId: string;
   }>();
+  const colors = useColors();
   const [asset, setAsset] = useState<Asset | null>(null);
   const [quantity, setQuantity] = useState('');
   const [pricePerUnit, setPricePerUnit] = useState('');
@@ -86,14 +88,14 @@ export default function AddLotScreen() {
 
   if (!asset) {
     return (
-      <YStack flex={1} backgroundColor="#000000">
+      <YStack flex={1} backgroundColor={colors.background}>
         <ScreenHeader title="Add Lot" showBack fallbackPath={fallbackPath} />
       </YStack>
     );
   }
 
   return (
-    <YStack flex={1} backgroundColor="#000000">
+    <YStack flex={1} backgroundColor={colors.background}>
       <ScreenHeader title="Add Lot" showBack fallbackPath={fallbackPath} />
       <Form
         footer={

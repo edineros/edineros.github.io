@@ -13,6 +13,7 @@ import { getAssetById } from '../../lib/db/assets';
 import { getLotsForAsset, createTransaction } from '../../lib/db/transactions';
 import { fetchPrice } from '../../lib/api/prices';
 import { formatCurrency, formatQuantity, formatDate, formatPercent, parseDecimal } from '../../lib/utils/format';
+import { useColors } from '../../lib/theme/store';
 import type { Asset, Lot } from '../../lib/types';
 
 export default function CloseLotScreen() {
@@ -21,6 +22,7 @@ export default function CloseLotScreen() {
     lotId: string;
     portfolioId: string;
   }>();
+  const colors = useColors();
   const [asset, setAsset] = useState<Asset | null>(null);
   const [lot, setLot] = useState<Lot | null>(null);
   const [quantity, setQuantity] = useState('');
@@ -132,7 +134,7 @@ export default function CloseLotScreen() {
 
   if (!asset || !lot) {
     return (
-      <YStack flex={1} backgroundColor="#000000">
+      <YStack flex={1} backgroundColor={colors.background}>
         <ScreenHeader title="Sell Position" showBack fallbackPath={fallbackPath} />
       </YStack>
     );
@@ -141,7 +143,7 @@ export default function CloseLotScreen() {
   const gainInfo = calculateGain();
 
   return (
-    <YStack flex={1} backgroundColor="#000000">
+    <YStack flex={1} backgroundColor={colors.background}>
       <ScreenHeader title="Sell Position" showBack fallbackPath={fallbackPath} />
       <Form
         footer={
@@ -156,15 +158,15 @@ export default function CloseLotScreen() {
       >
         {/* Lot Info Card */}
         <YStack
-          backgroundColor="#111111"
+          backgroundColor={colors.card}
           borderRadius={12}
           borderWidth={1}
-          borderColor="#1F1F1F"
+          borderColor={colors.cardBorder}
           padding={16}
           gap={8}
         >
           <InfoLabel>Closing lot for {asset.symbol}</InfoLabel>
-          <Separator backgroundColor="#1F1F1F" />
+          <Separator backgroundColor={colors.border} />
           <InfoRow label="Available" value={`${formatQuantity(lot.remainingQuantity)} units`} />
           <InfoRow label="Purchase Price" value={formatCurrency(lot.purchasePrice, asset.currency)} />
           <InfoRow label="Purchase Date" value={formatDate(lot.purchaseDate)} />
@@ -216,23 +218,23 @@ export default function CloseLotScreen() {
 
         {gainInfo && (
           <YStack
-            backgroundColor="#111111"
+            backgroundColor={colors.card}
             borderRadius={12}
             borderWidth={1}
-            borderColor="#1F1F1F"
+            borderColor={colors.cardBorder}
             padding={16}
             gap={12}
           >
             <InfoLabel>Sale Summary</InfoLabel>
-            <Separator backgroundColor="#1F1F1F" />
+            <Separator backgroundColor={colors.border} />
             <YStack gap={8}>
               <InfoRow label="Sell Value" value={formatCurrency(gainInfo.sellValue, asset.currency)} />
               <InfoRow label="Cost Basis" value={formatCurrency(gainInfo.costBasis, asset.currency)} />
-              <Separator backgroundColor="#1F1F1F" />
+              <Separator backgroundColor={colors.border} />
               <InfoRow
                 label="Realized Gain/Loss"
                 value={`${formatCurrency(gainInfo.gain, asset.currency, { showSign: true })} (${formatPercent(gainInfo.gainPercent)})`}
-                valueColor={gainInfo.gain >= 0 ? '#00D897' : '#FF6B6B'}
+                valueColor={gainInfo.gain >= 0 ? colors.gain : colors.loss}
                 bold
               />
             </YStack>

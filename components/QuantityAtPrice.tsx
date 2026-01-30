@@ -1,5 +1,6 @@
 import { XStack, Text } from 'tamagui';
 import { formatQuantity, formatCurrency } from '../lib/utils/format';
+import { useColors } from '../lib/theme/store';
 
 interface QuantityAtPriceProps {
   quantity: number;
@@ -17,15 +18,17 @@ export function QuantityAtPrice({
   currency,
   fontSize = 12,
 }: QuantityAtPriceProps) {
+  const colors = useColors();
+
   return (
     <XStack alignItems="center">
-      <Text color="#CCCCCC" fontSize={fontSize}>
+      <Text color={colors.textMuted} fontSize={fontSize}>
         {formatQuantity(quantity)}
       </Text>
-      <Text color="#636366" fontSize={fontSize}>
+      <Text color={colors.textTertiary} fontSize={fontSize}>
         {' @ '}
       </Text>
-      <Text color="#CCCCCC" fontSize={fontSize}>
+      <Text color={colors.textMuted} fontSize={fontSize}>
         {formatCurrency(price, currency)}
       </Text>
     </XStack>

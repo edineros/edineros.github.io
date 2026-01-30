@@ -10,11 +10,13 @@ import { alert, confirm } from '../../../lib/utils/confirm';
 import { getAssetById, getAllAssetTags } from '../../../lib/db/assets';
 import { TagInputRef } from '../../../components/TagInput';
 import { isSimpleAssetType } from '../../../lib/constants/assetTypes';
+import { useColors } from '../../../lib/theme/store';
 import type { Asset } from '../../../lib/types';
 import { HeaderIconButton } from '../../../components/HeaderButtons';
 
 export default function EditAssetScreen() {
   const { id, portfolioId } = useLocalSearchParams<{ id: string; portfolioId: string }>();
+  const colors = useColors();
   const [asset, setAsset] = useState<Asset | null>(null);
   const [name, setName] = useState('');
   const [tags, setTags] = useState<string[]>([]);
@@ -89,10 +91,10 @@ export default function EditAssetScreen() {
 
   if (isLoading) {
     return (
-      <YStack flex={1} backgroundColor="#000000">
+      <YStack flex={1} backgroundColor={colors.background}>
         <ScreenHeader title="Edit Asset" showBack fallbackPath={fallbackPath} />
         <YStack flex={1} justifyContent="center" alignItems="center">
-          <Spinner size="large" />
+          <Spinner size="large" color={colors.text} />
         </YStack>
       </YStack>
     );
@@ -100,10 +102,10 @@ export default function EditAssetScreen() {
 
   if (!asset) {
     return (
-      <YStack flex={1} backgroundColor="#000000">
+      <YStack flex={1} backgroundColor={colors.background}>
         <ScreenHeader title="Edit Asset" showBack fallbackPath={fallbackPath} />
         <YStack flex={1} justifyContent="center" alignItems="center" padding="$4">
-          <Text>Asset not found</Text>
+          <Text color={colors.text}>Asset not found</Text>
         </YStack>
       </YStack>
     );
@@ -112,14 +114,14 @@ export default function EditAssetScreen() {
   const isSimple = isSimpleAssetType(asset.type);
 
   return (
-    <YStack flex={1} backgroundColor="#000000">
+    <YStack flex={1} backgroundColor={colors.background}>
       <ScreenHeader
         title="Edit Asset"
         showBack
         fallbackPath={fallbackPath}
         rightComponent={
           <HeaderIconButton
-            color="#FF3B30"
+            color={colors.destructive}
             icon="trash-outline"
             onPress={handleDelete}
           />
