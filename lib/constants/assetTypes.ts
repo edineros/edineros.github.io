@@ -82,8 +82,9 @@ export function getAssetTypeColor(type: AssetType): string {
 }
 
 /**
- * Simple asset types don't require a symbol and don't fetch prices.
- * Their value is calculated as: quantity × 1 (in asset currency).
+ * Simple asset types don't require a symbol and don't fetch live market prices.
+ * Their current price is the average purchase price from lots.
+ * Value is calculated as: quantity × average_purchase_price.
  */
 export const SIMPLE_ASSET_TYPES: AssetType[] = ['cash', 'real-estate', 'other'];
 

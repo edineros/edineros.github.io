@@ -16,9 +16,10 @@ import {
   calculateTagAllocations,
   AllocationMode,
 } from '../../components/AssetAllocationChart';
-import { formatCurrency, formatPercent, getGainColor } from '../../lib/utils/format';
+import { formatCurrency, formatPercent, formatQuantity, getGainColor } from '../../lib/utils/format';
 import { CONTENT_HORIZONTAL_PADDING } from '../../lib/constants/layout';
 import { VALUE_MASK } from '../../lib/constants/ui';
+import { isSimpleAssetType } from '../../lib/constants/assetTypes';
 import { useColors } from '../../lib/theme/store';
 import type { Asset } from '../../lib/types';
 
@@ -120,6 +121,7 @@ export default function PortfolioDetailScreen() {
   const renderAsset = ({ item }: { item: Asset }) => {
     const stats = assetStats.get(item.id);
     const gainColor = stats ? getGainColor(stats.unrealizedGain) : 'neutral';
+    const isSimple = isSimpleAssetType(item.type);
 
     return (
       <TouchableOpacity
@@ -161,13 +163,19 @@ export default function PortfolioDetailScreen() {
             )}
             {stats && (
               <XStack marginTop={2}>
-                <QuantityAtPrice
-                  quantity={stats.totalQuantity}
-                  price={stats.averageCost}
-                  currency={item.currency}
-                  fontSize={12}
-                  masked={portfolio?.masked}
-                />
+                {isSimple ? (
+                  <Text color={colors.textMuted} fontSize={12}>
+                    {portfolio?.masked ? VALUE_MASK : `${formatQuantity(stats.totalQuantity)} ${stats.totalQuantity === 1 ? 'item' : 'items'}`}
+                  </Text>
+                ) : (
+                  <QuantityAtPrice
+                    quantity={stats.totalQuantity}
+                    price={stats.averageCost}
+                    currency={item.currency}
+                    fontSize={12}
+                    masked={portfolio?.masked}
+                  />
+                )}
               </XStack>
             )}
           </YStack>
@@ -177,13 +185,15 @@ export default function PortfolioDetailScreen() {
                 <Text color={colors.text} fontSize={17} fontWeight="600">
                   {portfolio?.masked ? VALUE_MASK : formatCurrency(stats.currentValue, portfolio?.currency)}
                 </Text>
-                <Text
-                  fontSize={13}
-                  fontWeight="600"
-                  color={gainColor === 'gain' ? colors.gain : gainColor === 'loss' ? colors.loss : colors.textSecondary}
-                >
-                  {portfolio?.masked ? formatPercent(stats.unrealizedGainPercent) : `${formatCurrency(stats.unrealizedGain, portfolio?.currency, { showSign: true })} (${formatPercent(stats.unrealizedGainPercent)})`}
-                </Text>
+                {!isSimple && (
+                  <Text
+                    fontSize={13}
+                    fontWeight="600"
+                    color={gainColor === 'gain' ? colors.gain : gainColor === 'loss' ? colors.loss : colors.textSecondary}
+                  >
+                    {portfolio?.masked ? formatPercent(stats.unrealizedGainPercent) : `${formatCurrency(stats.unrealizedGain, portfolio?.currency, { showSign: true })} (${formatPercent(stats.unrealizedGainPercent)})`}
+                  </Text>
+                )}
               </>
             ) : (
               <Spinner size="small" color={colors.textSecondary} />

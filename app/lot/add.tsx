@@ -37,19 +37,26 @@ export default function AddLotScreen() {
   }, [assetId]);
 
   const total = () => {
+    if (isSimple) {
+      // For simple assets, "quantity" field holds the amount (which becomes pricePerUnit)
+      return parseDecimal(quantity) || 0;
+    }
     const qty = parseDecimal(quantity) || 0;
-    const price = isSimple ? 1 : (parseDecimal(pricePerUnit) || 0);
-    const feeVal = isSimple ? 0 : (parseDecimal(fee) || 0);
+    const price = parseDecimal(pricePerUnit) || 0;
+    const feeVal = parseDecimal(fee) || 0;
     return qty * price + feeVal;
   };
 
   const handleCreate = async () => {
-    const qty = parseDecimal(quantity);
-    const price = isSimple ? 1 : parseDecimal(pricePerUnit);
+    // For simple assets: amount is stored as pricePerUnit with quantity=1
+    // For other assets: quantity and pricePerUnit are separate fields
+    const amount = parseDecimal(quantity);
+    const qty = isSimple ? 1 : amount;
+    const price = isSimple ? amount : parseDecimal(pricePerUnit);
     const feeVal = isSimple ? 0 : (parseDecimal(fee) || 0);
 
-    if (!qty || qty <= 0) {
-      alert('Error', 'Please enter a valid quantity');
+    if (!amount || amount <= 0) {
+      alert('Error', isSimple ? 'Please enter a valid amount' : 'Please enter a valid quantity');
       return;
     }
 

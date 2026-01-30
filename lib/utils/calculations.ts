@@ -7,6 +7,7 @@ import {
   getValidCachedPrice,
   setCachedPrice,
 } from '../db/priceCache';
+import { isSimpleAssetType } from '../constants/assetTypes';
 
 // TTL in minutes for crypto prices (matches prices.ts)
 const CRYPTO_PRICE_TTL = 5;
@@ -50,24 +51,36 @@ export async function calculateAssetStats(
   );
   const averageCost = totalQuantity > 0 ? totalCost / totalQuantity : 0;
 
-  // Fetch current price
-  const priceResult = await fetchPrice(asset.symbol, asset.type, asset.currency);
-  let currentPrice: number | null = priceResult?.price ?? null;
+  // For simple asset types (cash, real-estate, other), use the purchase price as current price
+  // since these don't have market prices. This way value = quantity × purchase_price.
+  let currentPrice: number | null;
   let currentValue: number | null = null;
   let unrealizedGain: number | null = null;
   let unrealizedGainPercent: number | null = null;
 
-  if (currentPrice !== null) {
-    // Convert price to asset currency if needed
-    if (priceResult && priceResult.currency !== asset.currency) {
-      const converted = await convertCurrency(currentPrice, priceResult.currency, asset.currency);
-      if (converted !== null) {
-        currentPrice = converted;
-      }
-    }
-
+  if (isSimpleAssetType(asset.type)) {
+    // Use average cost as the current price for simple assets
+    currentPrice = averageCost;
     currentValue = totalQuantity * currentPrice;
+  } else {
+    // Fetch current price for market-traded assets
+    const priceResult = await fetchPrice(asset.symbol, asset.type, asset.currency);
+    currentPrice = priceResult?.price ?? null;
 
+    if (currentPrice !== null) {
+      // Convert price to asset currency if needed
+      if (priceResult && priceResult.currency !== asset.currency) {
+        const converted = await convertCurrency(currentPrice, priceResult.currency, asset.currency);
+        if (converted !== null) {
+          currentPrice = converted;
+        }
+      }
+
+      currentValue = totalQuantity * currentPrice;
+    }
+  }
+
+  if (currentPrice !== null) {
     // Convert to portfolio currency if different
     if (asset.currency !== portfolioCurrency && currentValue !== null) {
       const convertedValue = await convertCurrency(currentValue, asset.currency, portfolioCurrency);

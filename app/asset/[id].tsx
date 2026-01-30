@@ -20,6 +20,7 @@ import {
   getGainColor,
 } from '../../lib/utils/format';
 import { calculateLotStats } from '../../lib/utils/calculations';
+import { isSimpleAssetType } from '../../lib/constants/assetTypes';
 import type { Asset, Lot, Transaction } from '../../lib/types';
 import { MicroButton } from '../../components/MicroButton';
 import { useColors } from '../../lib/theme/store';
@@ -59,7 +60,8 @@ export default function AssetDetailScreen() {
       setLots(lotsData);
       setTransactions(txData);
 
-      if (assetData) {
+      // Only fetch price for market assets (not simple assets)
+      if (assetData && !isSimpleAssetType(assetData.type)) {
         const priceResult = await fetchPrice(assetData.symbol, assetData.type, assetData.currency);
         if (priceResult) {
           setCurrentPrice(priceResult.price);
@@ -75,7 +77,7 @@ export default function AssetDetailScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    if (asset) {
+    if (asset && !isSimpleAssetType(asset.type)) {
       const priceResult = await refreshPrice(asset.symbol, asset.type, asset.currency);
       if (priceResult) {
         setCurrentPrice(priceResult.price);
@@ -99,6 +101,19 @@ export default function AssetDetailScreen() {
     }
   }, []);
 
+  const handleDeleteItem = useCallback(async (lot: Lot) => {
+    const confirmed = await confirm({
+      title: 'Delete Item',
+      message: 'Are you sure you want to delete this item?',
+      confirmText: 'Delete',
+      destructive: true,
+    });
+    if (confirmed) {
+      await deleteTransaction(lot.buyTransactionId);
+      loadData();
+    }
+  }, []);
+
   // Calculate totals
   const totalQuantity = lots.reduce((sum, lot) => sum + lot.remainingQuantity, 0);
   const totalCost = lots.reduce(
@@ -111,6 +126,43 @@ export default function AssetDetailScreen() {
   const unrealizedGainPercent =
     unrealizedGain !== null && totalCost > 0 ? (unrealizedGain / totalCost) * 100 : null;
 
+  // Simplified item renderer for simple assets (cash, real-estate, other)
+  const renderSimpleItem = ({ item }: { item: Lot }) => (
+    <Card
+      elevate
+      bordered
+      marginHorizontal={CONTENT_HORIZONTAL_PADDING}
+      marginVertical={4}
+      padding={16}
+      backgroundColor="$background"
+    >
+      <XStack justifyContent="space-between" alignItems="flex-start">
+        <YStack flex={1}>
+          <Text fontSize="$4" fontWeight="600" color="$color">
+            {formatCurrency(item.remainingQuantity * item.purchasePrice, asset?.currency)}
+          </Text>
+          <Text fontSize="$2" color="$gray10" marginTop={2}>
+            {formatDate(item.purchaseDate)}
+          </Text>
+          {item.notes && (
+            <Text fontSize="$2" color="$gray9" marginTop={4}>
+              {item.notes}
+            </Text>
+          )}
+        </YStack>
+      </XStack>
+      <XStack marginTop="$3" gap="$2" justifyContent="flex-end">
+        <MicroButton href={`/lot/edit?lotId=${item.id}&assetId=${id}&portfolioId=${portfolioId}`}>
+          Edit
+        </MicroButton>
+        <MicroButton theme="red" onPress={() => handleDeleteItem(item)}>
+          Delete
+        </MicroButton>
+      </XStack>
+    </Card>
+  );
+
+  // Lot renderer for market assets (stocks, crypto, etc.)
   const renderLot = ({ item }: { item: Lot }) => {
     const stats = calculateLotStats(item, currentPrice);
 
@@ -137,6 +189,11 @@ export default function AssetDetailScreen() {
             {item.remainingQuantity !== item.originalQuantity && (
               <Text fontSize="$2" color="$gray9">
                 (Originally {formatQuantity(item.originalQuantity)})
+              </Text>
+            )}
+            {item.notes && (
+              <Text fontSize="$2" color="$gray9" marginTop={4}>
+                {item.notes}
               </Text>
             )}
           </YStack>
@@ -283,22 +340,24 @@ export default function AssetDetailScreen() {
               </Text>
             )}
           </YStack>
-          <YStack alignItems="flex-end">
-            {currentPrice !== null ? (
-              <>
-                <Text fontSize="$6" fontWeight="600" color="$color">
-                  {formatCurrency(currentPrice, asset.currency)}
-                </Text>
-                {priceLastUpdated && (
-                  <Text fontSize="$2" color="$gray9">
-                    {formatRelativeTime(priceLastUpdated)}
+          {!isSimpleAssetType(asset.type) && (
+            <YStack alignItems="flex-end">
+              {currentPrice !== null ? (
+                <>
+                  <Text fontSize="$6" fontWeight="600" color="$color">
+                    {formatCurrency(currentPrice, asset.currency)}
                   </Text>
-                )}
-              </>
-            ) : (
-              <Text color="$gray10">Price unavailable</Text>
-            )}
-          </YStack>
+                  {priceLastUpdated && (
+                    <Text fontSize="$2" color="$gray9">
+                      {formatRelativeTime(priceLastUpdated)}
+                    </Text>
+                  )}
+                </>
+              ) : (
+                <Text color="$gray10">Price unavailable</Text>
+              )}
+            </YStack>
+          )}
         </XStack>
 
         <Separator marginVertical="$3" />
@@ -306,20 +365,26 @@ export default function AssetDetailScreen() {
         <XStack justifyContent="space-between">
           <YStack>
             <Text fontSize="$2" color="$gray10">
-              Holdings
+              {isSimpleAssetType(asset.type) ? 'Items' : 'Holdings'}
             </Text>
             <Text fontSize="$5" fontWeight="600">
-              {formatQuantity(totalQuantity)}
+              {isSimpleAssetType(asset.type) ? `${formatQuantity(totalQuantity)} ${totalQuantity === 1 ? 'item' : 'items'}` : formatQuantity(totalQuantity)}
             </Text>
-            <Text fontSize="$2" color="$gray10">
-              Avg. Cost: {formatCurrency(averageCost, asset.currency)}
-            </Text>
+            {!isSimpleAssetType(asset.type) && (
+              <Text fontSize="$2" color="$gray10">
+                Avg. Cost: {formatCurrency(averageCost, asset.currency)}
+              </Text>
+            )}
           </YStack>
           <YStack alignItems="flex-end">
             <Text fontSize="$2" color="$gray10">
               Total Value
             </Text>
-            {currentValue !== null ? (
+            {isSimpleAssetType(asset.type) ? (
+              <Text fontSize="$5" fontWeight="600">
+                {formatCurrency(totalCost, asset.currency)}
+              </Text>
+            ) : currentValue !== null ? (
               <>
                 <Text fontSize="$5" fontWeight="600">
                   {formatCurrency(currentValue, asset.currency)}
@@ -347,63 +412,88 @@ export default function AssetDetailScreen() {
         </XStack>
       </Card>
 
-      {/* Tabs */}
-      <Tabs
-        value={activeTab}
-        onValueChange={setActiveTab}
-        flexDirection="column"
-        flex={1}
-      >
-        <Tabs.List paddingHorizontal={CONTENT_HORIZONTAL_PADDING} justifyContent="space-between">
-          <Tabs.Tab value="lots" width="49%">
-            <Text>Lots ({lots.length})</Text>
-          </Tabs.Tab>
-          <Tabs.Tab value="transactions" width="49%">
-            <Text>Transactions ({transactions.length})</Text>
-          </Tabs.Tab>
-        </Tabs.List>
-
-        <Tabs.Content value="lots" flex={1}>
+      {/* Simple assets: show items list without tabs */}
+      {isSimpleAssetType(asset.type) ? (
+        <YStack flex={1}>
           <FlatList
             data={lots}
             keyExtractor={(item) => item.id}
-            renderItem={renderLot}
-            contentContainerStyle={{ paddingVertical: 8, flexGrow: 1 }}
+            renderItem={renderSimpleItem}
+            contentContainerStyle={{ paddingBottom: 100, flexGrow: 1 }}
             refreshControl={
               <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
             }
             ListEmptyComponent={
               <YStack flex={1} padding="$8" alignItems="center" justifyContent="center">
                 <Text fontSize="$5" color="$gray10" textAlign="center">
-                  No lots yet
+                  No items yet
                 </Text>
                 <Text fontSize="$3" color="$gray9" textAlign="center" marginTop="$2">
-                  Add a lot to track your holdings
+                  Add an item to track this asset
                 </Text>
               </YStack>
             }
           />
-        </Tabs.Content>
+        </YStack>
+      ) : (
+        /* Market assets: show Lots/Transactions tabs */
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          flexDirection="column"
+          flex={1}
+        >
+          <Tabs.List paddingHorizontal={CONTENT_HORIZONTAL_PADDING} justifyContent="space-between">
+            <Tabs.Tab value="lots" width="49%">
+              <Text>Lots ({lots.length})</Text>
+            </Tabs.Tab>
+            <Tabs.Tab value="transactions" width="49%">
+              <Text>Transactions ({transactions.length})</Text>
+            </Tabs.Tab>
+          </Tabs.List>
 
-        <Tabs.Content value="transactions" flex={1}>
-          <FlatList
-            data={transactions}
-            keyExtractor={(item) => item.id}
-            renderItem={renderTransaction}
-            contentContainerStyle={{ paddingVertical: 8, flexGrow: 1 }}
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-            }
-            ListEmptyComponent={
-              <YStack flex={1} padding="$8" alignItems="center" justifyContent="center">
-                <Text fontSize="$5" color="$gray10" textAlign="center">
-                  No transactions yet
-                </Text>
-              </YStack>
-            }
-          />
-        </Tabs.Content>
-      </Tabs>
+          <Tabs.Content value="lots" flex={1}>
+            <FlatList
+              data={lots}
+              keyExtractor={(item) => item.id}
+              renderItem={renderLot}
+              contentContainerStyle={{ paddingVertical: 8, flexGrow: 1 }}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+              }
+              ListEmptyComponent={
+                <YStack flex={1} padding="$8" alignItems="center" justifyContent="center">
+                  <Text fontSize="$5" color="$gray10" textAlign="center">
+                    No lots yet
+                  </Text>
+                  <Text fontSize="$3" color="$gray9" textAlign="center" marginTop="$2">
+                    Add a lot to track your holdings
+                  </Text>
+                </YStack>
+              }
+            />
+          </Tabs.Content>
+
+          <Tabs.Content value="transactions" flex={1}>
+            <FlatList
+              data={transactions}
+              keyExtractor={(item) => item.id}
+              renderItem={renderTransaction}
+              contentContainerStyle={{ paddingVertical: 8, flexGrow: 1 }}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+              }
+              ListEmptyComponent={
+                <YStack flex={1} padding="$8" alignItems="center" justifyContent="center">
+                  <Text fontSize="$5" color="$gray10" textAlign="center">
+                    No transactions yet
+                  </Text>
+                </YStack>
+              }
+            />
+          </Tabs.Content>
+        </Tabs>
+      )}
 
       <FloatingActionButton href={`/lot/add?assetId=${id}&portfolioId=${portfolioId}`} />
     </Page>
