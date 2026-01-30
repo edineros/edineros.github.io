@@ -2,7 +2,7 @@ import * as SQLite from 'expo-sqlite';
 import { Platform } from 'react-native';
 
 const DATABASE_NAME = 'portfolio.db';
-const SCHEMA_VERSION = 2; // Increment when schema changes require migration
+const SCHEMA_VERSION = 3; // Increment when schema changes require migration
 
 let db: SQLite.SQLiteDatabase | null = null;
 let dbInitPromise: Promise<SQLite.SQLiteDatabase> | null = null;
@@ -166,6 +166,21 @@ async function runMigrations(database: SQLite.SQLiteDatabase, fromVersion: numbe
     `);
 
     await database.execAsync('PRAGMA foreign_keys = ON;');
+  }
+
+  // Migration to version 3: Add masked column to portfolios
+  if (fromVersion < 3) {
+    // Check if column exists
+    const columns = await database.getAllAsync<{ name: string }>(
+      "PRAGMA table_info(portfolios)"
+    );
+    const hasValuesHidden = columns.some(col => col.name === 'masked');
+
+    if (!hasValuesHidden) {
+      await database.execAsync(
+        'ALTER TABLE portfolios ADD COLUMN masked INTEGER DEFAULT 0'
+      );
+    }
   }
 
   // Update schema version

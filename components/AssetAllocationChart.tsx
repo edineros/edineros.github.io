@@ -3,6 +3,7 @@ import { DonutChart, DonutSegment } from './DonutChart';
 import type { AssetType } from '../lib/types';
 import { formatCurrency, formatPercent } from '../lib/utils/format';
 import { getAssetTypeColor, getAssetTypePlural } from '../lib/constants/assetTypes';
+import { VALUE_MASK } from '../lib/constants/ui';
 import { useColors } from '../lib/theme/store';
 
 export type AllocationMode = 'type' | 'tags';
@@ -25,6 +26,7 @@ interface AssetAllocationChartProps {
   tagAllocations?: TagAllocationData[];
   currency: string;
   mode: AllocationMode;
+  masked?: boolean;
 }
 
 export function AssetAllocationChart({
@@ -32,6 +34,7 @@ export function AssetAllocationChart({
   tagAllocations = [],
   currency,
   mode,
+  masked = false,
 }: AssetAllocationChartProps) {
   const colors = useColors();
 
@@ -100,7 +103,7 @@ export function AssetAllocationChart({
                 </XStack>
                 <XStack alignItems="center" gap={8}>
                   <Text color={colors.textSecondary} fontSize={14}>
-                    {formatCurrency(allocation.value, currency)}
+                    {masked ? VALUE_MASK : formatCurrency(allocation.value, currency)}
                   </Text>
                   <Text color={colors.text} fontSize={14} fontWeight="500" minWidth={80} textAlign="right">
                     {formatPercent(allocation.percentage, { showSign: false, minimumFractionDigits: 1, maximumFractionDigits: 1 })}
@@ -127,7 +130,7 @@ export function AssetAllocationChart({
                 </XStack>
                 <XStack alignItems="center" gap={8}>
                   <Text color={colors.textSecondary} fontSize={14}>
-                    {formatCurrency(allocation.value, currency)}
+                    {masked ? VALUE_MASK : formatCurrency(allocation.value, currency)}
                   </Text>
                   <Text color={colors.text} fontSize={14} fontWeight="500" minWidth={80} textAlign="right">
                     {formatPercent(allocation.percentage, { showSign: false, minimumFractionDigits: 1, maximumFractionDigits: 1 })}

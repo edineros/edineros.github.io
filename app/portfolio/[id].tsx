@@ -18,6 +18,7 @@ import {
 } from '../../components/AssetAllocationChart';
 import { formatCurrency, formatPercent, getGainColor } from '../../lib/utils/format';
 import { CONTENT_HORIZONTAL_PADDING } from '../../lib/constants/layout';
+import { VALUE_MASK } from '../../lib/constants/ui';
 import { useColors } from '../../lib/theme/store';
 import type { Asset } from '../../lib/types';
 
@@ -37,6 +38,7 @@ export default function PortfolioDetailScreen() {
     loadPortfolioStats,
     refreshPrices,
     setCurrentPortfolio,
+    updatePortfolio,
   } = useAppStore();
 
   // Get portfolio directly from store (already loaded on list screen)
@@ -164,6 +166,7 @@ export default function PortfolioDetailScreen() {
                   price={stats.averageCost}
                   currency={item.currency}
                   fontSize={12}
+                  masked={portfolio?.masked}
                 />
               </XStack>
             )}
@@ -172,14 +175,14 @@ export default function PortfolioDetailScreen() {
             {stats?.currentValue !== null && stats?.currentValue !== undefined ? (
               <>
                 <Text color={colors.text} fontSize={17} fontWeight="600">
-                  {formatCurrency(stats.currentValue, portfolio?.currency)}
+                  {portfolio?.masked ? VALUE_MASK : formatCurrency(stats.currentValue, portfolio?.currency)}
                 </Text>
                 <Text
                   fontSize={13}
                   fontWeight="600"
                   color={gainColor === 'gain' ? colors.gain : gainColor === 'loss' ? colors.loss : colors.textSecondary}
                 >
-                  {formatCurrency(stats.unrealizedGain, portfolio?.currency, { showSign: true })} ({formatPercent(stats.unrealizedGainPercent)})
+                  {portfolio?.masked ? formatPercent(stats.unrealizedGainPercent) : `${formatCurrency(stats.unrealizedGain, portfolio?.currency, { showSign: true })} (${formatPercent(stats.unrealizedGainPercent)})`}
                 </Text>
               </>
             ) : (
@@ -228,22 +231,36 @@ export default function PortfolioDetailScreen() {
       />
       {/* Portfolio Summary */}
       <YStack padding={CONTENT_HORIZONTAL_PADDING} gap={4}>
-        <Text color={colors.textSecondary} fontSize={13}>
-          TOTAL VALUE
-        </Text>
+        <XStack alignItems="center" gap={8}>
+          <Text color={colors.textSecondary} fontSize={13}>
+            TOTAL VALUE
+          </Text>
+          <TouchableOpacity
+            onPress={() => updatePortfolio(portfolio.id, { masked: !portfolio.masked })}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons
+              name={portfolio.masked ? 'eye-off-outline' : 'eye-outline'}
+              size={16}
+              color={colors.textSecondary}
+            />
+          </TouchableOpacity>
+        </XStack>
         {stats?.totalValue !== null && stats?.totalValue !== undefined ? (
           <>
             <Text color={colors.text} fontSize={34} fontWeight="700">
-              {formatCurrency(stats.totalValue, portfolio.currency)}
+              {portfolio.masked ? VALUE_MASK : formatCurrency(stats.totalValue, portfolio.currency)}
             </Text>
             <XStack alignItems="center" gap={8} marginTop={4}>
-              <Text
-                fontSize={15}
-                fontWeight="600"
-                color={overallGainColor === 'gain' ? colors.gain : overallGainColor === 'loss' ? colors.loss : colors.textSecondary}
-              >
-                {formatCurrency(stats.totalGain, portfolio.currency, { showSign: true })}
-              </Text>
+              {!portfolio.masked && (
+                <Text
+                  fontSize={15}
+                  fontWeight="600"
+                  color={overallGainColor === 'gain' ? colors.gain : overallGainColor === 'loss' ? colors.loss : colors.textSecondary}
+                >
+                  {formatCurrency(stats.totalGain, portfolio.currency, { showSign: true })}
+                </Text>
+              )}
               <Text
                 fontSize={13}
                 fontWeight="600"
@@ -313,6 +330,7 @@ export default function PortfolioDetailScreen() {
                 tagAllocations={allocationData.tagAllocations}
                 currency={portfolio.currency}
                 mode={allocationMode}
+                masked={portfolio.masked}
               />
             </YStack>
           ) : null

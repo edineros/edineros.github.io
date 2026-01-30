@@ -7,6 +7,7 @@ interface PortfolioRow {
   id: string;
   name: string;
   currency: string;
+  masked: number;
   created_at: number;
   updated_at: number;
 }
@@ -16,6 +17,7 @@ function rowToPortfolio(row: PortfolioRow): Portfolio {
     id: row.id,
     name: row.name,
     currency: row.currency,
+    masked: row.masked === 1,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   };
@@ -58,6 +60,7 @@ export async function createPortfolio(
     id,
     name,
     currency,
+    masked: 0,
     created_at: now,
     updated_at: now,
   };
@@ -67,8 +70,8 @@ export async function createPortfolio(
   } else {
     const db = await getDatabase();
     await db.runAsync(
-      'INSERT INTO portfolios (id, name, currency, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
-      [id, name, currency, now, now]
+      'INSERT INTO portfolios (id, name, currency, masked, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+      [id, name, currency, 0, now, now]
     );
   }
 
@@ -76,6 +79,7 @@ export async function createPortfolio(
     id,
     name,
     currency,
+    masked: false,
     createdAt: new Date(now),
     updatedAt: new Date(now),
   };
@@ -83,7 +87,7 @@ export async function createPortfolio(
 
 export async function updatePortfolio(
   id: string,
-  updates: { name?: string; currency?: string }
+  updates: { name?: string; currency?: string; masked?: boolean }
 ): Promise<Portfolio | null> {
   const portfolio = await getPortfolioById(id);
   if (!portfolio) return null;
@@ -91,20 +95,22 @@ export async function updatePortfolio(
   const now = Date.now();
   const newName = updates.name ?? portfolio.name;
   const newCurrency = updates.currency ?? portfolio.currency;
+  const newValuesHidden = updates.masked ?? portfolio.masked;
 
   if (isWeb()) {
     await webDb.updatePortfolio({
       id,
       name: newName,
       currency: newCurrency,
+      masked: newValuesHidden ? 1 : 0,
       created_at: portfolio.createdAt.getTime(),
       updated_at: now,
     });
   } else {
     const db = await getDatabase();
     await db.runAsync(
-      'UPDATE portfolios SET name = ?, currency = ?, updated_at = ? WHERE id = ?',
-      [newName, newCurrency, now, id]
+      'UPDATE portfolios SET name = ?, currency = ?, masked = ?, updated_at = ? WHERE id = ?',
+      [newName, newCurrency, newValuesHidden ? 1 : 0, now, id]
     );
   }
 
@@ -112,6 +118,7 @@ export async function updatePortfolio(
     ...portfolio,
     name: newName,
     currency: newCurrency,
+    masked: newValuesHidden,
     updatedAt: new Date(now),
   };
 }

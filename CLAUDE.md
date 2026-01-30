@@ -45,7 +45,8 @@ if (!id) {
 ├── types.ts              # TypeScript interfaces
 ├── constants/
 │   ├── assetTypes.ts     # Asset type definitions
-│   └── layout.ts         # Layout constants
+│   ├── layout.ts         # Layout constants
+│   └── ui.ts             # UI constants (VALUE_MASK, etc.)
 ├── theme/
 │   ├── colors.ts         # Color definitions (dark/light)
 │   └── store.ts          # Theme state (dark/light/auto)
@@ -112,6 +113,7 @@ CREATE TABLE portfolios (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   currency TEXT DEFAULT 'EUR',
+  masked INTEGER DEFAULT 0,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
 );

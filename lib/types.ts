@@ -12,6 +12,7 @@ export interface Portfolio {
   id: string;
   name: string;
   currency: string;
+  masked: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

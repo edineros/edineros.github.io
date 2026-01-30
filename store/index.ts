@@ -57,7 +57,7 @@ interface AppState {
   // Actions
   loadPortfolios: () => Promise<void>;
   createPortfolio: (name: string, currency?: string) => Promise<Portfolio>;
-  updatePortfolio: (id: string, updates: { name?: string; currency?: string }) => Promise<void>;
+  updatePortfolio: (id: string, updates: { name?: string; currency?: string; masked?: boolean }) => Promise<void>;
   deletePortfolio: (id: string) => Promise<void>;
   setCurrentPortfolio: (id: string | null) => void;
 
@@ -121,7 +121,7 @@ export const useAppStore = create<AppState>((set) => ({
     }
   },
 
-  updatePortfolio: async (id: string, updates: { name?: string; currency?: string }) => {
+  updatePortfolio: async (id: string, updates: { name?: string; currency?: string; masked?: boolean }) => {
     set({ isLoading: true, error: null });
     try {
       const updated = await db.updatePortfolio(id, updates);
