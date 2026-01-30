@@ -3,7 +3,8 @@ import { format } from 'date-fns';
 import { getAllPortfolios } from '../db/portfolios';
 import { getAssetsByPortfolioId } from '../db/assets';
 import { getTransactionsByAssetId } from '../db/transactions';
-import type { ExportData, Portfolio, Asset, Transaction } from '../types';
+import type { ExportData, Portfolio, Asset, Transaction, AssetType } from '../types';
+import { isValidAssetType } from '../types';
 
 const EXPORT_VERSION = '1.0';
 
@@ -172,10 +173,17 @@ export async function importFromJson(jsonString: string): Promise<{
       continue;
     }
 
+    // Validate asset type - map unknown types to 'other' to preserve data
+    let assetType: AssetType = asset.type;
+    if (!isValidAssetType(asset.type)) {
+      console.warn(`Unknown asset type "${asset.type}" for asset "${asset.symbol}", mapping to "other"`);
+      assetType = 'other';
+    }
+
     const newAsset = await createAsset(
       newPortfolioId,
       asset.symbol,
-      asset.type,
+      assetType,
       asset.name || undefined,
       asset.currency,
       asset.tags || []

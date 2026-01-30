@@ -2,6 +2,7 @@ import * as SQLite from 'expo-sqlite';
 import { Platform } from 'react-native';
 
 const DATABASE_NAME = 'portfolio.db';
+const SCHEMA_VERSION = 2; // Increment when schema changes require migration
 
 let db: SQLite.SQLiteDatabase | null = null;
 let dbInitPromise: Promise<SQLite.SQLiteDatabase> | null = null;
@@ -42,77 +43,134 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
 
 async function initializeDatabase(database: SQLite.SQLiteDatabase) {
   await database.execAsync('PRAGMA journal_mode = WAL;');
+
+  // Create schema version table if it doesn't exist
   await database.execAsync(`
-    PRAGMA foreign_keys = ON;
-
-    -- Portfolios
-    CREATE TABLE IF NOT EXISTS portfolios (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      currency TEXT DEFAULT 'EUR',
-      created_at INTEGER NOT NULL,
-      updated_at INTEGER NOT NULL
+    CREATE TABLE IF NOT EXISTS schema_version (
+      version INTEGER PRIMARY KEY
     );
-
-    -- Assets
-    CREATE TABLE IF NOT EXISTS assets (
-      id TEXT PRIMARY KEY,
-      portfolio_id TEXT NOT NULL REFERENCES portfolios(id) ON DELETE CASCADE,
-      symbol TEXT NOT NULL,
-      name TEXT,
-      type TEXT CHECK(type IN ('stock','etf','crypto','bond','commodity','cash','real-estate','other')) NOT NULL,
-      currency TEXT DEFAULT 'EUR',
-      tags TEXT DEFAULT '[]',
-      created_at INTEGER NOT NULL
-    );
-
-    -- Transactions
-    CREATE TABLE IF NOT EXISTS transactions (
-      id TEXT PRIMARY KEY,
-      asset_id TEXT NOT NULL REFERENCES assets(id) ON DELETE CASCADE,
-      type TEXT CHECK(type IN ('buy','sell')) NOT NULL,
-      quantity REAL NOT NULL,
-      price_per_unit REAL NOT NULL,
-      fee REAL DEFAULT 0,
-      date INTEGER NOT NULL,
-      notes TEXT,
-      lot_id TEXT,
-      created_at INTEGER NOT NULL
-    );
-
-    -- Transaction Tags (many-to-many)
-    CREATE TABLE IF NOT EXISTS transaction_tags (
-      transaction_id TEXT NOT NULL REFERENCES transactions(id) ON DELETE CASCADE,
-      tag TEXT NOT NULL,
-      PRIMARY KEY (transaction_id, tag)
-    );
-
-    -- Price Cache
-    CREATE TABLE IF NOT EXISTS price_cache (
-      symbol TEXT PRIMARY KEY,
-      asset_type TEXT,
-      price REAL,
-      currency TEXT,
-      fetched_at INTEGER,
-      expires_at INTEGER
-    );
-
-    -- Exchange Rates Cache
-    CREATE TABLE IF NOT EXISTS exchange_rates (
-      from_currency TEXT NOT NULL,
-      to_currency TEXT NOT NULL,
-      rate REAL NOT NULL,
-      fetched_at INTEGER NOT NULL,
-      expires_at INTEGER NOT NULL,
-      PRIMARY KEY (from_currency, to_currency)
-    );
-
-    -- Create indexes for faster queries
-    CREATE INDEX IF NOT EXISTS idx_assets_portfolio ON assets(portfolio_id);
-    CREATE INDEX IF NOT EXISTS idx_transactions_asset ON transactions(asset_id);
-    CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date);
-    CREATE INDEX IF NOT EXISTS idx_price_cache_expires ON price_cache(expires_at);
   `);
+
+  // Get current schema version
+  const versionResult = await database.getFirstAsync<{ version: number }>('SELECT version FROM schema_version LIMIT 1');
+  const currentVersion = versionResult?.version ?? 0;
+
+  if (currentVersion < SCHEMA_VERSION) {
+    await runMigrations(database, currentVersion);
+  }
+}
+
+async function runMigrations(database: SQLite.SQLiteDatabase, fromVersion: number) {
+  // Migration from version 0 or 1 to version 2:
+  // Remove CHECK constraint from assets.type to allow new asset types
+  // without requiring database migrations for each new type
+
+  if (fromVersion < 2) {
+    await database.execAsync('PRAGMA foreign_keys = OFF;');
+
+    await database.execAsync(`
+      -- Create tables if they don't exist (fresh install)
+      CREATE TABLE IF NOT EXISTS portfolios (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        currency TEXT DEFAULT 'EUR',
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS assets (
+        id TEXT PRIMARY KEY,
+        portfolio_id TEXT NOT NULL REFERENCES portfolios(id) ON DELETE CASCADE,
+        symbol TEXT NOT NULL,
+        name TEXT,
+        type TEXT NOT NULL,
+        currency TEXT DEFAULT 'EUR',
+        tags TEXT DEFAULT '[]',
+        created_at INTEGER NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS transactions (
+        id TEXT PRIMARY KEY,
+        asset_id TEXT NOT NULL REFERENCES assets(id) ON DELETE CASCADE,
+        type TEXT CHECK(type IN ('buy','sell')) NOT NULL,
+        quantity REAL NOT NULL,
+        price_per_unit REAL NOT NULL,
+        fee REAL DEFAULT 0,
+        date INTEGER NOT NULL,
+        notes TEXT,
+        lot_id TEXT,
+        created_at INTEGER NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS transaction_tags (
+        transaction_id TEXT NOT NULL REFERENCES transactions(id) ON DELETE CASCADE,
+        tag TEXT NOT NULL,
+        PRIMARY KEY (transaction_id, tag)
+      );
+
+      CREATE TABLE IF NOT EXISTS price_cache (
+        symbol TEXT PRIMARY KEY,
+        asset_type TEXT,
+        price REAL,
+        currency TEXT,
+        fetched_at INTEGER,
+        expires_at INTEGER
+      );
+
+      CREATE TABLE IF NOT EXISTS exchange_rates (
+        from_currency TEXT NOT NULL,
+        to_currency TEXT NOT NULL,
+        rate REAL NOT NULL,
+        fetched_at INTEGER NOT NULL,
+        expires_at INTEGER NOT NULL,
+        PRIMARY KEY (from_currency, to_currency)
+      );
+    `);
+
+    // Check if assets table has a CHECK constraint that needs to be removed
+    // by recreating the table without it
+    const tableInfo = await database.getAllAsync<{ sql: string }>(
+      "SELECT sql FROM sqlite_master WHERE type='table' AND name='assets'"
+    );
+
+    if (tableInfo.length > 0 && tableInfo[0].sql && tableInfo[0].sql.includes('CHECK')) {
+      // Table has CHECK constraint - need to recreate it
+      await database.execAsync(`
+        -- Create new assets table without CHECK constraint
+        CREATE TABLE assets_new (
+          id TEXT PRIMARY KEY,
+          portfolio_id TEXT NOT NULL REFERENCES portfolios(id) ON DELETE CASCADE,
+          symbol TEXT NOT NULL,
+          name TEXT,
+          type TEXT NOT NULL,
+          currency TEXT DEFAULT 'EUR',
+          tags TEXT DEFAULT '[]',
+          created_at INTEGER NOT NULL
+        );
+
+        -- Copy existing data
+        INSERT INTO assets_new SELECT * FROM assets;
+
+        -- Drop old table and rename new one
+        DROP TABLE assets;
+        ALTER TABLE assets_new RENAME TO assets;
+      `);
+    }
+
+    // Create indexes
+    await database.execAsync(`
+      CREATE INDEX IF NOT EXISTS idx_assets_portfolio ON assets(portfolio_id);
+      CREATE INDEX IF NOT EXISTS idx_transactions_asset ON transactions(asset_id);
+      CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date);
+      CREATE INDEX IF NOT EXISTS idx_price_cache_expires ON price_cache(expires_at);
+    `);
+
+    await database.execAsync('PRAGMA foreign_keys = ON;');
+  }
+
+  // Update schema version
+  await database.execAsync('DELETE FROM schema_version;');
+  await database.execAsync(`INSERT INTO schema_version (version) VALUES (${SCHEMA_VERSION});`);
 }
 
 export async function closeDatabase() {

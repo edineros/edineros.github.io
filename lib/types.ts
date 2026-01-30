@@ -1,6 +1,13 @@
 export type AssetType = 'stock' | 'etf' | 'crypto' | 'bond' | 'commodity' | 'cash' | 'real-estate' | 'other';
 export type TransactionType = 'buy' | 'sell';
 
+// Runtime array for validation (must match AssetType union)
+export const VALID_ASSET_TYPES: AssetType[] = ['stock', 'etf', 'crypto', 'bond', 'commodity', 'cash', 'real-estate', 'other'];
+
+export function isValidAssetType(type: string): type is AssetType {
+  return VALID_ASSET_TYPES.includes(type as AssetType);
+}
+
 export interface Portfolio {
   id: string;
   name: string;
