@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { getAllPortfolios } from '../db/portfolios';
 import { getAssetsByPortfolioId } from '../db/assets';
 import { getTransactionsByAssetId } from '../db/transactions';
-import type { ExportData, Portfolio, Asset, Transaction, AssetType } from '../types';
+import type { ExportData, Asset, Transaction, AssetType } from '../types';
 import { isValidAssetType } from '../types';
 
 const EXPORT_VERSION = '1.0';
@@ -62,63 +62,9 @@ export async function exportToJson(): Promise<string> {
   return file.uri;
 }
 
-export async function exportTransactionsToCsv(portfolioId?: string): Promise<string> {
-  const portfolios = portfolioId
-    ? [await (await import('../db/portfolios')).getPortfolioById(portfolioId)].filter(Boolean) as Portfolio[]
-    : await getAllPortfolios();
-
-  const rows: string[] = [
-    'date,portfolio,symbol,asset_name,type,quantity,price_per_unit,fee,total,notes,tags',
-  ];
-
-  for (const portfolio of portfolios) {
-    const assets = await getAssetsByPortfolioId(portfolio.id);
-
-    for (const asset of assets) {
-      const transactions = await getTransactionsByAssetId(asset.id);
-
-      for (const tx of transactions) {
-        const total = tx.quantity * tx.pricePerUnit + tx.fee;
-        const escapedNotes = tx.notes ? `"${tx.notes.replace(/"/g, '""')}"` : '';
-        const tags = tx.tags.length > 0 ? `"${tx.tags.join(',')}"` : '';
-
-        rows.push(
-          [
-            format(tx.date, 'yyyy-MM-dd'),
-            portfolio.name,
-            asset.symbol,
-            asset.name || '',
-            tx.type,
-            tx.quantity.toString(),
-            tx.pricePerUnit.toString(),
-            tx.fee.toString(),
-            total.toString(),
-            escapedNotes,
-            tags,
-          ].join(',')
-        );
-      }
-    }
-  }
-
-  const csv = rows.join('\n');
-  const filename = `transactions_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.csv`;
-
-  if (Platform.OS === 'web') {
-    downloadFile(csv, filename, 'text/csv');
-    return filename;
-  }
-
-  // Native: use expo-file-system
-  const { File, Paths } = await import('expo-file-system');
-  const file = new File(Paths.document, filename);
-  await file.write(csv);
-  return file.uri;
-}
-
 export async function shareFile(filePath: string): Promise<void> {
   if (Platform.OS === 'web') {
-    // On web, file was already downloaded in exportToJson/exportTransactionsToCsv
+    // On web, file was already downloaded in exportToJson
     return;
   }
 
@@ -131,7 +77,7 @@ export async function shareFile(filePath: string): Promise<void> {
   }
 
   await Sharing.shareAsync(filePath, {
-    mimeType: filePath.endsWith('.json') ? 'application/json' : 'text/csv',
+    mimeType: 'application/json',
     dialogTitle: 'Export Portfolio Data',
   });
 }

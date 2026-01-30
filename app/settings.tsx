@@ -3,7 +3,7 @@ import { ScrollView, Platform, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { YStack, XStack, Text } from 'tamagui';
 import { Ionicons } from '@expo/vector-icons';
-import { exportToJson, exportTransactionsToCsv, shareFile, importFromJson } from '../lib/utils/export';
+import { exportToJson, shareFile, importFromJson } from '../lib/utils/export';
 import { alert, alertAsync } from '../lib/utils/confirm';
 import { useAppStore } from '../store';
 import { ScreenHeader } from '../components/ScreenHeader';
@@ -30,18 +30,6 @@ export default function SettingsScreen() {
     setIsExporting(true);
     try {
       const filePath = await exportToJson();
-      await shareFile(filePath);
-    } catch (error) {
-      alert('Export Failed', (error as Error).message);
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  const handleExportCsv = async () => {
-    setIsExporting(true);
-    try {
-      const filePath = await exportTransactionsToCsv();
       await shareFile(filePath);
     } catch (error) {
       alert('Export Failed', (error as Error).message);
@@ -202,22 +190,12 @@ export default function SettingsScreen() {
               Export your portfolio data for backup or analysis
             </Text>
 
-            <YStack gap={12}>
-              <LongButton
-                onPress={handleExportJson}
-                disabled={isExporting}
-              >
-                {isExporting ? 'Exporting...' : 'Export as JSON (Full Backup)'}
-              </LongButton>
-
-              <LongButton
-                onPress={handleExportCsv}
-                disabled={isExporting}
-                variant="secondary"
-              >
-                {isExporting ? 'Exporting...' : 'Export Transactions as CSV'}
-              </LongButton>
-            </YStack>
+            <LongButton
+              onPress={handleExportJson}
+              disabled={isExporting}
+            >
+              {isExporting ? 'Exporting...' : 'Export as JSON (Full Backup)'}
+            </LongButton>
           </YStack>
 
           <YStack
