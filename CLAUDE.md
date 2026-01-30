@@ -1,75 +1,99 @@
-# Coding styles
-When refactoring something, change existing comments only if needed
+# Maintenance
 
-# Private Portfolio Tracker
+When making significant changes to the codebase (schema, project structure, design system, coding conventions), update this file to keep the context accurate.
 
-A privacy-first, offline-capable portfolio tracking application for iOS, Android, and Web.
+---
 
-## Quick Start
+# Coding Styles
+- Prefer reusable components and patters if possible
+- When refactoring, change existing comments only if needed
+- Always use braces for control statements (no single-line shorthand)
 
-```bash
-npm start         # Start Expo dev server
-npm run web       # Run on web
-npm run ios       # Run on iOS
-npm run android   # Run on Android
+```typescript
+// Bad
+if (!id) return;
+
+// Good
+if (!id) {
+  return;
+}
 ```
 
-## Core Principles
+---
 
-1. **Privacy by Design** - No accounts, no server-side data storage
-2. **Offline First** - Full functionality without internet; online only for price updates
-3. **Data Ownership** - User data stored in portable, standard formats (JSON/CSV export)
-4. **Simplicity** - Clean, minimal UI focused on essential features
-
-## Technical Stack
-
-- **Framework**: Expo (React Native) - iOS, Android, Web
-- **Language**: TypeScript
-- **State Management**: Zustand
-- **Local Storage**: expo-sqlite (native), IndexedDB (web)
-- **UI Framework**: Tamagui
-- **Price APIs**: Yahoo Finance (stocks), Kraken (crypto), Frankfurter (forex)
-
-## Project Structure
+# Project Structure
 
 ```
-/app                    # Expo Router screens
-├── (tabs)/            # Tab navigation (portfolios, settings)
-│   ├── index.tsx      # Portfolio list screen
-│   └── settings.tsx   # Settings screen
-├── portfolio/         # Portfolio screens
-│   ├── [id].tsx       # Portfolio detail
-│   ├── create.tsx     # Create portfolio
-│   └── edit/[id].tsx  # Edit portfolio
-├── asset/             # Asset screens
-│   ├── [id].tsx       # Asset detail
-│   └── add.tsx        # Add asset
-└── lot/               # Lot management screens
-    ├── add.tsx        # Add lot (buy transaction)
-    └── close.tsx      # Close lot (sell transaction)
+/app                      # Expo Router screens
+├── index.tsx             # Portfolio list (home)
+├── settings.tsx          # Settings screen
+├── _layout.tsx           # Root layout
+├── portfolio/
+│   ├── [id].tsx          # Portfolio detail
+│   ├── create.tsx        # Create portfolio
+│   └── edit/[id].tsx     # Edit portfolio
+├── asset/
+│   ├── [id].tsx          # Asset detail
+│   ├── add.tsx           # Add asset
+│   └── edit/[id].tsx     # Edit asset
+└── lot/
+    ├── add.tsx           # Add lot (buy transaction)
+    ├── close.tsx         # Close lot (sell transaction)
+    └── edit.tsx          # Edit lot
 
 /lib
-├── db/                # Database operations
-│   ├── schema.ts      # SQLite schema & init
-│   ├── webDatabase.ts # IndexedDB for web
-│   ├── portfolios.ts  # Portfolio CRUD
-│   ├── assets.ts      # Asset CRUD
-│   ├── transactions.ts # Transaction CRUD
-│   └── priceCache.ts  # Price & exchange rate cache
-├── api/               # Price API providers
-│   ├── prices.ts      # Main price fetching logic
-│   └── providers/     # Individual API providers
-│       ├── yahoo.ts   # Yahoo Finance (stocks, ETFs)
-│       ├── kraken.ts    # Kraken (crypto)
+├── types.ts              # TypeScript interfaces
+├── constants/
+│   ├── assetTypes.ts     # Asset type definitions
+│   └── layout.ts         # Layout constants
+├── theme/
+│   ├── colors.ts         # Color definitions (dark/light)
+│   └── store.ts          # Theme state (dark/light/auto)
+├── db/
+│   ├── schema.ts         # SQLite schema & migrations
+│   ├── webDatabase.ts    # IndexedDB wrapper for web
+│   ├── webStorage.ts     # Web storage utilities
+│   ├── portfolios.ts     # Portfolio CRUD
+│   ├── assets.ts         # Asset CRUD
+│   ├── transactions.ts   # Transaction CRUD
+│   └── priceCache.ts     # Price & exchange rate cache
+├── api/
+│   ├── prices.ts         # Main price fetching logic
+│   └── providers/
+│       ├── yahoo.ts      # Yahoo Finance (stocks, ETFs)
+│       ├── kraken.ts     # Kraken (crypto)
+│       ├── krakenAssets.ts # Kraken asset mappings
 │       └── frankfurter.ts # Frankfurter (forex)
-├── utils/             # Utilities
-│   ├── calculations.ts # Portfolio/asset calculations
-│   ├── format.ts      # Number/currency formatting
-│   └── export.ts      # JSON/CSV export
-└── types.ts           # TypeScript interfaces
+└── utils/
+    ├── calculations.ts   # Portfolio/asset calculations
+    ├── format.ts         # Number/currency formatting
+    ├── export.ts         # JSON/CSV export
+    ├── confirm.ts        # Confirmation dialogs
+    └── uuid.ts           # UUID generation
+
+/components                # Reusable UI components
+├── Form.tsx              # Form container
+├── FormField.tsx         # Form input wrapper
+├── ScreenHeader.tsx      # Screen header with navigation
+├── HeaderButtons.tsx     # Header action buttons
+├── FloatingActionButton.tsx
+├── LongButton.tsx        # Full-width button
+├── MicroButton.tsx       # Small icon button
+├── TextButton.tsx        # Text-only button
+├── SegmentedControl.tsx  # Tab-like selector
+├── CurrencySelect.tsx    # Currency picker
+├── TagInput.tsx          # Tag input field
+├── InfoRow.tsx           # Key-value display row
+├── InfoLabel.tsx         # Labeled info display
+├── LabeledElement.tsx    # Generic labeled wrapper
+├── QuantityAtPrice.tsx   # Quantity @ price display
+├── PortfolioSwitcher.tsx # Portfolio dropdown
+├── DonutChart.tsx        # Pie/donut chart
+├── AssetAllocationChart.tsx
+└── AddAssetMenu.tsx      # Asset type selection menu
 
 /store
-└── index.ts           # Zustand store
+└── index.ts              # Zustand store
 ```
 
 ---
@@ -84,7 +108,6 @@ npm run android   # Run on Android
 ## SQLite Schema
 
 ```sql
--- Portfolios
 CREATE TABLE portfolios (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
@@ -93,7 +116,6 @@ CREATE TABLE portfolios (
   updated_at INTEGER NOT NULL
 );
 
--- Assets
 CREATE TABLE assets (
   id TEXT PRIMARY KEY,
   portfolio_id TEXT NOT NULL REFERENCES portfolios(id) ON DELETE CASCADE,
@@ -104,7 +126,6 @@ CREATE TABLE assets (
   created_at INTEGER NOT NULL
 );
 
--- Transactions
 CREATE TABLE transactions (
   id TEXT PRIMARY KEY,
   asset_id TEXT NOT NULL REFERENCES assets(id) ON DELETE CASCADE,
@@ -118,14 +139,6 @@ CREATE TABLE transactions (
   created_at INTEGER NOT NULL
 );
 
--- Tags (many-to-many)
-CREATE TABLE transaction_tags (
-  transaction_id TEXT NOT NULL REFERENCES transactions(id) ON DELETE CASCADE,
-  tag TEXT NOT NULL,
-  PRIMARY KEY (transaction_id, tag)
-);
-
--- Price Cache
 CREATE TABLE price_cache (
   symbol TEXT PRIMARY KEY,
   asset_type TEXT,
@@ -135,7 +148,6 @@ CREATE TABLE price_cache (
   expires_at INTEGER
 );
 
--- Exchange Rates Cache
 CREATE TABLE exchange_rates (
   from_currency TEXT NOT NULL,
   to_currency TEXT NOT NULL,
@@ -150,79 +162,53 @@ CREATE TABLE exchange_rates (
 
 # Design System
 
-## Colors (Dark Theme)
+## Theme
 
-```
-Background:       #000000
-Card Background:  #111111
-Card Border:      #1F1F1F
-Text Primary:     #FFFFFF
-Text Secondary:   #8E8E93
-Text Tertiary:    #636366
-Accent (Blue):    #007AFF
-Gain (Green):     #00D897
-Loss (Red):       #FF6B6B
-```
+Supports **dark**, **light**, and **auto** (system) modes. Colors are defined in `lib/theme/colors.ts` as theme variables.
+
+## Key Colors
+
+| Token      | Dark        | Light       |
+|------------|-------------|-------------|
+| background | #000000     | #FFFFFF     |
+| card       | #111111     | #FFFFFF     |
+| text       | #FFFFFF     | #000000     |
+| accent     | #007AFF     | #007AFF     |
+| gain       | #00D897     | #34C759     |
+| loss       | #FF6B6B     | #FF3B30     |
 
 ## Typography
 
 - Large titles: 34px, weight 700
-- Section headers: 13px, weight 600, uppercase, color #8E8E93
+- Section headers: 13px, weight 600, uppercase, secondary color
 - Values: 17-20px, weight 600-700
-- Secondary text: 13px, color #8E8E93
+- Secondary text: 13px, secondary color
 
 ## Components
 
-- Cards: 12px border radius, 1px border, subtle background
+- Cards: 12px border radius, 1px border
 - Buttons: 12px border radius, 16px vertical padding
-- Inputs: 12px border radius, dark background (#111111)
-- Badges: 4-6px border radius, tinted background for gain/loss
+- Inputs: 12px border radius
+- Badges: 4-6px border radius, muted background for gain/loss
 
 ---
 
 # Known Issues
 
-1. **Web OPFS**: expo-sqlite OPFS doesn't work reliably on web, so we use pure IndexedDB instead
-2. **Price API Rate Limits**: Free APIs have rate limits; caching helps mitigate this
+1. **Web OPFS**: expo-sqlite OPFS doesn't work reliably on web; uses pure IndexedDB instead
+2. **Price API Rate Limits**: Free APIs have rate limits; caching helps mitigate
 3. **Yahoo Finance**: May require CORS proxy for web; works natively on mobile
-
----
-
-# Code Style Guide
-
-## Control Flow
-
-Always use braces for control statements. No single-line shorthand.
-
-```typescript
-// Bad
-if (!id) return;
-
-// Good
-if (!id) {
-  return;
-}
-```
 
 ---
 
 # Testing
 
-## Setup
-
-- **Test Runner**: Jest with jest-expo preset
-- **Testing Library**: @testing-library/react-native
-
-## Commands
+Tests are placed in the same directory as the file they test, named `*.test.ts` / `*.test.tsx`.
 
 ```bash
-npm test          # Run all tests
-npm run test:watch # Run tests in watch mode
+npm test           # Run all tests
+npm run test:watch # Watch mode
 ```
-
-## Writing Tests
-
-Tests should be placed in the same directtory as the file they are testing and should be named `*.test.ts` / `*.test.tsx`.
 
 ```typescript
 import { render, screen } from '@testing-library/react-native';
@@ -234,12 +220,3 @@ describe('MyComponent', () => {
   });
 });
 ```
-
----
-
-# Development Notes
-
-- Default currency is EUR (can be changed per portfolio)
-- Prices fetched from free APIs (no API keys needed)
-- All data stored locally - no server communication except price APIs
-- No analytics or telemetry
