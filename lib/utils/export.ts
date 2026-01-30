@@ -93,9 +93,16 @@ export async function importFromJson(jsonString: string): Promise<{
     console.warn(`Import version mismatch: ${data.version} vs ${EXPORT_VERSION}`);
   }
 
-  const { createPortfolio } = await import('../db/portfolios');
+  const { createPortfolio, getAllPortfolios, deletePortfolio } = await import('../db/portfolios');
   const { createAsset } = await import('../db/assets');
   const { createTransaction } = await import('../db/transactions');
+
+  // Delete all existing data before importing
+  // Due to ON DELETE CASCADE, deleting portfolios will also delete assets and transactions
+  const existingPortfolios = await getAllPortfolios();
+  for (const portfolio of existingPortfolios) {
+    await deletePortfolio(portfolio.id);
+  }
 
   // Map old IDs to new IDs
   const portfolioIdMap = new Map<string, string>();

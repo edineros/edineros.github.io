@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { YStack, XStack, Text } from 'tamagui';
 import { Ionicons } from '@expo/vector-icons';
 import { exportToJson, shareFile, importFromJson } from '../lib/utils/export';
-import { alert, alertAsync } from '../lib/utils/confirm';
+import { alert, alertAsync, confirm } from '../lib/utils/confirm';
 import { useAppStore } from '../store';
 import { Page } from '../components/Page';
 import { LongButton } from '../components/LongButton';
@@ -57,6 +57,18 @@ export default function SettingsScreen() {
         return;
       }
 
+      const confirmed = await confirm({
+        title: 'Replace All Data?',
+        message: 'Importing will delete all existing portfolios, assets, and transactions. This action cannot be undone.',
+        confirmText: 'Replace',
+        cancelText: 'Cancel',
+        destructive: true,
+      });
+
+      if (!confirmed) {
+        return;
+      }
+
       setIsImporting(true);
 
       const file = new File(pickedFile.uri);
@@ -85,6 +97,22 @@ export default function SettingsScreen() {
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) {
+      return;
+    }
+
+    const confirmed = await confirm({
+      title: 'Replace All Data?',
+      message: 'Importing will delete all existing portfolios, assets, and transactions. This action cannot be undone.',
+      confirmText: 'Replace',
+      cancelText: 'Cancel',
+      destructive: true,
+    });
+
+    if (!confirmed) {
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
       return;
     }
 
@@ -208,8 +236,7 @@ export default function SettingsScreen() {
               Data Import
             </Text>
             <Text color={colors.textSecondary} fontSize={15} marginBottom={16}>
-              Import data from a previous backup. This will create new entries without
-              affecting existing data.
+              Import data from a previous backup. This will replace all existing data.
             </Text>
 
             <LongButton
