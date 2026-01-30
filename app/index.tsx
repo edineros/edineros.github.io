@@ -1,14 +1,11 @@
-import { useEffect, useCallback, useState } from 'react';
-import { FlatList, RefreshControl, TouchableOpacity } from 'react-native';
+import { useEffect, useCallback } from 'react';
+import { TouchableOpacity } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { YStack, XStack, Text, Spinner } from 'tamagui';
+import { YStack, Text, Spinner } from 'tamagui';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../store';
 import { ScreenHeader } from '../components/ScreenHeader';
-import { formatCurrency, formatPercent, getGainColor } from '../lib/utils/format';
 import { CONTENT_HORIZONTAL_PADDING } from '../lib/constants/layout';
-import type { Portfolio } from '../lib/types';
-import { FloatingActionButton } from '../components/FloatingActionButton';
 import { LongButton } from '../components/LongButton';
 import { useColors } from '../lib/theme/store';
 
@@ -29,11 +26,9 @@ function MenuButton() {
   );
 }
 
-export default function PortfolioListScreen() {
+export default function HomeScreen() {
   const router = useRouter();
-  const { portfolios, portfolioStats, isLoading, loadPortfolios, loadPortfolioStats } =
-    useAppStore();
-  const [refreshing, setRefreshing] = useState(false);
+  const { portfolios, isLoading, loadPortfolios, getLastPortfolioId } = useAppStore();
   const colors = useColors();
 
   useFocusEffect(
@@ -42,93 +37,26 @@ export default function PortfolioListScreen() {
     }, [])
   );
 
+  // Redirect to last opened portfolio (or first) when loading completes
   useEffect(() => {
-    portfolios.forEach((p) => {
-      if (!portfolioStats.has(p.id)) {
-        loadPortfolioStats(p.id);
+    const redirect = async () => {
+      if (!isLoading && portfolios.length > 0) {
+        // Try to get the last opened portfolio
+        const lastId = await getLastPortfolioId();
+        const targetPortfolio = lastId
+          ? portfolios.find(p => p.id === lastId)
+          : null;
+
+        // Use last opened portfolio if it exists, otherwise use first
+        const portfolioId = targetPortfolio?.id || portfolios[0].id;
+        router.replace(`/portfolio/${portfolioId}`);
       }
-    });
-  }, [portfolios]);
+    };
+    redirect();
+  }, [isLoading, portfolios, router, getLastPortfolioId]);
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await loadPortfolios();
-    for (const p of portfolios) {
-      await loadPortfolioStats(p.id);
-    }
-    setRefreshing(false);
-  }, [portfolios]);
-
-  const renderPortfolio = ({ item }: { item: Portfolio }) => {
-    const stats = portfolioStats.get(item.id);
-    const gainColor = stats ? getGainColor(stats.totalGain) : 'neutral';
-
-    return (
-      <TouchableOpacity
-        activeOpacity={0.7}
-        onPress={() => router.push(`/portfolio/${item.id}`)}
-        style={{
-          marginHorizontal: CONTENT_HORIZONTAL_PADDING,
-          marginVertical: 6,
-          padding: CONTENT_HORIZONTAL_PADDING,
-          backgroundColor: colors.card,
-          borderRadius: 12,
-          borderWidth: 1,
-          borderColor: colors.cardBorder,
-        }}
-      >
-        <XStack justifyContent="space-between" alignItems="flex-start">
-          <YStack flex={1} gap={2}>
-            <Text color={colors.text} fontSize={17} fontWeight="600">
-              {item.name}
-            </Text>
-            <Text color={colors.textSecondary} fontSize={13}>
-              {stats?.assetCount ?? 0} assets
-            </Text>
-          </YStack>
-          <YStack alignItems="flex-end" gap={2}>
-            {stats?.totalValue !== null && stats?.totalValue !== undefined ? (
-              <>
-                <Text color={colors.text} fontSize={20} fontWeight="700">
-                  {formatCurrency(stats.totalValue, item.currency)}
-                </Text>
-                <XStack alignItems="center" gap={6}>
-                  <Text
-                    fontSize={13}
-                    fontWeight="600"
-                    color={gainColor === 'gain' ? colors.gain : gainColor === 'loss' ? colors.loss : colors.textSecondary}
-                  >
-                    {formatCurrency(stats.totalGain, item.currency, { showSign: true })}
-                  </Text>
-                  <Text
-                    fontSize={12}
-                    fontWeight="600"
-                    color={gainColor === 'gain' ? colors.gain : gainColor === 'loss' ? colors.loss : colors.textSecondary}
-                    backgroundColor={
-                      gainColor === 'gain'
-                        ? colors.gainMuted
-                        : gainColor === 'loss'
-                          ? colors.lossMuted
-                          : 'rgba(142, 142, 147, 0.15)'
-                    }
-                    paddingHorizontal={6}
-                    paddingVertical={2}
-                    borderRadius={4}
-                  >
-                    {formatPercent(stats.totalGainPercent)}
-                  </Text>
-                </XStack>
-              </>
-            ) : (
-              <Spinner size="small" color={colors.textSecondary} />
-            )}
-          </YStack>
-        </XStack>
-      </TouchableOpacity>
-    );
-  };
-
-  if (isLoading && portfolios.length === 0) {
+  // Show loading state
+  if (isLoading || portfolios.length > 0) {
     return (
       <YStack flex={1} backgroundColor={colors.background}>
         <ScreenHeader title="Portfolios" leftComponent={<MenuButton />} />
@@ -139,66 +67,25 @@ export default function PortfolioListScreen() {
     );
   }
 
+  // Empty state - no portfolios yet
   return (
     <YStack flex={1} backgroundColor={colors.background}>
       <ScreenHeader title="Portfolios" leftComponent={<MenuButton />} />
 
-      {/* Total across all portfolios */}
-      {portfolios.length > 0 && (
-        <YStack paddingHorizontal={CONTENT_HORIZONTAL_PADDING} paddingBottom={20}>
-          <Text color={colors.textSecondary} fontSize={13} marginBottom={4}>
-            TOTAL BALANCE
-          </Text>
-          <Text color={colors.text} fontSize={32} fontWeight="700">
-            {(() => {
-              let total = 0;
-              let hasData = false;
-              portfolios.forEach(p => {
-                const s = portfolioStats.get(p.id);
-                if (s?.totalValue != null) {
-                  total += s.totalValue;
-                  hasData = true;
-                }
-              });
-              return hasData ? formatCurrency(total, portfolios[0]?.currency || 'EUR') : '—';
-            })()}
-          </Text>
-        </YStack>
-      )}
+      <YStack flex={1} padding={32} alignItems="center" justifyContent="center">
+        <Text color={colors.text} fontSize={20} fontWeight="600" textAlign="center">
+          No portfolios yet
+        </Text>
+        <Text color={colors.textSecondary} fontSize={15} textAlign="center" marginTop={8}>
+          Create your first portfolio to start tracking
+        </Text>
+      </YStack>
 
-      <FlatList
-        data={portfolios}
-        keyExtractor={(item) => item.id}
-        renderItem={renderPortfolio}
-        contentContainerStyle={{ paddingBottom: 100, flexGrow: 1 }}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.text}
-          />
-        }
-        ListEmptyComponent={
-          <YStack flex={1} padding={32} alignItems="center" justifyContent="center">
-            <Text color={colors.text} fontSize={20} fontWeight="600" textAlign="center">
-              No portfolios yet
-            </Text>
-            <Text color={colors.textSecondary} fontSize={15} textAlign="center" marginTop={8}>
-              Create your first portfolio to start tracking
-            </Text>
-          </YStack>
-        }
-      />
-
-      {portfolios.length === 0 ? (
-        <YStack position="absolute" bottom={40} left={CONTENT_HORIZONTAL_PADDING} right={CONTENT_HORIZONTAL_PADDING}>
-          <LongButton onPress={() => router.push(NEW_PORTFOLIO_URL)}>
-            Create Portfolio
-          </LongButton>
-        </YStack>
-      ) : (
-        <FloatingActionButton href={NEW_PORTFOLIO_URL} />
-      )}
+      <YStack position="absolute" bottom={40} left={CONTENT_HORIZONTAL_PADDING} right={CONTENT_HORIZONTAL_PADDING}>
+        <LongButton onPress={() => router.push(NEW_PORTFOLIO_URL)}>
+          Create Portfolio
+        </LongButton>
+      </YStack>
     </YStack>
   );
 }

@@ -24,6 +24,21 @@ export function alert(title: string, message?: string): void {
   }
 }
 
+/**
+ * Cross-platform alert dialog that returns a promise.
+ * Resolves when the user dismisses the alert.
+ */
+export function alertAsync(title: string, message?: string): Promise<void> {
+  return new Promise((resolve) => {
+    if (Platform.OS === 'web') {
+      window.alert(message ? `${title}\n\n${message}` : title);
+      resolve();
+    } else {
+      Alert.alert(title, message, [{ text: 'OK', onPress: () => resolve() }]);
+    }
+  });
+}
+
 export function confirm(options: ConfirmOptions): Promise<boolean> {
   const {
     title,

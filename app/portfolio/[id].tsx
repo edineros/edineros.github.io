@@ -2,6 +2,7 @@ import { useCallback, useState, useMemo } from 'react';
 import { FlatList, RefreshControl, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, useFocusEffect, useRouter } from 'expo-router';
 import { YStack, XStack, Text, Spinner } from 'tamagui';
+import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../../store';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { HeaderIconButton } from '../../components/HeaderButtons';
@@ -35,6 +36,7 @@ export default function PortfolioDetailScreen() {
     loadAssets,
     loadPortfolioStats,
     refreshPrices,
+    setCurrentPortfolio,
   } = useAppStore();
 
   // Get portfolio directly from store (already loaded on list screen)
@@ -49,6 +51,9 @@ export default function PortfolioDetailScreen() {
           return;
         }
 
+        // Save this as the last opened portfolio
+        setCurrentPortfolio(id);
+
         // If portfolio not in store (direct URL navigation), load all portfolios
         if (!portfolio) {
           await loadPortfolios();
@@ -60,7 +65,7 @@ export default function PortfolioDetailScreen() {
       };
 
       loadData();
-    }, [id, portfolio])
+    }, [id, portfolio, setCurrentPortfolio])
   );
 
   const onRefresh = useCallback(async () => {
@@ -200,124 +205,131 @@ export default function PortfolioDetailScreen() {
   const overallGainColor = stats ? getGainColor(stats.totalGain) : 'neutral';
 
   return (
-      <YStack flex={1} backgroundColor={colors.background}>
-        <ScreenHeader
-          showBack
-          fallbackPath="/"
-          titleComponent={
-            <PortfolioSwitcher
-              currentPortfolio={portfolio}
-              portfolios={portfolios}
-            />
-          }
-          rightComponent={
-            <HeaderIconButton icon="settings-outline" href={`/portfolio/edit/${id}`} />
-          }
-        />
-        {/* Portfolio Summary */}
-        <YStack padding={CONTENT_HORIZONTAL_PADDING} gap={4}>
-          <Text color={colors.textSecondary} fontSize={13}>
-            TOTAL VALUE
-          </Text>
-          {stats?.totalValue !== null && stats?.totalValue !== undefined ? (
-            <>
-              <Text color={colors.text} fontSize={34} fontWeight="700">
-                {formatCurrency(stats.totalValue, portfolio.currency)}
+    <YStack flex={1} backgroundColor={colors.background}>
+      <ScreenHeader
+        leftComponent={
+          <TouchableOpacity
+            onPress={() => router.push('/settings')}
+            style={{ paddingHorizontal: 8, paddingVertical: 8 }}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name="menu" size={24} color={colors.text} />
+          </TouchableOpacity>
+        }
+        titleComponent={
+          <PortfolioSwitcher
+            currentPortfolio={portfolio}
+            portfolios={portfolios}
+          />
+        }
+        rightComponent={
+          <HeaderIconButton icon="pencil" color={colors.text} href={`/portfolio/edit/${id}`} />
+        }
+      />
+      {/* Portfolio Summary */}
+      <YStack padding={CONTENT_HORIZONTAL_PADDING} gap={4}>
+        <Text color={colors.textSecondary} fontSize={13}>
+          TOTAL VALUE
+        </Text>
+        {stats?.totalValue !== null && stats?.totalValue !== undefined ? (
+          <>
+            <Text color={colors.text} fontSize={34} fontWeight="700">
+              {formatCurrency(stats.totalValue, portfolio.currency)}
+            </Text>
+            <XStack alignItems="center" gap={8} marginTop={4}>
+              <Text
+                fontSize={15}
+                fontWeight="600"
+                color={overallGainColor === 'gain' ? colors.gain : overallGainColor === 'loss' ? colors.loss : colors.textSecondary}
+              >
+                {formatCurrency(stats.totalGain, portfolio.currency, { showSign: true })}
               </Text>
-              <XStack alignItems="center" gap={8} marginTop={4}>
-                <Text
-                  fontSize={15}
-                  fontWeight="600"
-                  color={overallGainColor === 'gain' ? colors.gain : overallGainColor === 'loss' ? colors.loss : colors.textSecondary}
-                >
-                  {formatCurrency(stats.totalGain, portfolio.currency, { showSign: true })}
-                </Text>
-                <Text
-                  fontSize={13}
-                  fontWeight="600"
-                  color={overallGainColor === 'gain' ? colors.gain : overallGainColor === 'loss' ? colors.loss : colors.textSecondary}
-                  backgroundColor={
-                    overallGainColor === 'gain'
-                      ? colors.gainMuted
-                      : overallGainColor === 'loss'
-                        ? colors.lossMuted
-                        : 'rgba(142, 142, 147, 0.15)'
-                  }
-                  paddingHorizontal={8}
-                  paddingVertical={3}
-                  borderRadius={6}
-                >
-                  {formatPercent(stats.totalGainPercent)}
-                </Text>
-              </XStack>
-            </>
-          ) : (
-            <Spinner size="small" color={colors.text} />
-          )}
-        </YStack>
-
-        {/* Section header */}
-        <XStack paddingHorizontal={CONTENT_HORIZONTAL_PADDING} paddingVertical={12} justifyContent="space-between" alignItems="center">
-          <Text color={colors.textSecondary} fontSize={13} fontWeight="600">
-            HOLDINGS
-          </Text>
-          <Text color={colors.textTertiary} fontSize={13}>
-            {portfolioAssets.length} {portfolioAssets.length === 1 ? 'asset' : 'assets'}
-          </Text>
-        </XStack>
-
-        <FlatList
-          data={portfolioAssets}
-          keyExtractor={(item) => item.id}
-          renderItem={renderAsset}
-          contentContainerStyle={{ paddingBottom: 100, flexGrow: 1 }}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={colors.text}
-            />
-          }
-          ListFooterComponent={
-            allocationData.allocations.length > 1 ? (
-              <YStack paddingHorizontal={CONTENT_HORIZONTAL_PADDING} paddingTop={16} gap={12}>
-                <XStack justifyContent="space-between" alignItems="center">
-                  <Text color={colors.textSecondary} fontSize={13} fontWeight="600" textTransform="uppercase">
-                    Allocation
-                  </Text>
-                  {allocationData.hasAnyTags && (
-                    <SegmentedControl
-                      options={[
-                        { label: 'Type', value: 'type' },
-                        { label: 'Tags', value: 'tags' },
-                      ]}
-                      value={allocationMode}
-                      onChange={setAllocationMode}
-                    />
-                  )}
-                </XStack>
-                <AssetAllocationChart
-                  allocations={allocationData.allocations}
-                  tagAllocations={allocationData.tagAllocations}
-                  currency={portfolio.currency}
-                  mode={allocationMode}
-                />
-              </YStack>
-            ) : null
-          }
-          ListEmptyComponent={
-            <YStack flex={1} padding={32} alignItems="center" justifyContent="center">
-              <Text color={colors.text} fontSize={18} fontWeight="600" textAlign="center">
-                No assets yet
+              <Text
+                fontSize={13}
+                fontWeight="600"
+                color={overallGainColor === 'gain' ? colors.gain : overallGainColor === 'loss' ? colors.loss : colors.textSecondary}
+                backgroundColor={
+                  overallGainColor === 'gain'
+                    ? colors.gainMuted
+                    : overallGainColor === 'loss'
+                      ? colors.lossMuted
+                      : 'rgba(142, 142, 147, 0.15)'
+                }
+                paddingHorizontal={8}
+                paddingVertical={3}
+                borderRadius={6}
+              >
+                {formatPercent(stats.totalGainPercent)}
               </Text>
-              <Text color={colors.textSecondary} fontSize={15} textAlign="center" marginTop={8}>
-                Add your first asset to start tracking
-              </Text>
-            </YStack>
-          }
-        />
-
-        <AddAssetMenu portfolioId={id!} />
+            </XStack>
+          </>
+        ) : (
+          <Spinner size="small" color={colors.text} />
+        )}
       </YStack>
+
+      {/* Section header */}
+      <XStack paddingHorizontal={CONTENT_HORIZONTAL_PADDING} paddingVertical={12} justifyContent="space-between" alignItems="center">
+        <Text color={colors.textSecondary} fontSize={13} fontWeight="600">
+          HOLDINGS
+        </Text>
+        <Text color={colors.textTertiary} fontSize={13}>
+          {portfolioAssets.length} {portfolioAssets.length === 1 ? 'asset' : 'assets'}
+        </Text>
+      </XStack>
+
+      <FlatList
+        data={portfolioAssets}
+        keyExtractor={(item) => item.id}
+        renderItem={renderAsset}
+        contentContainerStyle={{ paddingBottom: 100, flexGrow: 1 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.text}
+          />
+        }
+        ListFooterComponent={
+          allocationData.allocations.length > 1 ? (
+            <YStack paddingHorizontal={CONTENT_HORIZONTAL_PADDING} paddingTop={16} gap={12}>
+              <XStack justifyContent="space-between" alignItems="center">
+                <Text color={colors.textSecondary} fontSize={13} fontWeight="600" textTransform="uppercase">
+                  Allocation
+                </Text>
+                {allocationData.hasAnyTags && (
+                  <SegmentedControl
+                    options={[
+                      { label: 'Type', value: 'type' },
+                      { label: 'Tags', value: 'tags' },
+                    ]}
+                    value={allocationMode}
+                    onChange={setAllocationMode}
+                  />
+                )}
+              </XStack>
+              <AssetAllocationChart
+                allocations={allocationData.allocations}
+                tagAllocations={allocationData.tagAllocations}
+                currency={portfolio.currency}
+                mode={allocationMode}
+              />
+            </YStack>
+          ) : null
+        }
+        ListEmptyComponent={
+          <YStack flex={1} padding={32} alignItems="center" justifyContent="center">
+            <Text color={colors.text} fontSize={18} fontWeight="600" textAlign="center">
+              No assets yet
+            </Text>
+            <Text color={colors.textSecondary} fontSize={15} textAlign="center" marginTop={8}>
+              Add your first asset to start tracking
+            </Text>
+          </YStack>
+        }
+      />
+
+      <AddAssetMenu portfolioId={id!} />
+    </YStack>
   );
 }

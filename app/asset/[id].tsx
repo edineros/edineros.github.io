@@ -255,7 +255,8 @@ export default function AssetDetailScreen() {
         fallbackPath={portfolioId ? `/portfolio/${portfolioId}` : '/'}
         rightComponent={
           <HeaderIconButton
-            icon="settings-outline"
+            icon="pencil"
+            color={colors.text}
             href={`/asset/edit/${id}?portfolioId=${portfolioId}`}
           />
         }

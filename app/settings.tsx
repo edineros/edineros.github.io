@@ -1,8 +1,10 @@
 import { useState, useRef } from 'react';
-import { Alert, ScrollView, Platform, TouchableOpacity } from 'react-native';
+import { ScrollView, Platform, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
 import { YStack, XStack, Text } from 'tamagui';
 import { Ionicons } from '@expo/vector-icons';
 import { exportToJson, exportTransactionsToCsv, shareFile, importFromJson } from '../lib/utils/export';
+import { alert, alertAsync } from '../lib/utils/confirm';
 import { useAppStore } from '../store';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { LongButton } from '../components/LongButton';
@@ -22,6 +24,7 @@ export default function SettingsScreen() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { mode, setMode } = useThemeStore();
   const colors = useColors();
+  const router = useRouter();
 
   const handleExportJson = async () => {
     setIsExporting(true);
@@ -29,7 +32,7 @@ export default function SettingsScreen() {
       const filePath = await exportToJson();
       await shareFile(filePath);
     } catch (error) {
-      Alert.alert('Export Failed', (error as Error).message);
+      alert('Export Failed', (error as Error).message);
     } finally {
       setIsExporting(false);
     }
@@ -41,7 +44,7 @@ export default function SettingsScreen() {
       const filePath = await exportTransactionsToCsv();
       await shareFile(filePath);
     } catch (error) {
-      Alert.alert('Export Failed', (error as Error).message);
+      alert('Export Failed', (error as Error).message);
     } finally {
       setIsExporting(false);
     }
@@ -72,14 +75,15 @@ export default function SettingsScreen() {
       const content = await file.text();
       const importResult = await importFromJson(content);
 
-      Alert.alert(
+      await loadPortfolios();
+
+      await alertAsync(
         'Import Successful',
         `Imported:\n- ${importResult.portfoliosImported} portfolios\n- ${importResult.assetsImported} assets\n- ${importResult.transactionsImported} transactions`
       );
-
-      await loadPortfolios();
+      router.replace('/');
     } catch (error) {
-      Alert.alert('Import Failed', (error as Error).message);
+      alert('Import Failed', (error as Error).message);
     } finally {
       setIsImporting(false);
     }
@@ -101,14 +105,15 @@ export default function SettingsScreen() {
       const content = await file.text();
       const importResult = await importFromJson(content);
 
-      Alert.alert(
+      await loadPortfolios();
+
+      await alertAsync(
         'Import Successful',
         `Imported:\n- ${importResult.portfoliosImported} portfolios\n- ${importResult.assetsImported} assets\n- ${importResult.transactionsImported} transactions`
       );
-
-      await loadPortfolios();
+      router.replace('/');
     } catch (error) {
-      Alert.alert('Import Failed', (error as Error).message);
+      alert('Import Failed', (error as Error).message);
     } finally {
       setIsImporting(false);
       // Reset file input

@@ -1,7 +1,45 @@
 import { create } from 'zustand';
+import { Platform } from 'react-native';
 import type { Portfolio, Asset, AssetWithStats, PortfolioWithStats } from '../lib/types';
 import * as db from '../lib/db';
 import { calculateAssetStats, calculatePortfolioStats } from '../lib/utils/calculations';
+
+const LAST_PORTFOLIO_KEY = 'last_portfolio_id';
+
+// Simple storage abstraction for last portfolio ID
+const portfolioStorage = {
+  get: async (): Promise<string | null> => {
+    if (Platform.OS === 'web') {
+      return localStorage.getItem(LAST_PORTFOLIO_KEY);
+    }
+    try {
+      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+      return await AsyncStorage.getItem(LAST_PORTFOLIO_KEY);
+    } catch {
+      return null;
+    }
+  },
+  set: async (value: string | null): Promise<void> => {
+    if (Platform.OS === 'web') {
+      if (value) {
+        localStorage.setItem(LAST_PORTFOLIO_KEY, value);
+      } else {
+        localStorage.removeItem(LAST_PORTFOLIO_KEY);
+      }
+      return;
+    }
+    try {
+      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+      if (value) {
+        await AsyncStorage.setItem(LAST_PORTFOLIO_KEY, value);
+      } else {
+        await AsyncStorage.removeItem(LAST_PORTFOLIO_KEY);
+      }
+    } catch {
+      // Ignore storage errors
+    }
+  },
+};
 
 interface AppState {
   // Data
@@ -23,6 +61,7 @@ interface AppState {
   deletePortfolio: (id: string) => Promise<void>;
   setCurrentPortfolio: (id: string | null) => void;
 
+  getLastPortfolioId: () => Promise<string | null>;
   loadAssets: (portfolioId: string) => Promise<void>;
   createAsset: (
     portfolioId: string,
@@ -52,7 +91,7 @@ export const useAppStore = create<AppState>((set) => ({
   currentPortfolioId: null,
   assets: new Map(),
   assetStats: new Map(),
-  isLoading: false,
+  isLoading: true, // Start with loading state to avoid flash of empty state
   error: null,
   lastPriceUpdate: null,
 
@@ -101,6 +140,11 @@ export const useAppStore = create<AppState>((set) => ({
     set({ isLoading: true, error: null });
     try {
       await db.deletePortfolio(id);
+      // Clear last portfolio ID if it was the deleted one
+      const lastId = await portfolioStorage.get();
+      if (lastId === id) {
+        await portfolioStorage.set(null);
+      }
       set((state) => ({
         portfolios: state.portfolios.filter((p) => p.id !== id),
         currentPortfolioId: state.currentPortfolioId === id ? null : state.currentPortfolioId,
@@ -113,6 +157,11 @@ export const useAppStore = create<AppState>((set) => ({
 
   setCurrentPortfolio: (id: string | null) => {
     set({ currentPortfolioId: id });
+    portfolioStorage.set(id);
+  },
+
+  getLastPortfolioId: async () => {
+    return portfolioStorage.get();
   },
 
   // Asset actions

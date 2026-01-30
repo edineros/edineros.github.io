@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Modal, TouchableOpacity, ScrollView, Platform } from 'react-native';
 import { router } from 'expo-router';
-import { YStack, XStack, Text } from 'tamagui';
+import { YStack, Text } from 'tamagui';
 import { Ionicons } from '@expo/vector-icons';
 import type { Portfolio } from '../lib/types';
 import { useColors } from '../lib/theme/store';
@@ -20,6 +20,11 @@ export function PortfolioSwitcher({ currentPortfolio, portfolios }: PortfolioSwi
     if (portfolio.id !== currentPortfolio.id) {
       router.replace(`/portfolio/${portfolio.id}`);
     }
+  };
+
+  const handleCreateNew = () => {
+    setIsOpen(false);
+    router.push('/portfolio/create');
   };
 
   return (
@@ -74,7 +79,7 @@ export function PortfolioSwitcher({ currentPortfolio, portfolios }: PortfolioSwi
                         flexDirection: 'row',
                         alignItems: 'center',
                         justifyContent: 'space-between',
-                        borderBottomWidth: index < portfolios.length - 1 ? 1 : 0,
+                        borderBottomWidth: 1,
                         borderBottomColor: colors.modalBorder,
                         backgroundColor: portfolio.id === currentPortfolio.id ? colors.modalBorder : 'transparent',
                       }}
@@ -96,6 +101,22 @@ export function PortfolioSwitcher({ currentPortfolio, portfolios }: PortfolioSwi
                       )}
                     </TouchableOpacity>
                   ))}
+                  {/* New Portfolio option */}
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={handleCreateNew}
+                    style={{
+                      padding: 16,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 8,
+                    }}
+                  >
+                    <Ionicons name="add-circle-outline" size={22} color={colors.accent} />
+                    <Text color={colors.accent} fontSize={17} fontWeight="500">
+                      New Portfolio
+                    </Text>
+                  </TouchableOpacity>
                 </ScrollView>
               </YStack>
               <TouchableOpacity
