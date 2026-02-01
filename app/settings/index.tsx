@@ -3,14 +3,14 @@ import { ScrollView, Platform, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { YStack, XStack, Text } from 'tamagui';
 import { Ionicons } from '@expo/vector-icons';
-import { exportToJson, shareFile, importFromJson } from '../lib/utils/export';
-import { alert, alertAsync, confirm } from '../lib/utils/confirm';
-import { useAppStore } from '../store';
-import { Page } from '../components/Page';
-import { LongButton } from '../components/LongButton';
-import { SettingsSection } from '../components/SettingsSection';
-import { CONTENT_HORIZONTAL_PADDING } from '../lib/constants/layout';
-import { useThemeStore, useColors, type ThemeMode } from '../lib/theme/store';
+import { exportToJson, shareFile, importFromJson } from '../../lib/utils/export';
+import { alert, alertAsync, confirm } from '../../lib/utils/confirm';
+import { useAppStore } from '../../store';
+import { Page } from '../../components/Page';
+import { LongButton } from '../../components/LongButton';
+import { SettingsSection } from '../../components/SettingsSection';
+import { CONTENT_HORIZONTAL_PADDING } from '../../lib/constants/layout';
+import { useThemeStore, useColors, type ThemeMode } from '../../lib/theme/store';
 
 const THEME_OPTIONS: { value: ThemeMode; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { value: 'light', label: 'Light', icon: 'sunny-outline' },
@@ -181,26 +181,44 @@ export default function SettingsScreen() {
 
           <SettingsSection
             title="Data Export"
-            subtitle="Export your portfolio data for backup or analysis"
+            subtitle="Export your portfolio data for backup or transfer"
           >
-            <LongButton
-              onPress={handleExportJson}
-              disabled={isExporting}
-            >
-              {isExporting ? 'Exporting...' : 'Export as JSON (Full Backup)'}
-            </LongButton>
+            <YStack gap={12}>
+              <LongButton
+                onPress={handleExportJson}
+                disabled={isExporting}
+              >
+                {isExporting ? 'Exporting...' : 'Export as JSON'}
+              </LongButton>
+              <LongButton
+                onPress={() => router.push('/settings/qr-export')}
+                variant="secondary"
+              >
+                Export via QR Code
+              </LongButton>
+            </YStack>
           </SettingsSection>
 
           <SettingsSection
             title="Data Import"
             subtitle="Import data from a previous backup. This will replace all existing data."
           >
-            <LongButton
-              onPress={handleImport}
-              disabled={isImporting}
-            >
-              {isImporting ? 'Importing...' : 'Import from JSON'}
-            </LongButton>
+            <YStack gap={12}>
+              <LongButton
+                onPress={handleImport}
+                disabled={isImporting}
+              >
+                {isImporting ? 'Importing...' : 'Import from JSON'}
+              </LongButton>
+              {Platform.OS !== 'web' && (
+                <LongButton
+                  onPress={() => router.push('/settings/qr-import')}
+                  variant="secondary"
+                >
+                  Import via QR Code
+                </LongButton>
+              )}
+            </YStack>
           </SettingsSection>
 
           <SettingsSection title="About">

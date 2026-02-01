@@ -8,6 +8,7 @@ When making significant changes to the codebase (schema, project structure, desi
 - Prefer reusable components and patters if possible
 - When refactoring, change existing comments only if needed
 - Always use braces for control statements (no single-line shorthand)
+- Use `Slot` instead of `Stack` for layout files (Stack causes errors in Expo Go)
 
 ```typescript
 // Bad
@@ -26,8 +27,12 @@ if (!id) {
 ```
 /app                      # Expo Router screens
 ├── index.tsx             # Portfolio list (home)
-├── settings.tsx          # Settings screen
 ├── _layout.tsx           # Root layout
+├── settings/
+│   ├── index.tsx         # Settings screen
+│   ├── _layout.tsx       # Settings layout (uses Slot)
+│   ├── qr-export.tsx     # QR code export
+│   └── qr-import.tsx     # QR code import (mobile only)
 ├── portfolio/
 │   ├── [id].tsx          # Portfolio detail
 │   ├── create.tsx        # Create portfolio
@@ -201,6 +206,7 @@ Supports **dark**, **light**, and **auto** (system) modes. Colors are defined in
 1. **Web OPFS**: expo-sqlite OPFS doesn't work reliably on web; uses pure IndexedDB instead
 2. **Price API Rate Limits**: Free APIs have rate limits; caching helps mitigate
 3. **Yahoo Finance**: May require CORS proxy for web; works natively on mobile
+4. **expo-dev-client breaks Expo Go**: Do not add `expo-dev-client` to dependencies - it causes "Cannot find native module" errors (e.g., ExpoCamera) in Expo Go on iOS. Only add it if switching to development builds.
 
 ---
 

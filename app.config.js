@@ -46,7 +46,8 @@ module.exports = {
     },
     plugins: [
       "expo-router",
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-camera"
     ],
     extra: {
       eas: {
