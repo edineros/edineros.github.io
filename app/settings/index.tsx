@@ -210,14 +210,12 @@ export default function SettingsScreen() {
               >
                 {isImporting ? 'Importing...' : 'Import from JSON'}
               </LongButton>
-              {Platform.OS !== 'web' && (
-                <LongButton
-                  onPress={() => router.push('/settings/qr-import')}
-                  variant="secondary"
-                >
-                  Import via QR Code
-                </LongButton>
-              )}
+              <LongButton
+                onPress={() => router.push('/settings/qr-import')}
+                variant="secondary"
+              >
+                Import via QR Code
+              </LongButton>
             </YStack>
           </SettingsSection>
 

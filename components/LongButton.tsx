@@ -1,6 +1,7 @@
 import { Button, ButtonProps } from 'tamagui';
 import { LabeledElement } from './LabeledElement';
 import { useColors } from '../lib/theme/store';
+import { ReactNode } from 'react';
 
 type LongButtonVariant = 'primary' | 'secondary' | 'destructive';
 type LongButtonSize = 'small' | 'medium' | 'large';
@@ -13,7 +14,7 @@ interface LongButtonProps {
   size?: LongButtonSize;
   topSpacing?: LongButtonTopSpacing;
   label?: string;
-  children: string;
+  children: ReactNode;
 }
 
 const SIZE_MAP: Record<LongButtonSize, ButtonProps['size']> = {

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Dimensions } from 'react-native';
-import { YStack, XStack, Text } from 'tamagui';
+import { YStack, XStack, Text, Separator } from 'tamagui';
 import QRCode from 'react-native-qrcode-svg';
 import { Page } from '../../components/Page';
 import { LongButton } from '../../components/LongButton';
@@ -8,6 +8,7 @@ import { useColors } from '../../lib/theme/store';
 import { CONTENT_HORIZONTAL_PADDING } from '../../lib/constants/layout';
 import { encodeForQR } from '../../lib/utils/qrData';
 import { exportAllData } from '../../lib/utils/export';
+import { Ionicons } from '@expo/vector-icons';
 
 const ANIMATION_INTERVAL_MS = 500; // Time per QR code frame
 
@@ -131,21 +132,20 @@ export default function QRExportScreen() {
         {/* Controls */}
         <YStack gap={12}>
           <XStack gap={12}>
-            <YStack flex={1}>
-              <LongButton onPress={handlePrevious} variant="secondary">
-                Previous
-              </LongButton>
-            </YStack>
-            <YStack flex={1}>
-              <LongButton onPress={togglePlayPause}>
-                {isPlaying ? 'Pause' : 'Play'}
-              </LongButton>
-            </YStack>
-            <YStack flex={1}>
-              <LongButton onPress={handleNext} variant="secondary">
-                Next
-              </LongButton>
-            </YStack>
+            <LongButton onPress={handlePrevious} variant="secondary">
+              Previous
+            </LongButton>
+            <LongButton onPress={handleNext} variant="secondary">
+              Next
+            </LongButton>
+            <Separator />
+            <LongButton onPress={togglePlayPause}>
+              <Ionicons
+                name={isPlaying ? 'pause' : 'play'}
+                size={16}
+                color={colors.text}
+              />
+            </LongButton>
           </XStack>
         </YStack>
 
