@@ -141,7 +141,7 @@ export default function PortfolioDetailScreen() {
           <YStack flex={1} gap={2}>
             <XStack alignItems="center" gap={8}>
               <Text color={colors.text} fontSize={17} fontWeight="600">
-                {item.symbol}
+                {isSimple ? item.name : item.symbol}
               </Text>
               <Text
                 fontSize={11}
@@ -156,7 +156,7 @@ export default function PortfolioDetailScreen() {
                 {item.type}
               </Text>
             </XStack>
-            {item.name && (
+            {item.name && !isSimple && (
               <Text color={colors.textTertiary} fontSize={13} numberOfLines={1}>
                 {item.name}
               </Text>
