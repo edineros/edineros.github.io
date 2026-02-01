@@ -8,6 +8,7 @@ import { alert, alertAsync, confirm } from '../lib/utils/confirm';
 import { useAppStore } from '../store';
 import { Page } from '../components/Page';
 import { LongButton } from '../components/LongButton';
+import { SettingsSection } from '../components/SettingsSection';
 import { CONTENT_HORIZONTAL_PADDING } from '../lib/constants/layout';
 import { useThemeStore, useColors, type ThemeMode } from '../lib/theme/store';
 
@@ -38,6 +39,35 @@ export default function SettingsScreen() {
     }
   };
 
+  const processImport = async (content: string) => {
+    setIsImporting(true);
+    try {
+      const importResult = await importFromJson(content);
+
+      await loadPortfolios();
+
+      await alertAsync(
+        'Import Successful',
+        `Imported:\n- ${importResult.portfoliosImported} portfolios\n- ${importResult.assetsImported} assets\n- ${importResult.transactionsImported} transactions`
+      );
+      router.replace('/');
+    } catch (error) {
+      alert('Import Failed', (error as Error).message);
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const confirmImport = async () => {
+    return confirm({
+      title: 'Replace All Data?',
+      message: 'Importing will delete all existing portfolios, assets, and transactions. This action cannot be undone.',
+      confirmText: 'Replace',
+      cancelText: 'Cancel',
+      destructive: true,
+    });
+  };
+
   const handleImportNative = async () => {
     try {
       const DocumentPicker = await import('expo-document-picker');
@@ -57,40 +87,21 @@ export default function SettingsScreen() {
         return;
       }
 
-      const confirmed = await confirm({
-        title: 'Replace All Data?',
-        message: 'Importing will delete all existing portfolios, assets, and transactions. This action cannot be undone.',
-        confirmText: 'Replace',
-        cancelText: 'Cancel',
-        destructive: true,
-      });
-
+      const confirmed = await confirmImport();
       if (!confirmed) {
         return;
       }
 
-      setIsImporting(true);
-
       const file = new File(pickedFile.uri);
       const content = await file.text();
-      const importResult = await importFromJson(content);
-
-      await loadPortfolios();
-
-      await alertAsync(
-        'Import Successful',
-        `Imported:\n- ${importResult.portfoliosImported} portfolios\n- ${importResult.assetsImported} assets\n- ${importResult.transactionsImported} transactions`
-      );
-      router.replace('/');
+      await processImport(content);
     } catch (error) {
       alert('Import Failed', (error as Error).message);
-    } finally {
       setIsImporting(false);
     }
   };
 
   const handleImportWeb = () => {
-    // Trigger hidden file input
     fileInputRef.current?.click();
   };
 
@@ -100,39 +111,18 @@ export default function SettingsScreen() {
       return;
     }
 
-    const confirmed = await confirm({
-      title: 'Replace All Data?',
-      message: 'Importing will delete all existing portfolios, assets, and transactions. This action cannot be undone.',
-      confirmText: 'Replace',
-      cancelText: 'Cancel',
-      destructive: true,
-    });
-
+    const confirmed = await confirmImport();
     if (!confirmed) {
-      // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
       return;
     }
 
-    setIsImporting(true);
     try {
       const content = await file.text();
-      const importResult = await importFromJson(content);
-
-      await loadPortfolios();
-
-      await alertAsync(
-        'Import Successful',
-        `Imported:\n- ${importResult.portfoliosImported} portfolios\n- ${importResult.assetsImported} assets\n- ${importResult.transactionsImported} transactions`
-      );
-      router.replace('/');
-    } catch (error) {
-      alert('Import Failed', (error as Error).message);
+      await processImport(content);
     } finally {
-      setIsImporting(false);
-      // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -156,21 +146,7 @@ export default function SettingsScreen() {
         )}
 
         <YStack flex={1} padding={CONTENT_HORIZONTAL_PADDING} gap={16}>
-          {/* Theme Selector */}
-          <YStack
-            backgroundColor={colors.card}
-            borderRadius={12}
-            borderWidth={1}
-            borderColor={colors.cardBorder}
-            padding={CONTENT_HORIZONTAL_PADDING}
-          >
-            <Text color={colors.text} fontSize={20} fontWeight="600" marginBottom={12}>
-              Appearance
-            </Text>
-            <Text color={colors.textSecondary} fontSize={15} marginBottom={16}>
-              Choose your preferred theme
-            </Text>
-
+          <SettingsSection title="Appearance" subtitle="Choose your preferred theme">
             <XStack gap={8}>
               {THEME_OPTIONS.map((option) => (
                 <TouchableOpacity
@@ -201,63 +177,33 @@ export default function SettingsScreen() {
                 </TouchableOpacity>
               ))}
             </XStack>
-          </YStack>
+          </SettingsSection>
 
-          <YStack
-            backgroundColor={colors.card}
-            borderRadius={12}
-            borderWidth={1}
-            borderColor={colors.cardBorder}
-            padding={CONTENT_HORIZONTAL_PADDING}
+          <SettingsSection
+            title="Data Export"
+            subtitle="Export your portfolio data for backup or analysis"
           >
-            <Text color={colors.text} fontSize={20} fontWeight="600" marginBottom={12}>
-              Data Export
-            </Text>
-            <Text color={colors.textSecondary} fontSize={15} marginBottom={16}>
-              Export your portfolio data for backup or analysis
-            </Text>
-
             <LongButton
               onPress={handleExportJson}
               disabled={isExporting}
             >
               {isExporting ? 'Exporting...' : 'Export as JSON (Full Backup)'}
             </LongButton>
-          </YStack>
+          </SettingsSection>
 
-          <YStack
-            backgroundColor={colors.card}
-            borderRadius={12}
-            borderWidth={1}
-            borderColor={colors.cardBorder}
-            padding={CONTENT_HORIZONTAL_PADDING}
+          <SettingsSection
+            title="Data Import"
+            subtitle="Import data from a previous backup. This will replace all existing data."
           >
-            <Text color={colors.text} fontSize={20} fontWeight="600" marginBottom={12}>
-              Data Import
-            </Text>
-            <Text color={colors.textSecondary} fontSize={15} marginBottom={16}>
-              Import data from a previous backup. This will replace all existing data.
-            </Text>
-
             <LongButton
               onPress={handleImport}
               disabled={isImporting}
             >
               {isImporting ? 'Importing...' : 'Import from JSON'}
             </LongButton>
-          </YStack>
+          </SettingsSection>
 
-          <YStack
-            backgroundColor={colors.card}
-            borderRadius={12}
-            borderWidth={1}
-            borderColor={colors.cardBorder}
-            padding={CONTENT_HORIZONTAL_PADDING}
-          >
-            <Text color={colors.text} fontSize={20} fontWeight="600" marginBottom={12}>
-              About
-            </Text>
-
+          <SettingsSection title="About">
             <YStack gap={8}>
               <XStack justifyContent="space-between">
                 <Text color={colors.textSecondary}>Version</Text>
@@ -278,7 +224,7 @@ export default function SettingsScreen() {
                 Price data provided by Yahoo Finance, Kraken, and Frankfurter API.
               </Text>
             </YStack>
-          </YStack>
+          </SettingsSection>
         </YStack>
       </ScrollView>
     </Page>
