@@ -1,12 +1,15 @@
 /**
  * Utilities for encoding/decoding data for animated QR code transfer.
  *
- * Data is split into chunks, each chunk contains:
+ * Data is compressed with zlib, then split into chunks.
+ * Each chunk contains:
  * - Header: "PP|{chunkIndex}|{totalChunks}|"
- * - Data: base64 encoded JSON fragment
+ * - Data: base64 encoded compressed fragment
  */
 
-const CHUNK_PREFIX = 'PP'; // Private Portfolio prefix
+import pako from 'pako';
+
+const CHUNK_PREFIX = 'PP';
 const MAX_QR_BYTES = 1000; // Conservative limit for QR code data
 const HEADER_OVERHEAD = 20; // Approximate header size "PP|999|999|"
 
@@ -17,11 +20,37 @@ export interface QRChunk {
 }
 
 /**
- * Encode data into QR-friendly chunks
+ * Convert Uint8Array to base64 string
+ */
+function uint8ArrayToBase64(bytes: Uint8Array): string {
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
+/**
+ * Convert base64 string to Uint8Array
+ */
+function base64ToUint8Array(base64: string): Uint8Array {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
+/**
+ * Encode data into QR-friendly compressed chunks
  */
 export function encodeForQR(jsonData: string): string[] {
-  // Base64 encode the entire JSON
-  const base64Data = btoa(unescape(encodeURIComponent(jsonData)));
+  // Compress the JSON data
+  const compressed = pako.deflate(jsonData);
+
+  // Convert to base64
+  const base64Data = uint8ArrayToBase64(compressed);
 
   // Calculate chunk size (leaving room for header)
   const chunkDataSize = MAX_QR_BYTES - HEADER_OVERHEAD;
@@ -88,9 +117,10 @@ export function reassembleChunks(chunks: Map<number, string>, totalChunks: numbe
     base64Data += chunks.get(i);
   }
 
-  // Decode base64 to JSON
+  // Decompress
   try {
-    return decodeURIComponent(escape(atob(base64Data)));
+    const compressed = base64ToUint8Array(base64Data);
+    return pako.inflate(compressed, { to: 'string' });
   } catch {
     return null;
   }

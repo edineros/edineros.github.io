@@ -19,6 +19,8 @@ export default function QRExportScreen() {
   const [isPlaying, setIsPlaying] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [originalSize, setOriginalSize] = useState(0);
+  const [compressedSize, setCompressedSize] = useState(0);
 
   const screenWidth = Dimensions.get('window').width;
   const qrSize = Math.min(screenWidth - CONTENT_HORIZONTAL_PADDING * 4, 300);
@@ -33,8 +35,15 @@ export default function QRExportScreen() {
       setError(null);
       const data = await exportAllData();
       const jsonString = JSON.stringify(data);
+      setOriginalSize(jsonString.length);
       const encoded = encodeForQR(jsonString);
       setChunks(encoded);
+      // Calculate compressed size from chunks (excluding headers)
+      const totalCompressed = encoded.reduce((sum, chunk) => {
+        const dataStart = chunk.lastIndexOf('|') + 1;
+        return sum + chunk.slice(dataStart).length;
+      }, 0);
+      setCompressedSize(totalCompressed);
     } catch (err) {
       setError((err as Error).message);
     } finally {
