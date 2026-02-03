@@ -21,7 +21,7 @@ const THEME_OPTIONS: { value: ThemeMode; label: string; icon: keyof typeof Ionic
 export default function SettingsScreen() {
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
-  const { loadPortfolios } = useAppStore();
+  const { loadPortfolios, clearCache } = useAppStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { mode, setMode } = useThemeStore();
   const colors = useColors();
@@ -44,6 +44,7 @@ export default function SettingsScreen() {
     try {
       const importResult = await importFromJson(content);
 
+      clearCache();
       await loadPortfolios();
 
       await alertAsync(

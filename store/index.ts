@@ -88,6 +88,7 @@ interface AppState {
 
   refreshPrices: () => Promise<void>;
   clearError: () => void;
+  clearCache: () => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -428,5 +429,13 @@ export const useAppStore = create<AppState>((set) => ({
 
   clearError: () => {
     set({ error: null });
+  },
+
+  clearCache: () => {
+    set({
+      assets: new Map(),
+      assetStats: new Map(),
+      portfolioStats: new Map(),
+    });
   },
 }));

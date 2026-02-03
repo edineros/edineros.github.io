@@ -175,7 +175,7 @@ function NativeQRScanner({ onScan }: { onScan: (data: string) => void }) {
 export default function QRImportScreen() {
   const colors = useColors();
   const router = useRouter();
-  const { loadPortfolios } = useAppStore();
+  const { loadPortfolios, clearCache } = useAppStore();
   const [chunks, setChunks] = useState<Map<number, string>>(new Map());
   const [totalChunks, setTotalChunks] = useState<number | null>(null);
   const [isImporting, setIsImporting] = useState(false);
@@ -238,6 +238,7 @@ export default function QRImportScreen() {
     setIsImporting(true);
     try {
       const result = await importFromJson(jsonData);
+      clearCache();
       await loadPortfolios();
       await alertAsync(
         'Import Successful',
