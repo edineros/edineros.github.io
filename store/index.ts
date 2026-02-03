@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import type { Portfolio, Asset, AssetWithStats, PortfolioWithStats } from '../lib/types';
 import * as db from '../lib/db';
 import { calculateAssetStats, calculatePortfolioStats } from '../lib/utils/calculations';
+import { convertCurrency } from '../lib/api/prices';
 
 const LAST_PORTFOLIO_KEY = 'last_portfolio_id';
 
@@ -41,6 +42,9 @@ const portfolioStorage = {
   },
 };
 
+// Special ID for "All Portfolios" view
+export const ALL_PORTFOLIOS_ID = 'all';
+
 interface AppState {
   // Data
   portfolios: Portfolio[];
@@ -63,6 +67,7 @@ interface AppState {
 
   getLastPortfolioId: () => Promise<string | null>;
   loadAssets: (portfolioId: string) => Promise<void>;
+  loadAllAssets: () => Promise<void>;
   createAsset: (
     portfolioId: string,
     symbol: string,
@@ -79,6 +84,7 @@ interface AppState {
 
   loadAssetStats: (assetId: string, portfolioCurrency: string) => Promise<AssetWithStats | null>;
   loadPortfolioStats: (portfolioId: string) => Promise<PortfolioWithStats | null>;
+  loadAllPortfoliosStats: (displayCurrency: string) => Promise<PortfolioWithStats | null>;
 
   refreshPrices: () => Promise<void>;
   clearError: () => void;
@@ -172,6 +178,20 @@ export const useAppStore = create<AppState>((set) => ({
       set((state) => {
         const assets = new Map(state.assets);
         assets.set(portfolioId, portfolioAssets);
+        return { assets, isLoading: false };
+      });
+    } catch (error) {
+      set({ error: (error as Error).message, isLoading: false });
+    }
+  },
+
+  loadAllAssets: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const allAssets = await db.getAllAssets();
+      set((state) => {
+        const assets = new Map(state.assets);
+        assets.set(ALL_PORTFOLIOS_ID, allAssets);
         return { assets, isLoading: false };
       });
     } catch (error) {
@@ -291,6 +311,100 @@ export const useAppStore = create<AppState>((set) => ({
         return { portfolioStats, assetStats };
       });
       return stats;
+    } catch (error) {
+      set({ error: (error as Error).message });
+      return null;
+    }
+  },
+
+  loadAllPortfoliosStats: async (displayCurrency: string) => {
+    try {
+      const portfolios = await db.getAllPortfolios();
+      if (portfolios.length === 0) {
+        return null;
+      }
+
+      let totalValue: number | null = 0;
+      let totalCost = 0;
+      let totalAssetCount = 0;
+      let hasAllPrices = true;
+      const allAssetStats = new Map<string, AssetWithStats>();
+
+      // Calculate stats for each portfolio and aggregate
+      for (const portfolio of portfolios) {
+        const { portfolioStats: stats, assetStats: newAssetStats } = await calculatePortfolioStats(portfolio);
+
+        // Update asset stats
+        for (const [assetId, assetStat] of newAssetStats) {
+          allAssetStats.set(assetId, assetStat);
+        }
+
+        totalAssetCount += stats.assetCount;
+
+        // Convert portfolio stats to display currency if needed
+        if (portfolio.currency !== displayCurrency) {
+          const convertedCost = await convertCurrency(stats.totalCost, portfolio.currency, displayCurrency);
+          if (convertedCost !== null) {
+            totalCost += convertedCost;
+          } else {
+            totalCost += stats.totalCost; // Fallback to unconverted value
+          }
+
+          if (stats.totalValue !== null) {
+            const convertedValue = await convertCurrency(stats.totalValue, portfolio.currency, displayCurrency);
+            if (convertedValue !== null) {
+              totalValue = (totalValue ?? 0) + convertedValue;
+            } else {
+              totalValue = (totalValue ?? 0) + stats.totalValue; // Fallback
+            }
+          } else {
+            hasAllPrices = false;
+          }
+        } else {
+          totalCost += stats.totalCost;
+
+          if (stats.totalValue !== null) {
+            totalValue = (totalValue ?? 0) + stats.totalValue;
+          } else {
+            hasAllPrices = false;
+          }
+        }
+      }
+
+      if (!hasAllPrices) {
+        totalValue = null;
+      }
+
+      const totalGain = totalValue !== null ? totalValue - totalCost : null;
+      const totalGainPercent = totalGain !== null && totalCost > 0 ? (totalGain / totalCost) * 100 : null;
+
+      const combinedStats: PortfolioWithStats = {
+        id: ALL_PORTFOLIOS_ID,
+        name: 'All Portfolios',
+        currency: displayCurrency,
+        masked: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        totalValue,
+        totalCost,
+        totalGain,
+        totalGainPercent,
+        assetCount: totalAssetCount,
+      };
+
+      set((state) => {
+        const portfolioStats = new Map(state.portfolioStats);
+        portfolioStats.set(ALL_PORTFOLIOS_ID, combinedStats);
+
+        const assetStats = new Map(state.assetStats);
+        for (const [assetId, assetStat] of allAssetStats) {
+          assetStats.set(assetId, assetStat);
+        }
+
+        return { portfolioStats, assetStats };
+      });
+
+      return combinedStats;
     } catch (error) {
       set({ error: (error as Error).message });
       return null;

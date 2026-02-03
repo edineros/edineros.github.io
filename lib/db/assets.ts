@@ -70,6 +70,18 @@ export async function getAssetsByPortfolioId(portfolioId: string): Promise<Asset
   return rows.map(rowToAsset);
 }
 
+export async function getAllAssets(): Promise<Asset[]> {
+  if (isWeb()) {
+    return webDb.getAllAssets();
+  }
+
+  const db = await getDatabase();
+  const rows = await db.getAllAsync<AssetRow>(
+    'SELECT * FROM assets ORDER BY symbol ASC'
+  );
+  return rows.map(rowToAsset);
+}
+
 export async function getAssetById(id: string): Promise<Asset | null> {
   if (isWeb()) {
     return webDb.getAssetById(id);

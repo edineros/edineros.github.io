@@ -3,7 +3,7 @@ import { FlatList, RefreshControl, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, useFocusEffect, useRouter } from 'expo-router';
 import { YStack, XStack, Text, Spinner } from 'tamagui';
 import { Ionicons } from '@expo/vector-icons';
-import { useAppStore } from '../../store';
+import { useAppStore, ALL_PORTFOLIOS_ID } from '../../store';
 import { Page } from '../../components/Page';
 import { HeaderIconButton } from '../../components/HeaderButtons';
 import { QuantityAtPrice } from '../../components/QuantityAtPrice';
@@ -36,16 +36,30 @@ export default function PortfolioDetailScreen() {
     portfolioStats,
     loadPortfolios,
     loadAssets,
+    loadAllAssets,
     loadPortfolioStats,
+    loadAllPortfoliosStats,
     refreshPrices,
     setCurrentPortfolio,
     updatePortfolio,
   } = useAppStore();
 
+  const isAllPortfolios = id === ALL_PORTFOLIOS_ID;
+
   // Get portfolio directly from store (already loaded on list screen)
-  const portfolio = portfolios.find(p => p.id === id) || null;
+  const portfolio = isAllPortfolios ? null : portfolios.find(p => p.id === id) || null;
   const portfolioAssets = id ? assets.get(id) || [] : [];
   const stats = id ? portfolioStats.get(id) : null;
+
+  // For "All Portfolios", use the first portfolio's currency as display currency
+  const displayCurrency = isAllPortfolios
+    ? (portfolios[0]?.currency ?? 'EUR')
+    : (portfolio?.currency ?? 'EUR');
+
+  // Check if any portfolio is masked (for "All Portfolios" view)
+  const isMasked = isAllPortfolios
+    ? portfolios.some(p => p.masked)
+    : (portfolio?.masked ?? false);
 
   useFocusEffect(
     useCallback(() => {
@@ -54,21 +68,30 @@ export default function PortfolioDetailScreen() {
           return;
         }
 
-        // Save this as the last opened portfolio
-        setCurrentPortfolio(id);
-
-        // If portfolio not in store (direct URL navigation), load all portfolios
-        if (!portfolio) {
-          await loadPortfolios();
+        // Save this as the last opened portfolio (unless viewing all)
+        if (!isAllPortfolios) {
+          setCurrentPortfolio(id);
         }
 
-        // Load assets first, then portfolio stats (which also calculates all asset stats)
-        await loadAssets(id);
-        await loadPortfolioStats(id);
+        // For "All Portfolios", load all portfolios and their assets
+        if (isAllPortfolios) {
+          await loadPortfolios();
+          await loadAllAssets();
+          await loadAllPortfoliosStats(displayCurrency);
+        } else {
+          // If portfolio not in store (direct URL navigation), load all portfolios
+          if (!portfolio) {
+            await loadPortfolios();
+          }
+
+          // Load assets first, then portfolio stats (which also calculates all asset stats)
+          await loadAssets(id);
+          await loadPortfolioStats(id);
+        }
       };
 
       loadData();
-    }, [id, portfolio, setCurrentPortfolio])
+    }, [id, portfolio, isAllPortfolios, displayCurrency, setCurrentPortfolio])
   );
 
   const onRefresh = useCallback(async () => {
@@ -77,10 +100,15 @@ export default function PortfolioDetailScreen() {
     }
     setRefreshing(true);
     await refreshPrices();
-    await loadAssets(id);
-    await loadPortfolioStats(id);
+    if (isAllPortfolios) {
+      await loadAllAssets();
+      await loadAllPortfoliosStats(displayCurrency);
+    } else {
+      await loadAssets(id);
+      await loadPortfolioStats(id);
+    }
     setRefreshing(false);
-  }, [id]);
+  }, [id, isAllPortfolios, displayCurrency]);
 
   const allocationData = useMemo(() => {
     if (!id) {
@@ -126,7 +154,7 @@ export default function PortfolioDetailScreen() {
     return (
       <TouchableOpacity
         activeOpacity={0.7}
-        onPress={() => router.push(`/asset/${item.id}?portfolioId=${id}`)}
+        onPress={() => router.push(`/asset/${item.id}?portfolioId=${item.portfolioId}`)}
         style={{
           marginHorizontal: CONTENT_HORIZONTAL_PADDING,
           marginVertical: 4,
@@ -165,7 +193,7 @@ export default function PortfolioDetailScreen() {
               <XStack marginTop={2}>
                 {isSimple ? (
                   <Text color={colors.textMuted} fontSize={12}>
-                    {portfolio?.masked ? VALUE_MASK : `${formatQuantity(stats.totalQuantity)} ${stats.totalQuantity === 1 ? 'item' : 'items'}`}
+                    {isMasked ? VALUE_MASK : `${formatQuantity(stats.totalQuantity)} ${stats.totalQuantity === 1 ? 'item' : 'items'}`}
                   </Text>
                 ) : (
                   <QuantityAtPrice
@@ -173,7 +201,7 @@ export default function PortfolioDetailScreen() {
                     price={stats.averageCost}
                     currency={item.currency}
                     fontSize={12}
-                    masked={portfolio?.masked}
+                    masked={isMasked}
                   />
                 )}
               </XStack>
@@ -183,7 +211,7 @@ export default function PortfolioDetailScreen() {
             {stats?.currentValue !== null && stats?.currentValue !== undefined ? (
               <>
                 <Text color={colors.text} fontSize={17} fontWeight="600">
-                  {portfolio?.masked ? VALUE_MASK : formatCurrency(stats.currentValue, portfolio?.currency)}
+                  {isMasked ? VALUE_MASK : formatCurrency(stats.currentValue, displayCurrency)}
                 </Text>
                 {!isSimple && (
                   <Text
@@ -191,7 +219,7 @@ export default function PortfolioDetailScreen() {
                     fontWeight="600"
                     color={gainColor === 'gain' ? colors.gain : gainColor === 'loss' ? colors.loss : colors.textSecondary}
                   >
-                    {portfolio?.masked ? formatPercent(stats.unrealizedGainPercent) : `${formatCurrency(stats.unrealizedGain, portfolio?.currency, { showSign: true })} (${formatPercent(stats.unrealizedGainPercent)})`}
+                    {isMasked ? formatPercent(stats.unrealizedGainPercent) : `${formatCurrency(stats.unrealizedGain, displayCurrency, { showSign: true })} (${formatPercent(stats.unrealizedGainPercent)})`}
                   </Text>
                 )}
               </>
@@ -204,7 +232,19 @@ export default function PortfolioDetailScreen() {
     );
   };
 
-  if (!portfolio) {
+  // Show loading state unless we're viewing "All Portfolios" or have a specific portfolio
+  if (!isAllPortfolios && !portfolio) {
+    return (
+      <Page fallbackPath="/" showBack={false} >
+        <YStack flex={1} justifyContent="center" alignItems="center">
+          <Spinner size="large" color={colors.text} />
+        </YStack>
+      </Page>
+    );
+  }
+
+  // For "All Portfolios", wait until portfolios are loaded
+  if (isAllPortfolios && portfolios.length === 0) {
     return (
       <Page fallbackPath="/" showBack={false} >
         <YStack flex={1} justifyContent="center" alignItems="center">
@@ -232,10 +272,13 @@ export default function PortfolioDetailScreen() {
         <PortfolioSwitcher
           currentPortfolio={portfolio}
           portfolios={portfolios}
+          isAllPortfolios={isAllPortfolios}
         />
       }
       rightComponent={
-        <HeaderIconButton icon="pencil" color={colors.text} href={`/portfolio/edit/${id}`} />
+        isAllPortfolios ? null : (
+          <HeaderIconButton icon="pencil" color={colors.text} href={`/portfolio/edit/${id}`} />
+        )
       }
     >
       {/* Portfolio Summary */}
@@ -244,30 +287,32 @@ export default function PortfolioDetailScreen() {
           <Text color={colors.textSecondary} fontSize={13}>
             TOTAL VALUE
           </Text>
-          <TouchableOpacity
-            onPress={() => updatePortfolio(portfolio.id, { masked: !portfolio.masked })}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Ionicons
-              name={portfolio.masked ? 'eye-off-outline' : 'eye-outline'}
-              size={16}
-              color={colors.textSecondary}
-            />
-          </TouchableOpacity>
+          {!isAllPortfolios && portfolio && (
+            <TouchableOpacity
+              onPress={() => updatePortfolio(portfolio.id, { masked: !portfolio.masked })}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons
+                name={portfolio.masked ? 'eye-off-outline' : 'eye-outline'}
+                size={16}
+                color={colors.textSecondary}
+              />
+            </TouchableOpacity>
+          )}
         </XStack>
         {stats?.totalValue !== null && stats?.totalValue !== undefined ? (
           <>
             <Text color={colors.text} fontSize={34} fontWeight="700">
-              {portfolio.masked ? VALUE_MASK : formatCurrency(stats.totalValue, portfolio.currency)}
+              {isMasked ? VALUE_MASK : formatCurrency(stats.totalValue, displayCurrency)}
             </Text>
             <XStack alignItems="center" gap={8} marginTop={4}>
-              {!portfolio.masked && (
+              {!isMasked && (
                 <Text
                   fontSize={15}
                   fontWeight="600"
                   color={overallGainColor === 'gain' ? colors.gain : overallGainColor === 'loss' ? colors.loss : colors.textSecondary}
                 >
-                  {formatCurrency(stats.totalGain, portfolio.currency, { showSign: true })}
+                  {formatCurrency(stats.totalGain, displayCurrency, { showSign: true })}
                 </Text>
               )}
               <Text
@@ -337,9 +382,9 @@ export default function PortfolioDetailScreen() {
               <AssetAllocationChart
                 allocations={allocationData.allocations}
                 tagAllocations={allocationData.tagAllocations}
-                currency={portfolio.currency}
+                currency={displayCurrency}
                 mode={allocationMode}
-                masked={portfolio.masked}
+                masked={isMasked}
               />
             </YStack>
           ) : null
@@ -350,13 +395,13 @@ export default function PortfolioDetailScreen() {
               No assets yet
             </Text>
             <Text color={colors.textSecondary} fontSize={15} textAlign="center" marginTop={8}>
-              Add your first asset to start tracking
+              {isAllPortfolios ? 'Add assets to your portfolios to see them here' : 'Add your first asset to start tracking'}
             </Text>
           </YStack>
         }
       />
 
-      <AddAssetMenu portfolioId={id!} />
+      {!isAllPortfolios && <AddAssetMenu portfolioId={id!} />}
     </Page>
   );
 }

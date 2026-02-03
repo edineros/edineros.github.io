@@ -189,6 +189,11 @@ export const webDb = {
     return assets.map(rowToAsset).sort((a, b) => a.symbol.localeCompare(b.symbol));
   },
 
+  async getAllAssets(): Promise<Asset[]> {
+    const assets = await getAll<any>('assets');
+    return assets.map(rowToAsset).sort((a, b) => a.symbol.localeCompare(b.symbol));
+  },
+
   async getAssetById(id: string): Promise<Asset | null> {
     const row = await getOne<any>('assets', id);
     return row ? rowToAsset(row) : null;
