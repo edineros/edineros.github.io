@@ -101,3 +101,13 @@ export const SIMPLE_ASSET_TYPES: AssetType[] = ['cash', 'real-estate', 'other'];
 export function isSimpleAssetType(type: AssetType): boolean {
   return SIMPLE_ASSET_TYPES.includes(type);
 }
+
+// Map for getting the sort order of asset types
+const typeOrderMap = new Map<AssetType, number>();
+ASSET_TYPE_CONFIGS.forEach((config, index) => {
+  typeOrderMap.set(config.value, index);
+});
+
+export function getAssetTypeSortOrder(type: AssetType): number {
+  return typeOrderMap.get(type) ?? 999;
+}

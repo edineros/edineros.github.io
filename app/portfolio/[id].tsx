@@ -19,7 +19,7 @@ import {
 import { formatCurrency, formatPercent, formatQuantity, getGainColor } from '../../lib/utils/format';
 import { CONTENT_HORIZONTAL_PADDING } from '../../lib/constants/layout';
 import { VALUE_MASK } from '../../lib/constants/ui';
-import { isSimpleAssetType } from '../../lib/constants/assetTypes';
+import { isSimpleAssetType, getAssetTypeSortOrder } from '../../lib/constants/assetTypes';
 import { useColors } from '../../lib/theme/store';
 import type { Asset } from '../../lib/types';
 
@@ -48,8 +48,23 @@ export default function PortfolioDetailScreen() {
 
   // Get portfolio directly from store (already loaded on list screen)
   const portfolio = isAllPortfolios ? null : portfolios.find(p => p.id === id) || null;
-  const portfolioAssets = id ? assets.get(id) || [] : [];
+  const rawAssets = id ? assets.get(id) || [] : [];
   const stats = id ? portfolioStats.get(id) : null;
+
+  // Sort assets by type (using defined order), then by symbol/name within each type
+  const portfolioAssets = useMemo(() => {
+    return [...rawAssets].sort((a, b) => {
+      const typeOrderA = getAssetTypeSortOrder(a.type);
+      const typeOrderB = getAssetTypeSortOrder(b.type);
+      if (typeOrderA !== typeOrderB) {
+        return typeOrderA - typeOrderB;
+      }
+      // Within same type, sort by symbol (or name for simple types)
+      const nameA = (isSimpleAssetType(a.type) ? a.name : a.symbol) || '';
+      const nameB = (isSimpleAssetType(b.type) ? b.name : b.symbol) || '';
+      return nameA.localeCompare(nameB);
+    });
+  }, [rawAssets]);
 
   // For "All Portfolios", use the first portfolio's currency as display currency
   const displayCurrency = isAllPortfolios
