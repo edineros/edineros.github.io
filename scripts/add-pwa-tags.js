@@ -19,6 +19,16 @@ const PWA_TAGS = `
     <meta name="mobile-web-app-capable" content="yes" />
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/assets/icon.png" />
+    <!-- GitHub Pages SPA redirect handler -->
+    <script>
+      (function() {
+        var redirectPath = sessionStorage.getItem('spa-redirect-path');
+        if (redirectPath) {
+          sessionStorage.removeItem('spa-redirect-path');
+          history.replaceState(null, '', redirectPath);
+        }
+      })();
+    </script>
 `;
 
 function findHtmlFiles(dir) {
@@ -66,6 +76,30 @@ console.log(`Found ${htmlFiles.length} HTML files`);
 
 for (const file of htmlFiles) {
   addPwaTags(file);
+}
+
+// Create 404.html for GitHub Pages SPA routing
+// Redirects to index.html while preserving the path in sessionStorage
+const notFoundPath = path.join(DIST_DIR, '404.html');
+const notFoundHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Redirecting...</title>
+  <script>
+    // Store the path so index.html can restore it
+    sessionStorage.setItem('spa-redirect-path', location.pathname + location.search + location.hash);
+    location.replace('/');
+  </script>
+</head>
+<body>
+  Redirecting...
+</body>
+</html>`;
+
+if (!fs.existsSync(notFoundPath)) {
+  fs.writeFileSync(notFoundPath, notFoundHtml);
+  console.log('Created 404.html for GitHub Pages SPA routing');
 }
 
 console.log('Done!');
