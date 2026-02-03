@@ -20,6 +20,7 @@ export default function AddAssetScreen() {
   const { portfolioId, type: typeParam } = useLocalSearchParams<{ portfolioId: string; type: string }>();
   const type = (typeParam as AssetType) || 'stock';
   const isSimple = isSimpleAssetType(type);
+  const isBitcoin = type === 'bitcoin';
   const colors = useColors();
   const [symbol, setSymbol] = useState('');
   const [name, setName] = useState('');
@@ -45,8 +46,8 @@ export default function AddAssetScreen() {
   }, [portfolioId]);
 
   useEffect(() => {
-    // Skip symbol search for simple asset types
-    if (isSimple) {
+    // Skip symbol search for simple asset types and bitcoin
+    if (isSimple || isBitcoin) {
       return;
     }
 
@@ -67,7 +68,7 @@ export default function AddAssetScreen() {
     }, 300);
 
     return () => clearTimeout(searchTimer);
-  }, [symbol, type, isSimple]);
+  }, [symbol, type, isSimple, isBitcoin]);
 
   const handleSelectResult = (result: any) => {
     setSymbol(result.symbol);
@@ -81,7 +82,7 @@ export default function AddAssetScreen() {
         alert('Error', 'Please enter a name');
         return;
       }
-    } else {
+    } else if (!isBitcoin) {
       if (!symbol.trim()) {
         alert('Error', 'Please enter a symbol');
         return;
@@ -99,9 +100,15 @@ export default function AddAssetScreen() {
       const finalTags = tagInputRef.current?.commitPending() ?? tags;
 
       // For simple assets, use the currency as the symbol (price is always 1 in that currency)
-      const assetSymbol = isSimple
-        ? currency.toUpperCase()
-        : symbol.trim().toUpperCase();
+      // For bitcoin, always use 'BTC' as the symbol
+      let assetSymbol: string;
+      if (isBitcoin) {
+        assetSymbol = 'BTC';
+      } else if (isSimple) {
+        assetSymbol = currency.toUpperCase();
+      } else {
+        assetSymbol = symbol.trim().toUpperCase();
+      }
 
       const asset = await createAsset(
         portfolioId,
@@ -120,7 +127,8 @@ export default function AddAssetScreen() {
   };
 
   const headerTitle = `Add ${getAssetTypeLabel(type)}`;
-  const canCreate = isSimple ? name.trim() : symbol.trim();
+  // Bitcoin and simple types don't require symbol, but simple types require name
+  const canCreate = isBitcoin ? true : (isSimple ? name.trim() : symbol.trim());
 
   return (
     <Page title={headerTitle} fallbackPath={portfolioId ? `/portfolio/${portfolioId}` : '/'}>
@@ -131,8 +139,8 @@ export default function AddAssetScreen() {
           </LongButton>
         }
       >
-        {/* Symbol input - only for non-simple assets */}
-        {!isSimple && (
+        {/* Symbol input - only for non-simple, non-bitcoin assets */}
+        {!isSimple && !isBitcoin && (
           <FormField
             label="Symbol"
             value={symbol}
@@ -198,8 +206,8 @@ export default function AddAssetScreen() {
           label={isSimple ? 'Name' : 'Name (Optional)'}
           value={name}
           onChangeText={setName}
-          placeholder={isSimple ? 'My savings account...' : 'Apple Inc.'}
-          autoFocus={isSimple}
+          placeholder={isBitcoin ? 'Bitcoin Stack' : (isSimple ? 'My savings account...' : 'Apple Inc.')}
+          autoFocus={isSimple || isBitcoin}
         />
 
         <FormField

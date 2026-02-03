@@ -15,6 +15,7 @@ const PRICE_TTL: Record<AssetType, number> = {
   stock: 15,
   etf: 15,
   crypto: 5,
+  bitcoin: 5,
   bond: 60,
   commodity: 15,
   cash: 1440, // 24 hours
@@ -36,8 +37,8 @@ async function fetchFromProvider(
   assetType: AssetType,
   preferredCurrency?: string
 ): Promise<{ price: number; currency: string; name?: string } | null> {
-  if (assetType === 'crypto') {
-    // Use Kraken for all crypto assets
+  if (assetType === 'crypto' || assetType === 'bitcoin') {
+    // Use Kraken for all crypto and bitcoin assets
     return await fetchKrakenPrice(symbol, preferredCurrency);
   }
 

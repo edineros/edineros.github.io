@@ -21,16 +21,26 @@ export const ASSET_TYPE_CONFIGS: AssetTypeConfig[] = [
     color: '#5856D6',
   },
   {
+    value: 'bitcoin',
+    label: 'Bitcoin',
+    plural: 'Bitcoin',
+    color: '#FF9500',
+  },
+  {
     value: 'crypto',
     label: 'Crypto',
     plural: 'Crypto',
-    color: '#FF9500',
+    color: '#00E5FF',
+    // alt colors:
+    // color: '#FF6F61',
+    // color: '#E6B89C',
+    // color: '#00C2A8',
   },
   {
     value: 'bond',
     label: 'Bond',
     plural: 'Bonds',
-    color: '#34C759',
+    color: '#8E9AAF',
   },
   {
     value: 'commodity',
@@ -42,13 +52,13 @@ export const ASSET_TYPE_CONFIGS: AssetTypeConfig[] = [
     value: 'cash',
     label: 'Cash',
     plural: 'Cash',
-    color: '#8E8E93',
+    color: '#00B140',
   },
   {
     value: 'real-estate',
     label: 'Real Estate',
     plural: 'Real Estate',
-    color: '#00D4AA',
+    color: '#FF2D55',
   },
   {
     value: 'other',
