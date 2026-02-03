@@ -2,8 +2,69 @@ import { create } from 'zustand';
 import { Platform } from 'react-native';
 import type { Portfolio, Asset, AssetWithStats, PortfolioWithStats } from '../lib/types';
 import * as db from '../lib/db';
-import { calculateAssetStats, calculatePortfolioStats } from '../lib/utils/calculations';
+import { calculateAssetStats } from '../lib/utils/calculations';
 import { convertCurrency } from '../lib/api/prices';
+
+// Helper type for asset with its portfolio context
+type AssetWithPortfolio = { asset: Asset; portfolioCurrency: string };
+
+// Helper to calculate asset stats in parallel and update store incrementally
+async function calculateAssetsStatsWithUpdates(
+  assetsWithPortfolio: AssetWithPortfolio[],
+  updateStore: (assetId: string, stats: AssetWithStats) => void
+): Promise<Array<{ asset: Asset; stats: AssetWithStats; portfolioCurrency: string }>> {
+  const promises = assetsWithPortfolio.map(async ({ asset, portfolioCurrency }) => {
+    const stats = await calculateAssetStats(asset, portfolioCurrency);
+    updateStore(asset.id, stats);
+    return { asset, stats, portfolioCurrency };
+  });
+  return Promise.all(promises);
+}
+
+// Helper to calculate portfolio totals from asset stats
+async function calculateTotals(
+  results: Array<{ asset: Asset; stats: AssetWithStats; portfolioCurrency: string }>,
+  targetCurrency: string
+): Promise<{ totalValue: number | null; totalCost: number; totalGain: number | null; totalGainPercent: number | null }> {
+  let totalValue: number | null = 0;
+  let totalCost = 0;
+  let hasAllPrices = true;
+
+  for (const { asset, stats, portfolioCurrency } of results) {
+    // Convert cost to target currency if needed
+    let assetCost = stats.totalCost;
+    if (asset.currency !== targetCurrency) {
+      const converted = await convertCurrency(assetCost, asset.currency, targetCurrency);
+      if (converted !== null) {
+        assetCost = converted;
+      }
+    }
+    totalCost += assetCost;
+
+    // Convert value to target currency if needed
+    if (stats.currentValue !== null) {
+      let assetValue = stats.currentValue;
+      if (portfolioCurrency !== targetCurrency) {
+        const converted = await convertCurrency(assetValue, portfolioCurrency, targetCurrency);
+        if (converted !== null) {
+          assetValue = converted;
+        }
+      }
+      totalValue = (totalValue ?? 0) + assetValue;
+    } else {
+      hasAllPrices = false;
+    }
+  }
+
+  if (!hasAllPrices) {
+    totalValue = null;
+  }
+
+  const totalGain = totalValue !== null ? totalValue - totalCost : null;
+  const totalGainPercent = totalGain !== null && totalCost > 0 ? (totalGain / totalCost) * 100 : null;
+
+  return { totalValue, totalCost, totalGain, totalGainPercent };
+}
 
 const LAST_PORTFOLIO_KEY = 'last_portfolio_id';
 
@@ -298,20 +359,37 @@ export const useAppStore = create<AppState>((set) => ({
         return null;
       }
 
-      const { portfolioStats: stats, assetStats: newAssetStats } = await calculatePortfolioStats(portfolio);
+      const assets = await db.getAssetsByPortfolioId(portfolioId);
+      const assetsWithPortfolio = assets.map((asset) => ({
+        asset,
+        portfolioCurrency: portfolio.currency,
+      }));
+
+      // Calculate stats in parallel, updating store as each completes
+      const results = await calculateAssetsStatsWithUpdates(assetsWithPortfolio, (assetId, stats) => {
+        set((state) => {
+          const assetStats = new Map(state.assetStats);
+          assetStats.set(assetId, stats);
+          return { assetStats };
+        });
+      });
+
+      // Calculate totals
+      const totals = await calculateTotals(results, portfolio.currency);
+
+      const portfolioStatsResult: PortfolioWithStats = {
+        ...portfolio,
+        ...totals,
+        assetCount: assets.length,
+      };
+
       set((state) => {
         const portfolioStats = new Map(state.portfolioStats);
-        portfolioStats.set(portfolioId, stats);
-
-        // Also update all asset stats from the batch calculation
-        const assetStats = new Map(state.assetStats);
-        for (const [assetId, assetStat] of newAssetStats) {
-          assetStats.set(assetId, assetStat);
-        }
-
-        return { portfolioStats, assetStats };
+        portfolioStats.set(portfolioId, portfolioStatsResult);
+        return { portfolioStats };
       });
-      return stats;
+
+      return portfolioStatsResult;
     } catch (error) {
       set({ error: (error as Error).message });
       return null;
@@ -325,59 +403,26 @@ export const useAppStore = create<AppState>((set) => ({
         return null;
       }
 
-      let totalValue: number | null = 0;
-      let totalCost = 0;
-      let totalAssetCount = 0;
-      let hasAllPrices = true;
-      const allAssetStats = new Map<string, AssetWithStats>();
-
-      // Calculate stats for each portfolio and aggregate
+      // Collect all assets from all portfolios
+      const assetsWithPortfolio: AssetWithPortfolio[] = [];
       for (const portfolio of portfolios) {
-        const { portfolioStats: stats, assetStats: newAssetStats } = await calculatePortfolioStats(portfolio);
-
-        // Update asset stats
-        for (const [assetId, assetStat] of newAssetStats) {
-          allAssetStats.set(assetId, assetStat);
-        }
-
-        totalAssetCount += stats.assetCount;
-
-        // Convert portfolio stats to display currency if needed
-        if (portfolio.currency !== displayCurrency) {
-          const convertedCost = await convertCurrency(stats.totalCost, portfolio.currency, displayCurrency);
-          if (convertedCost !== null) {
-            totalCost += convertedCost;
-          } else {
-            totalCost += stats.totalCost; // Fallback to unconverted value
-          }
-
-          if (stats.totalValue !== null) {
-            const convertedValue = await convertCurrency(stats.totalValue, portfolio.currency, displayCurrency);
-            if (convertedValue !== null) {
-              totalValue = (totalValue ?? 0) + convertedValue;
-            } else {
-              totalValue = (totalValue ?? 0) + stats.totalValue; // Fallback
-            }
-          } else {
-            hasAllPrices = false;
-          }
-        } else {
-          totalCost += stats.totalCost;
-
-          if (stats.totalValue !== null) {
-            totalValue = (totalValue ?? 0) + stats.totalValue;
-          } else {
-            hasAllPrices = false;
-          }
+        const assets = await db.getAssetsByPortfolioId(portfolio.id);
+        for (const asset of assets) {
+          assetsWithPortfolio.push({ asset, portfolioCurrency: portfolio.currency });
         }
       }
 
-      if (!hasAllPrices) {
-        totalValue = null;
-      }
+      // Calculate stats in parallel, updating store as each completes
+      const results = await calculateAssetsStatsWithUpdates(assetsWithPortfolio, (assetId, stats) => {
+        set((state) => {
+          const assetStats = new Map(state.assetStats);
+          assetStats.set(assetId, stats);
+          return { assetStats };
+        });
+      });
 
-      const totalGain = totalValue !== null ? totalValue - totalCost : null;
-      const totalGainPercent = totalGain !== null && totalCost > 0 ? (totalGain / totalCost) * 100 : null;
+      // Calculate totals (converting to display currency)
+      const totals = await calculateTotals(results, displayCurrency);
 
       const combinedStats: PortfolioWithStats = {
         id: ALL_PORTFOLIOS_ID,
@@ -386,23 +431,14 @@ export const useAppStore = create<AppState>((set) => ({
         masked: false,
         createdAt: new Date(),
         updatedAt: new Date(),
-        totalValue,
-        totalCost,
-        totalGain,
-        totalGainPercent,
-        assetCount: totalAssetCount,
+        ...totals,
+        assetCount: assetsWithPortfolio.length,
       };
 
       set((state) => {
         const portfolioStats = new Map(state.portfolioStats);
         portfolioStats.set(ALL_PORTFOLIOS_ID, combinedStats);
-
-        const assetStats = new Map(state.assetStats);
-        for (const [assetId, assetStat] of allAssetStats) {
-          assetStats.set(assetId, assetStat);
-        }
-
-        return { portfolioStats, assetStats };
+        return { portfolioStats };
       });
 
       return combinedStats;
