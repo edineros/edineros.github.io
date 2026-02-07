@@ -1,6 +1,8 @@
 import { Platform } from 'react-native';
 
 const DELAY = 200; // 200ms delay makes sure we fire no more than 5 yahoo requests per second
+const RETRY_DELAY = 7000; // 7 seconds delay before retrying on 429/500 errors
+const MAX_RETRIES = 2;
 
 // Rate limiting queue for Yahoo Finance API
 // Ensures no more than 5 requests per second (150ms minimum between requests)
@@ -81,6 +83,30 @@ function getProxiedUrl(url: string): string {
   return url;
 }
 
+// Fetch with retry for network errors, 429 (rate limit), and 5xx (server errors)
+async function fetchWithRetry(url: string, retries = MAX_RETRIES): Promise<Response> {
+  try {
+    const response = await fetch(url);
+
+    // Retry on rate limit or server errors
+    if ((response.status === 429 || response.status >= 500) && retries > 0) {
+      console.log(`Yahoo API returned ${response.status}, retrying in ${RETRY_DELAY}ms...`);
+      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
+      return fetchWithRetry(url, retries - 1);
+    }
+
+    return response;
+  } catch (error) {
+    // Retry on network failures (timeout, CORS, connection errors)
+    if (retries > 0) {
+      console.log(`Yahoo API fetch failed: ${error}, retrying in ${RETRY_DELAY}ms...`);
+      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
+      return fetchWithRetry(url, retries - 1);
+    }
+    throw error;
+  }
+}
+
 export async function fetchYahooPrice(symbol: string): Promise<{
   price: number;
   currency: string;
@@ -92,7 +118,7 @@ export async function fetchYahooPrice(symbol: string): Promise<{
       const baseUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`;
       const url = getProxiedUrl(baseUrl);
 
-      const response = await fetch(url);
+      const response = await fetchWithRetry(url);
 
       if (!response.ok) {
         console.error(`Yahoo Finance API error: ${response.status}`);
@@ -131,7 +157,7 @@ export async function searchYahooSymbol(query: string): Promise<
       const baseUrl = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=10&newsCount=0`;
       const url = getProxiedUrl(baseUrl);
 
-      const response = await fetch(url);
+      const response = await fetchWithRetry(url);
 
       if (!response.ok) {
         return [];
