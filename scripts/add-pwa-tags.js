@@ -31,19 +31,24 @@ const PWA_TAGS = `
 
         // Register service worker for auto-updates
         if ('serviceWorker' in navigator) {
-          navigator.serviceWorker.register('/sw.js').then(function(reg) {
+          var refreshing = false;
+          // Reload when a new service worker takes control
+          navigator.serviceWorker.addEventListener('controllerchange', function() {
+            if (!refreshing) {
+              refreshing = true;
+              window.location.reload();
+            }
+          });
+
+          navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).then(function(reg) {
+            // Check for updates immediately on load
+            reg.update();
             // Check for updates when app comes to foreground
             document.addEventListener('visibilitychange', function() {
               if (document.visibilityState === 'visible') {
                 reg.update();
               }
             });
-          });
-          // Reload when new service worker takes over
-          navigator.serviceWorker.addEventListener('message', function(event) {
-            if (event.data && event.data.type === 'SW_UPDATED') {
-              window.location.reload();
-            }
           });
         }
       })();
