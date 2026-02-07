@@ -257,7 +257,7 @@ export default function SettingsScreen() {
             <YStack gap={8}>
               <XStack justifyContent="space-between">
                 <Text color={colors.textSecondary}>Version</Text>
-                <Text color={colors.text}>1.0.1</Text>
+                <Text color={colors.text}>1.0.2</Text>
               </XStack>
 
               <YStack height={1} backgroundColor={colors.border} marginVertical={8} />

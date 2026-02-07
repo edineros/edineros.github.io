@@ -45,7 +45,7 @@ export function LongButton({
       case 'primary':
         return { backgroundColor: colors.accent, borderWidth: 0 };
       case 'secondary':
-        return { backgroundColor: 'transparent', borderColor: colors.border, borderWidth: 1 };
+        return { backgroundColor: colors.inputBackground, borderColor: colors.inputBorder, borderWidth: 1 };
       case 'destructive':
         return { backgroundColor: colors.destructive, borderWidth: 0 };
     }
