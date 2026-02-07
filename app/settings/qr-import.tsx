@@ -21,77 +21,79 @@ if (Platform.OS !== 'web') {
   useCameraPermissions = ExpoCamera.useCameraPermissions;
 }
 
-// Web QR scanner component
+// Declare jsqr module (no types available)
+declare module 'jsqr' {
+  export default function jsQR(
+    data: Uint8ClampedArray,
+    width: number,
+    height: number
+  ): { data: string } | null;
+}
+
+// Web QR scanner component using jsqr
 function WebQRScanner({ onScan, isActive, onStop }: { onScan: (data: string) => void; isActive: boolean; onStop?: () => void }) {
-  const scannerRef = useRef<any>(null);
-  const isRunningRef = useRef(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [error, setError] = useState<string | null>(null);
   const colors = useColors();
 
-  const stopScanner = useCallback(async () => {
-    if (scannerRef.current && isRunningRef.current) {
-      try {
-        await scannerRef.current.stop();
-      } catch {
-        // Scanner might already be stopped
-      }
-      isRunningRef.current = false;
-    }
-  }, []);
-
   useEffect(() => {
-    if (Platform.OS !== 'web') {
+    if (Platform.OS !== 'web' || !isActive) {
       return;
     }
 
-    if (!isActive) {
-      stopScanner().then(() => onStop?.());
-      return;
-    }
+    let animationId = 0;
 
-    let mounted = true;
+    const stopScanner = () => {
+      cancelAnimationFrame(animationId);
+      (videoRef.current?.srcObject as MediaStream)?.getTracks().forEach(track => track.stop());
+      onStop?.();
+    };
 
     const initScanner = async () => {
       try {
-        const { Html5Qrcode } = await import('html5-qrcode');
+        const jsQR = (await import('jsqr')).default;
 
-        if (!containerRef.current || !mounted) {
-          return;
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+        });
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
         }
 
-        const scanner = new Html5Qrcode('qr-reader');
-        scannerRef.current = scanner;
+        const scan = () => {
+          const video = videoRef.current;
+          const canvas = canvasRef.current;
+          const ctx = canvas?.getContext('2d', { willReadFrequently: true });
 
-        await scanner.start(
-          { facingMode: 'environment' },
-          {
-            fps: 10,
-            qrbox: { width: 250, height: 250 },
-          },
-          (decodedText: string) => {
-            onScan(decodedText);
-          },
-          () => {
-            // Ignore scan failures
+          if (video && canvas && ctx && video.readyState === video.HAVE_ENOUGH_DATA) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0);
+
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height);
+            if (code) {
+              onScan(code.data);
+            }
           }
-        );
-        isRunningRef.current = true;
+
+          animationId = requestAnimationFrame(scan);
+        };
+
+        scan();
       } catch (err) {
         console.error('QR Scanner error:', err);
-        if (mounted) {
-          setError('Failed to access camera. Please ensure camera permissions are granted.');
-        }
+        setError('Failed to access camera. Please ensure camera permissions are granted.');
       }
     };
 
     initScanner();
 
-    return () => {
-      mounted = false;
-      stopScanner();
-    };
-  }, [isActive, onScan, stopScanner, onStop]);
+    return stopScanner;
+  }, [isActive, onScan, onStop]);
 
   if (error) {
     return (
@@ -102,15 +104,10 @@ function WebQRScanner({ onScan, isActive, onStop }: { onScan: (data: string) => 
   }
 
   return (
-    <div
-      ref={containerRef}
-      id="qr-reader"
-      style={{
-        width: '100%',
-        height: '100%',
-        position: 'relative',
-      }}
-    />
+    <>
+      <video ref={videoRef} style={{ width: '100%', height: '100%', objectFit: 'cover' }} playsInline muted />
+      <canvas ref={canvasRef} style={{ display: 'none' }} />
+    </>
   );
 }
 
