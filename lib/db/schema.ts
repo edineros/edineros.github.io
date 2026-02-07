@@ -2,7 +2,7 @@ import * as SQLite from 'expo-sqlite';
 import { Platform } from 'react-native';
 
 const DATABASE_NAME = 'portfolio.db';
-const SCHEMA_VERSION = 6; // Increment when schema changes require migration
+const SCHEMA_VERSION = 7; // Increment when schema changes require migration
 
 let db: SQLite.SQLiteDatabase | null = null;
 let dbInitPromise: Promise<SQLite.SQLiteDatabase> | null = null;
@@ -224,9 +224,108 @@ async function runMigrations(database: SQLite.SQLiteDatabase, fromVersion: numbe
     );
   }
 
+  // Migration to version 7: Convert UUID to short IDs
+  // TODO: Remove after 2026-03-15 once all devices have migrated
+  if (fromVersion < 7) {
+    await migrateToShortIds(database);
+  }
+
   // Update schema version
   await database.execAsync('DELETE FROM schema_version;');
   await database.execAsync(`INSERT INTO schema_version (version) VALUES (${SCHEMA_VERSION});`);
+}
+
+/**
+ * Generate a short ID for migration purposes.
+ * Uses an incrementing counter to ensure uniqueness within a migration run.
+ */
+let migrationCounter = 0;
+function generateShortId(): string {
+  const time = Date.now().toString(36).slice(-6);
+  const counter = (migrationCounter++).toString(36).padStart(4, '0').slice(0, 4);
+  return time + counter;
+}
+
+/**
+ * Migrate UUIDs to short IDs for all tables.
+ * Order matters due to foreign key relationships:
+ * 1. portfolios (no dependencies)
+ * 2. categories (no dependencies)
+ * 3. assets (depends on portfolios, categories)
+ * 4. transactions (depends on assets, lot_id references other transactions)
+ */
+async function migrateToShortIds(database: SQLite.SQLiteDatabase): Promise<void> {
+  await database.execAsync('PRAGMA foreign_keys = OFF;');
+
+  // Build ID mappings
+  const portfolioIdMap = new Map<string, string>();
+  const categoryIdMap = new Map<string, string>();
+  const assetIdMap = new Map<string, string>();
+  const transactionIdMap = new Map<string, string>();
+
+  // Get all current IDs
+  const portfolios = await database.getAllAsync<{ id: string }>('SELECT id FROM portfolios');
+  const categories = await database.getAllAsync<{ id: string }>('SELECT id FROM categories');
+  const assets = await database.getAllAsync<{ id: string }>('SELECT id FROM assets');
+  const transactions = await database.getAllAsync<{ id: string }>('SELECT id FROM transactions');
+
+  // Generate new IDs for each record
+  for (const p of portfolios) {
+    portfolioIdMap.set(p.id, generateShortId());
+  }
+  for (const c of categories) {
+    categoryIdMap.set(c.id, generateShortId());
+  }
+  for (const a of assets) {
+    assetIdMap.set(a.id, generateShortId());
+  }
+  for (const t of transactions) {
+    transactionIdMap.set(t.id, generateShortId());
+  }
+
+  // Update portfolios
+  for (const [oldId, newId] of portfolioIdMap) {
+    await database.runAsync('UPDATE portfolios SET id = ? WHERE id = ?', [newId, oldId]);
+  }
+
+  // Update categories
+  for (const [oldId, newId] of categoryIdMap) {
+    await database.runAsync('UPDATE categories SET id = ? WHERE id = ?', [newId, oldId]);
+  }
+
+  // Update assets (id, portfolio_id, category_id)
+  for (const [oldId, newId] of assetIdMap) {
+    const asset = await database.getFirstAsync<{ portfolio_id: string; category_id: string | null }>(
+      'SELECT portfolio_id, category_id FROM assets WHERE id = ?',
+      [oldId]
+    );
+    if (asset) {
+      const newPortfolioId = portfolioIdMap.get(asset.portfolio_id) ?? asset.portfolio_id;
+      const newCategoryId = asset.category_id ? (categoryIdMap.get(asset.category_id) ?? asset.category_id) : null;
+      await database.runAsync(
+        'UPDATE assets SET id = ?, portfolio_id = ?, category_id = ? WHERE id = ?',
+        [newId, newPortfolioId, newCategoryId, oldId]
+      );
+    }
+  }
+
+  // Update transactions (id, asset_id, lot_id)
+  for (const [oldId, newId] of transactionIdMap) {
+    const tx = await database.getFirstAsync<{ asset_id: string; lot_id: string | null }>(
+      'SELECT asset_id, lot_id FROM transactions WHERE id = ?',
+      [oldId]
+    );
+    if (tx) {
+      const newAssetId = assetIdMap.get(tx.asset_id) ?? tx.asset_id;
+      const newLotId = tx.lot_id ? (transactionIdMap.get(tx.lot_id) ?? tx.lot_id) : null;
+      await database.runAsync(
+        'UPDATE transactions SET id = ?, asset_id = ?, lot_id = ? WHERE id = ?',
+        [newId, newAssetId, newLotId, oldId]
+      );
+    }
+  }
+
+  await database.execAsync('PRAGMA foreign_keys = ON;');
 }
 
 export async function closeDatabase() {

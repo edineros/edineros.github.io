@@ -92,6 +92,16 @@ export default function PortfolioDetailScreen() {
     }, [portfolioId, setCurrentPortfolio])
   );
 
+  // Redirect to first portfolio if current portfolio doesn't exist
+  useFocusEffect(
+    useCallback(() => {
+      if (portfolioId && !isLoading && !portfolio && portfolios.length > 0) {
+        // Portfolio doesn't exist (maybe ID changed after migration)
+        router.replace(`/portfolio/${portfolios[0].id}`);
+      }
+    }, [portfolioId, isLoading, portfolio, portfolios, router])
+  );
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     // Invalidate all price and exchange rate queries
@@ -226,8 +236,8 @@ export default function PortfolioDetailScreen() {
     );
   };
 
-  // Show loading state
-  if (portfolioId ? (!portfolio && isLoading) : (portfolios.length === 0)) {
+  // Show loading state (or while redirecting to valid portfolio)
+  if (portfolioId ? (!portfolio) : (portfolios.length === 0)) {
     return (
       <Page fallbackPath="/" showBack={false} >
         <YStack flex={1} justifyContent="center" alignItems="center">

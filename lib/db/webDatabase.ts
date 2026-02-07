@@ -4,7 +4,7 @@
 import type { Asset, Category } from '../types';
 
 const DB_NAME = 'portfolio-tracker';
-const DB_VERSION = 6;
+const DB_VERSION = 7;
 
 let idb: IDBDatabase | null = null;
 let idbPromise: Promise<IDBDatabase> | null = null;
@@ -80,10 +80,29 @@ async function openIDB(): Promise<IDBDatabase> {
   return db;
 }
 
+/**
+ * Generate a short ID for migration purposes.
+ * Uses an incrementing counter to ensure uniqueness within a migration run.
+ */
+let migrationCounter = 0;
+function generateShortId(): string {
+  const time = Date.now().toString(36).slice(-6);
+  const counter = (migrationCounter++).toString(36).padStart(4, '0').slice(0, 4);
+  return time + counter;
+}
+
 // Data migrations that can't be done in onupgradeneeded
-// TODO: Remove after 2026-02-20 once all devices have migrated
 async function runDataMigrations(db: IDBDatabase): Promise<void> {
   // Migration: Rename 'real-estate' to 'realEstate'
+  // TODO: Remove after 2026-02-20 once all devices have migrated
+  await migrateRealEstateType(db);
+
+  // Migration: Convert UUID to short IDs
+  // TODO: Remove after 2026-03-15 once all devices have migrated
+  await migrateToShortIds(db);
+}
+
+async function migrateRealEstateType(db: IDBDatabase): Promise<void> {
   const tx = db.transaction('assets', 'readwrite');
   const store = tx.objectStore('assets');
   const request = store.getAll();
@@ -101,6 +120,153 @@ async function runDataMigrations(db: IDBDatabase): Promise<void> {
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
     };
+  });
+}
+
+/**
+ * Check if an ID looks like a UUID (36 chars with dashes).
+ */
+function isUUID(id: string): boolean {
+  return typeof id === 'string' && id.length === 36 && id.includes('-');
+}
+
+/**
+ * Migrate UUIDs to short IDs for all tables.
+ * Only migrates records that have UUID-format IDs.
+ */
+async function migrateToShortIds(db: IDBDatabase): Promise<void> {
+  // Build ID mappings first
+  const portfolioIdMap = new Map<string, string>();
+  const categoryIdMap = new Map<string, string>();
+  const assetIdMap = new Map<string, string>();
+  const transactionIdMap = new Map<string, string>();
+
+  // Read all records
+  const portfolios = await getAllFromStore(db, 'portfolios');
+  const categories = await getAllFromStore(db, 'categories');
+  const assets = await getAllFromStore(db, 'assets');
+  const transactions = await getAllFromStore(db, 'transactions');
+
+  // Check if migration is needed (at least one UUID exists)
+  const hasUUIDs = [...portfolios, ...categories, ...assets, ...transactions].some(
+    (record: any) => isUUID(record.id)
+  );
+  if (!hasUUIDs) {
+    return; // Already migrated
+  }
+
+  // Generate new IDs for UUID records
+  for (const p of portfolios) {
+    if (isUUID(p.id)) {
+      portfolioIdMap.set(p.id, generateShortId());
+    }
+  }
+  for (const c of categories) {
+    if (isUUID(c.id)) {
+      categoryIdMap.set(c.id, generateShortId());
+    }
+  }
+  for (const a of assets) {
+    if (isUUID(a.id)) {
+      assetIdMap.set(a.id, generateShortId());
+    }
+  }
+  for (const t of transactions) {
+    if (isUUID(t.id)) {
+      transactionIdMap.set(t.id, generateShortId());
+    }
+  }
+
+  // Migrate portfolios
+  for (const portfolio of portfolios) {
+    const newId = portfolioIdMap.get(portfolio.id);
+    if (newId) {
+      await deleteFromStore(db, 'portfolios', portfolio.id);
+      portfolio.id = newId;
+      await putToStore(db, 'portfolios', portfolio);
+    }
+  }
+
+  // Migrate categories
+  for (const category of categories) {
+    const newId = categoryIdMap.get(category.id);
+    if (newId) {
+      await deleteFromStore(db, 'categories', category.id);
+      category.id = newId;
+      await putToStore(db, 'categories', category);
+    }
+  }
+
+  // Migrate assets (update id, portfolio_id, category_id)
+  for (const asset of assets) {
+    const newId = assetIdMap.get(asset.id);
+    const newPortfolioId = portfolioIdMap.get(asset.portfolio_id);
+    const newCategoryId = asset.category_id ? categoryIdMap.get(asset.category_id) : null;
+
+    if (newId || newPortfolioId || newCategoryId) {
+      await deleteFromStore(db, 'assets', asset.id);
+      if (newId) {
+        asset.id = newId;
+      }
+      if (newPortfolioId) {
+        asset.portfolio_id = newPortfolioId;
+      }
+      if (newCategoryId) {
+        asset.category_id = newCategoryId;
+      }
+      await putToStore(db, 'assets', asset);
+    }
+  }
+
+  // Migrate transactions (update id, asset_id, lot_id)
+  for (const transaction of transactions) {
+    const newId = transactionIdMap.get(transaction.id);
+    const newAssetId = assetIdMap.get(transaction.asset_id);
+    const newLotId = transaction.lot_id ? transactionIdMap.get(transaction.lot_id) : null;
+
+    if (newId || newAssetId || newLotId) {
+      await deleteFromStore(db, 'transactions', transaction.id);
+      if (newId) {
+        transaction.id = newId;
+      }
+      if (newAssetId) {
+        transaction.asset_id = newAssetId;
+      }
+      if (newLotId) {
+        transaction.lot_id = newLotId;
+      }
+      await putToStore(db, 'transactions', transaction);
+    }
+  }
+}
+
+async function getAllFromStore(db: IDBDatabase, storeName: string): Promise<any[]> {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, 'readonly');
+    const store = tx.objectStore(storeName);
+    const request = store.getAll();
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+  });
+}
+
+async function deleteFromStore(db: IDBDatabase, storeName: string, key: IDBValidKey): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, 'readwrite');
+    const store = tx.objectStore(storeName);
+    const request = store.delete(key);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve();
+  });
+}
+
+async function putToStore(db: IDBDatabase, storeName: string, data: any): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, 'readwrite');
+    const store = tx.objectStore(storeName);
+    const request = store.put(data);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve();
   });
 }
 

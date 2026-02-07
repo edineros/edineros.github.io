@@ -14,7 +14,7 @@ import { CONTENT_HORIZONTAL_PADDING } from '../../lib/constants/layout';
 import { useThemeStore, useColors, type ThemeMode } from '../../lib/theme/store';
 import { alertImportSuccess } from '../../lib/utils/backup';
 
-const VERSION = '1.0.4';
+const VERSION = '1.0.5';
 
 const THEME_OPTIONS: { value: ThemeMode; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { value: 'light', label: 'Light', icon: 'sunny-outline' },

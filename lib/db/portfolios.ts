@@ -1,4 +1,4 @@
-import { generateUUID } from '../utils/uuid';
+import { generateId } from '../utils/generateId';
 import { getDatabase, isWeb } from './schema';
 import { webDb } from './webDatabase';
 import type { Portfolio } from '../types';
@@ -54,7 +54,7 @@ export async function createPortfolio(
   name: string,
   currency: string = 'EUR'
 ): Promise<Portfolio> {
-  const id = generateUUID();
+  const id = generateId();
   const now = Date.now();
   const row: PortfolioRow = {
     id,

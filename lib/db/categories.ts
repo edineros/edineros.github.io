@@ -1,4 +1,4 @@
-import { generateUUID } from '../utils/uuid';
+import { generateId } from '../utils/generateId';
 import { getDatabase, isWeb } from './schema';
 import { webDb } from './webDatabase';
 import type { Category } from '../types';
@@ -51,7 +51,7 @@ export async function createCategory(
   color: string,
   sortOrder: number = 0
 ): Promise<Category> {
-  const id = generateUUID();
+  const id = generateId();
   const now = Date.now();
 
   if (isWeb()) {
