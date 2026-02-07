@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { alert } from '../../lib/utils/confirm';
 import { router } from 'expo-router';
-import { useAppStore } from '../../store';
+import { useCreatePortfolio } from '../../lib/hooks/usePortfolios';
 import { Page } from '../../components/Page';
 import { Form } from '../../components/Form';
 import { FormField } from '../../components/FormField';
@@ -10,8 +10,7 @@ import { LongButton } from '../../components/LongButton';
 export default function CreatePortfolioScreen() {
   const [name, setName] = useState('');
   const [currency, setCurrency] = useState('EUR');
-  const [isCreating, setIsCreating] = useState(false);
-  const { createPortfolio } = useAppStore();
+  const createPortfolio = useCreatePortfolio();
 
   const handleCreate = async () => {
     if (!name.trim()) {
@@ -19,14 +18,11 @@ export default function CreatePortfolioScreen() {
       return;
     }
 
-    setIsCreating(true);
     try {
-      const portfolio = await createPortfolio(name.trim(), currency);
+      const portfolio = await createPortfolio.mutateAsync({ name: name.trim(), currency });
       router.replace(`/portfolio/${portfolio.id}`);
     } catch (error) {
       alert('Error', (error as Error).message);
-    } finally {
-      setIsCreating(false);
     }
   };
 
@@ -34,8 +30,8 @@ export default function CreatePortfolioScreen() {
     <Page title="New Portfolio" fallbackPath="/">
       <Form
         footer={
-          <LongButton onPress={handleCreate} disabled={isCreating || !name.trim()}>
-            {isCreating ? 'Creating...' : 'Create Portfolio'}
+          <LongButton onPress={handleCreate} disabled={createPortfolio.isPending || !name.trim()}>
+            {createPortfolio.isPending ? 'Creating...' : 'Create Portfolio'}
           </LongButton>
         }
       >

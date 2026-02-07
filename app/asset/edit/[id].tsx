@@ -1,69 +1,54 @@
 import { useState, useEffect, useRef } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { YStack, Text, Spinner } from 'tamagui';
-import { useAppStore } from '../../../store';
+import { useAsset, useUpdateAsset, useDeleteAsset } from '../../../lib/hooks/useAssets';
 import { Page } from '../../../components/Page';
 import { Form } from '../../../components/Form';
 import { FormField } from '../../../components/FormField';
 import { LongButton } from '../../../components/LongButton';
 import { alert, confirm } from '../../../lib/utils/confirm';
-import { getAssetById, getAllAssetTags } from '../../../lib/db/assets';
+import { getAllAssetTags } from '../../../lib/db/assets';
 import { TagInputRef } from '../../../components/TagInput';
 import { isSimpleAssetType } from '../../../lib/constants/assetTypes';
 import { useColors } from '../../../lib/theme/store';
-import type { Asset } from '../../../lib/types';
 import { HeaderIconButton } from '../../../components/HeaderButtons';
 
 export default function EditAssetScreen() {
   const { id, portfolioId } = useLocalSearchParams<{ id: string; portfolioId: string }>();
   const colors = useColors();
-  const [asset, setAsset] = useState<Asset | null>(null);
   const [name, setName] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [existingTags, setExistingTags] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   const tagInputRef = useRef<TagInputRef>(null);
-  const { updateAsset, deleteAsset } = useAppStore();
+
+  const { data: asset, isLoading } = useAsset(id);
+  const updateAsset = useUpdateAsset();
+  const deleteAsset = useDeleteAsset();
 
   useEffect(() => {
-    if (id) {
-      loadAsset();
+    if (asset) {
+      setName(asset.name || '');
+      setTags(asset.tags || []);
     }
-  }, [id]);
+  }, [asset]);
 
-  const loadAsset = async () => {
-    try {
-      const [a, allTags] = await Promise.all([
-        getAssetById(id!),
-        getAllAssetTags(),
-      ]);
-      if (a) {
-        setAsset(a);
-        setName(a.name || '');
-        setTags(a.tags || []);
-      }
-      setExistingTags(allTags);
-    } catch (error) {
-      alert('Error', (error as Error).message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  useEffect(() => {
+    // Load existing tags for autocomplete
+    getAllAssetTags().then(setExistingTags);
+  }, []);
 
   const handleSave = async () => {
-    setIsSaving(true);
     try {
       // Commit any pending tag in the input field so that it's not lost if we forgot to explicity save it
       const finalTags = tagInputRef.current?.commitPending() ?? tags;
 
-      await updateAsset(id!, { name: name.trim() || undefined, tags: finalTags });
+      await updateAsset.mutateAsync({
+        id: id!,
+        updates: { name: name.trim() || undefined, tags: finalTags },
+      });
       router.back();
     } catch (error) {
       alert('Error', (error as Error).message);
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -76,13 +61,11 @@ export default function EditAssetScreen() {
     });
 
     if (confirmed && portfolioId) {
-      setIsDeleting(true);
       try {
-        await deleteAsset(id!, portfolioId);
+        await deleteAsset.mutateAsync({ id: id!, portfolioId });
         router.replace(`/portfolio/${portfolioId}`);
       } catch (error) {
         alert('Error', (error as Error).message);
-        setIsDeleting(false);
       }
     }
   };
@@ -125,8 +108,8 @@ export default function EditAssetScreen() {
     >
       <Form
         footer={
-          <LongButton onPress={handleSave} disabled={isSaving}>
-            {isSaving ? 'Saving...' : 'Save Changes'}
+          <LongButton onPress={handleSave} disabled={updateAsset.isPending}>
+            {updateAsset.isPending ? 'Saving...' : 'Save Changes'}
           </LongButton>
         }
       >

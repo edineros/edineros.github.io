@@ -9,12 +9,12 @@ import { LongButton } from '../../components/LongButton';
 import { InfoRow } from '../../components/InfoRow';
 import { InfoLabel } from '../../components/InfoLabel';
 import { TextButton } from '../../components/TextButton';
-import { getAssetById } from '../../lib/db/assets';
-import { getLotsForAsset, createTransaction } from '../../lib/db/transactions';
-import { fetchPrice } from '../../lib/api/prices';
+import { useAsset } from '../../lib/hooks/useAssets';
+import { useLots } from '../../lib/hooks/useLots';
+import { usePrice } from '../../lib/hooks/usePrices';
+import { useCreateTransaction } from '../../lib/hooks/useTransactions';
 import { formatCurrency, formatQuantity, formatDate, formatPercent, parseDecimal } from '../../lib/utils/format';
 import { useColors } from '../../lib/theme/store';
-import type { Asset, Lot } from '../../lib/types';
 
 export default function CloseLotScreen() {
   const { assetId, lotId, portfolioId } = useLocalSearchParams<{
@@ -23,44 +23,32 @@ export default function CloseLotScreen() {
     portfolioId: string;
   }>();
   const colors = useColors();
-  const [asset, setAsset] = useState<Asset | null>(null);
-  const [lot, setLot] = useState<Lot | null>(null);
   const [quantity, setQuantity] = useState('');
   const [pricePerUnit, setPricePerUnit] = useState('');
   const [fee, setFee] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState('');
-  const [isCreating, setIsCreating] = useState(false);
-  const [currentPrice, setCurrentPrice] = useState<number | null>(null);
+
+  const { data: asset } = useAsset(assetId);
+  const { data: lots = [] } = useLots(assetId);
+  const { data: priceData } = usePrice(asset?.symbol, asset?.type, asset?.currency);
+  const createTransaction = useCreateTransaction();
+
+  const lot = lots.find((l) => l.id === lotId) ?? null;
+  const currentPrice = priceData?.price ?? null;
+
+  // Initialize quantity and price when data loads
+  useEffect(() => {
+    if (lot && !quantity) {
+      setQuantity(lot.remainingQuantity.toString());
+    }
+  }, [lot]);
 
   useEffect(() => {
-    loadData();
-  }, [assetId, lotId]);
-
-  const loadData = async () => {
-    if (!assetId || !lotId) {
-      return;
+    if (currentPrice !== null && !pricePerUnit) {
+      setPricePerUnit(currentPrice.toString());
     }
-
-    const assetData = await getAssetById(assetId);
-    setAsset(assetData);
-
-    if (assetData) {
-      const lots = await getLotsForAsset(assetId);
-      const lotData = lots.find((l) => l.id === lotId);
-      setLot(lotData || null);
-
-      if (lotData) {
-        setQuantity(lotData.remainingQuantity.toString());
-      }
-
-      const priceResult = await fetchPrice(assetData.symbol, assetData.type, assetData.currency);
-      if (priceResult) {
-        setCurrentPrice(priceResult.price);
-        setPricePerUnit(priceResult.price.toString());
-      }
-    }
-  };
+  }, [currentPrice]);
 
   const calculateGain = () => {
     if (!lot) return null;
@@ -102,25 +90,22 @@ export default function CloseLotScreen() {
       return;
     }
 
-    setIsCreating(true);
     try {
-      await createTransaction(
+      await createTransaction.mutateAsync({
         assetId,
-        'sell',
-        qty,
-        price,
-        new Date(date),
-        {
+        type: 'sell',
+        quantity: qty,
+        pricePerUnit: price,
+        date: new Date(date),
+        options: {
           fee: feeVal,
           notes: notes.trim() || undefined,
           lotId: lotId,
-        }
-      );
+        },
+      });
       router.back();
     } catch (error) {
       alert('Error', (error as Error).message);
-    } finally {
-      setIsCreating(false);
     }
   };
 
@@ -148,10 +133,10 @@ export default function CloseLotScreen() {
         footer={
           <LongButton
             onPress={handleClose}
-            disabled={isCreating || !quantity || !pricePerUnit}
+            disabled={createTransaction.isPending || !quantity || !pricePerUnit}
             variant="destructive"
           >
-            {isCreating ? 'Closing...' : 'Close Lot'}
+            {createTransaction.isPending ? 'Closing...' : 'Close Lot'}
           </LongButton>
         }
       >

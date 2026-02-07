@@ -1,48 +1,33 @@
 import { useState, useEffect } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { YStack, Text, Spinner } from 'tamagui';
-import { useAppStore } from '../../../store';
 import { Page } from '../../../components/Page';
 import { Form } from '../../../components/Form';
 import { FormField } from '../../../components/FormField';
 import { LongButton } from '../../../components/LongButton';
 import { alert, confirm } from '../../../lib/utils/confirm';
-import { getPortfolioById } from '../../../lib/db/portfolios';
+import { usePortfolio, useUpdatePortfolio, useDeletePortfolio } from '../../../lib/hooks/usePortfolios';
+import { useAppStore } from '../../../store';
 import { useColors } from '../../../lib/theme/store';
-import type { Portfolio } from '../../../lib/types';
 import { HeaderIconButton } from '../../../components/HeaderButtons';
 
 export default function EditPortfolioScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const colors = useColors();
-  const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
   const [name, setName] = useState('');
   const [currency, setCurrency] = useState('EUR');
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const { updatePortfolio, deletePortfolio } = useAppStore();
+  const { clearLastPortfolioId } = useAppStore();
+
+  const { data: portfolio, isLoading } = usePortfolio(id);
+  const updatePortfolio = useUpdatePortfolio();
+  const deletePortfolio = useDeletePortfolio();
 
   useEffect(() => {
-    if (id) {
-      loadPortfolio();
+    if (portfolio) {
+      setName(portfolio.name);
+      setCurrency(portfolio.currency);
     }
-  }, [id]);
-
-  const loadPortfolio = async () => {
-    try {
-      const p = await getPortfolioById(id!);
-      if (p) {
-        setPortfolio(p);
-        setName(p.name);
-        setCurrency(p.currency);
-      }
-    } catch (error) {
-      alert('Error', (error as Error).message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  }, [portfolio]);
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -50,14 +35,11 @@ export default function EditPortfolioScreen() {
       return;
     }
 
-    setIsSaving(true);
     try {
-      await updatePortfolio(id!, { name: name.trim(), currency });
+      await updatePortfolio.mutateAsync({ id: id!, updates: { name: name.trim(), currency } });
       router.back();
     } catch (error) {
       alert('Error', (error as Error).message);
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -70,13 +52,12 @@ export default function EditPortfolioScreen() {
     });
 
     if (confirmed) {
-      setIsDeleting(true);
       try {
-        await deletePortfolio(id!);
+        await deletePortfolio.mutateAsync(id!);
+        await clearLastPortfolioId(id!);
         router.replace('/');
       } catch (error) {
         alert('Error', (error as Error).message);
-        setIsDeleting(false);
       }
     }
   };
@@ -115,8 +96,8 @@ export default function EditPortfolioScreen() {
     >
       <Form
         footer={
-          <LongButton onPress={handleSave} disabled={isSaving || !name.trim()}>
-            {isSaving ? 'Saving...' : 'Save Changes'}
+          <LongButton onPress={handleSave} disabled={updatePortfolio.isPending || !name.trim()}>
+            {updatePortfolio.isPending ? 'Saving...' : 'Save Changes'}
           </LongButton>
         }
       >

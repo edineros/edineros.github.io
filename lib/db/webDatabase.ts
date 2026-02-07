@@ -298,48 +298,4 @@ export const webDb = {
     const allTags = await getAll<any>('transaction_tags');
     return [...new Set(allTags.map(t => t.tag))].sort();
   },
-
-  // Price cache
-  async getCachedPrice(symbol: string) {
-    return getOne<any>('price_cache', symbol);
-  },
-
-  async setCachedPrice(price: any) {
-    await put('price_cache', price);
-  },
-
-  async clearExpiredPrices(): Promise<number> {
-    const now = Date.now();
-    const all = await getAll<any>('price_cache');
-    let count = 0;
-    for (const item of all) {
-      if (item.expires_at < now) {
-        await remove('price_cache', item.symbol);
-        count++;
-      }
-    }
-    return count;
-  },
-
-  // Exchange rates
-  async getCachedExchangeRate(fromCurrency: string, toCurrency: string) {
-    return getOne<any>('exchange_rates', [fromCurrency, toCurrency]);
-  },
-
-  async setCachedExchangeRate(rate: any) {
-    await put('exchange_rates', rate);
-  },
-
-  async clearExpiredExchangeRates(): Promise<number> {
-    const now = Date.now();
-    const all = await getAll<any>('exchange_rates');
-    let count = 0;
-    for (const item of all) {
-      if (item.expires_at < now) {
-        await remove('exchange_rates', [item.from_currency, item.to_currency]);
-        count++;
-      }
-    }
-    return count;
-  },
 };

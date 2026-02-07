@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { alert } from '../../lib/utils/confirm';
 import { router, useLocalSearchParams } from 'expo-router';
 import { YStack } from 'tamagui';
@@ -7,34 +7,26 @@ import { Form } from '../../components/Form';
 import { FormField } from '../../components/FormField';
 import { LongButton } from '../../components/LongButton';
 import { InfoRow } from '../../components/InfoRow';
-import { getAssetById } from '../../lib/db/assets';
-import { createTransaction } from '../../lib/db/transactions';
+import { useAsset } from '../../lib/hooks/useAssets';
+import { useCreateTransaction } from '../../lib/hooks/useTransactions';
 import { formatCurrency, parseDecimal } from '../../lib/utils/format';
 import { isSimpleAssetType } from '../../lib/constants/assetTypes';
-import { useColors } from '../../lib/theme/store';
-import type { Asset } from '../../lib/types';
 
 export default function AddLotScreen() {
   const { assetId, portfolioId } = useLocalSearchParams<{
     assetId: string;
     portfolioId: string;
   }>();
-  const colors = useColors();
-  const [asset, setAsset] = useState<Asset | null>(null);
   const [quantity, setQuantity] = useState('');
   const [pricePerUnit, setPricePerUnit] = useState('');
   const [fee, setFee] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState('');
-  const [isCreating, setIsCreating] = useState(false);
+
+  const { data: asset } = useAsset(assetId);
+  const createTransaction = useCreateTransaction();
 
   const isSimple = asset ? isSimpleAssetType(asset.type) : false;
-
-  useEffect(() => {
-    if (assetId) {
-      getAssetById(assetId).then(setAsset);
-    }
-  }, [assetId]);
 
   const total = () => {
     if (isSimple) {
@@ -70,24 +62,21 @@ export default function AddLotScreen() {
       return;
     }
 
-    setIsCreating(true);
     try {
-      await createTransaction(
+      await createTransaction.mutateAsync({
         assetId,
-        'buy',
-        qty,
-        price,
-        new Date(date),
-        {
+        type: 'buy',
+        quantity: qty!,
+        pricePerUnit: price!,
+        date: new Date(date),
+        options: {
           fee: feeVal,
           notes: notes.trim() || undefined,
-        }
-      );
+        },
+      });
       router.back();
     } catch (error) {
       alert('Error', (error as Error).message);
-    } finally {
-      setIsCreating(false);
     }
   };
 
@@ -113,9 +102,9 @@ export default function AddLotScreen() {
             />
             <LongButton
               onPress={handleCreate}
-              disabled={isCreating || !quantity || (!isSimple && !pricePerUnit)}
+              disabled={createTransaction.isPending || !quantity || (!isSimple && !pricePerUnit)}
             >
-              {isCreating ? 'Adding...' : 'Add Lot'}
+              {createTransaction.isPending ? 'Adding...' : 'Add Lot'}
             </LongButton>
           </YStack>
         }

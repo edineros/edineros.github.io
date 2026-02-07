@@ -3,14 +3,14 @@ import { ScrollView, TouchableOpacity } from 'react-native';
 import { alert } from '../../lib/utils/confirm';
 import { router, useLocalSearchParams } from 'expo-router';
 import { YStack, XStack, Text, Spinner } from 'tamagui';
-import { useAppStore } from '../../store';
+import { usePortfolio } from '../../lib/hooks/usePortfolios';
+import { useCreateAsset } from '../../lib/hooks/useAssets';
 import { Page } from '../../components/Page';
 import { Form } from '../../components/Form';
 import { FormField } from '../../components/FormField';
 import { LongButton } from '../../components/LongButton';
 import { TagInputRef } from '../../components/TagInput';
 import { searchSymbol } from '../../lib/api/prices';
-import { getPortfolioById } from '../../lib/db/portfolios';
 import { getAllAssetTags } from '../../lib/db/assets';
 import { getAssetTypeLabel, isSimpleAssetType } from '../../lib/constants/assetTypes';
 import { useColors } from '../../lib/theme/store';
@@ -29,21 +29,21 @@ export default function AddAssetScreen() {
   const [existingTags, setExistingTags] = useState<string[]>([]);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
   const tagInputRef = useRef<TagInputRef>(null);
-  const { createAsset } = useAppStore();
+
+  const { data: portfolio } = usePortfolio(portfolioId);
+  const createAsset = useCreateAsset();
 
   useEffect(() => {
-    if (portfolioId) {
-      getPortfolioById(portfolioId).then((p) => {
-        if (p) {
-          setCurrency(p.currency);
-        }
-      });
+    if (portfolio) {
+      setCurrency(portfolio.currency);
     }
+  }, [portfolio]);
+
+  useEffect(() => {
     // Load existing tags for autocomplete
     getAllAssetTags().then(setExistingTags);
-  }, [portfolioId]);
+  }, []);
 
   useEffect(() => {
     // Skip symbol search for simple asset types and bitcoin
@@ -94,7 +94,6 @@ export default function AddAssetScreen() {
       return;
     }
 
-    setIsCreating(true);
     try {
       // Commit any pending tag in the input field so that it's not lost if we forgot to explicity save it
       const finalTags = tagInputRef.current?.commitPending() ?? tags;
@@ -110,19 +109,17 @@ export default function AddAssetScreen() {
         assetSymbol = symbol.trim().toUpperCase();
       }
 
-      const asset = await createAsset(
+      const asset = await createAsset.mutateAsync({
         portfolioId,
-        assetSymbol,
+        symbol: assetSymbol,
         type,
-        name.trim() || undefined,
+        name: name.trim() || undefined,
         currency,
-        finalTags
-      );
+        tags: finalTags,
+      });
       router.replace(`/asset/${asset.id}?portfolioId=${portfolioId}`);
     } catch (error) {
       alert('Error', (error as Error).message);
-    } finally {
-      setIsCreating(false);
     }
   };
 
@@ -134,8 +131,8 @@ export default function AddAssetScreen() {
     <Page title={headerTitle} fallbackPath={portfolioId ? `/portfolio/${portfolioId}` : '/'}>
       <Form
         footer={
-          <LongButton onPress={handleCreate} disabled={isCreating || !canCreate}>
-            {isCreating ? 'Adding...' : 'Add Asset'}
+          <LongButton onPress={handleCreate} disabled={createAsset.isPending || !canCreate}>
+            {createAsset.isPending ? 'Adding...' : 'Add Asset'}
           </LongButton>
         }
       >

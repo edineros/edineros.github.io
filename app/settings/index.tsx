@@ -3,9 +3,9 @@ import { ScrollView, Platform, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { YStack, XStack, Text } from 'tamagui';
 import { Ionicons } from '@expo/vector-icons';
+import { useQueryClient } from '@tanstack/react-query';
 import { exportToJson, shareFile, importFromJson } from '../../lib/utils/export';
 import { alert, alertAsync, confirm } from '../../lib/utils/confirm';
-import { useAppStore } from '../../store';
 import { Page } from '../../components/Page';
 import { LongButton } from '../../components/LongButton';
 import { SettingsSection } from '../../components/SettingsSection';
@@ -21,7 +21,7 @@ const THEME_OPTIONS: { value: ThemeMode; label: string; icon: keyof typeof Ionic
 export default function SettingsScreen() {
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
-  const { loadPortfolios, clearCache } = useAppStore();
+  const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { mode, setMode } = useThemeStore();
   const colors = useColors();
@@ -44,8 +44,8 @@ export default function SettingsScreen() {
     try {
       const importResult = await importFromJson(content);
 
-      clearCache();
-      await loadPortfolios();
+      // Clear all cached data and refetch
+      queryClient.clear();
 
       await alertAsync(
         'Import Successful',

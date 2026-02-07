@@ -7,6 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import config from '../tamagui.config';
 import { getDatabase } from '../lib/db/schema';
 import { useThemeStore, useColors } from '../lib/theme/store';
+import { QueryProvider } from '../lib/providers/QueryProvider';
 
 function AppContent() {
   const { resolvedTheme, initializeTheme } = useThemeStore();
@@ -37,8 +38,10 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <TamaguiProvider config={config}>
-      <AppContent />
-    </TamaguiProvider>
+    <QueryProvider>
+      <TamaguiProvider config={config}>
+        <AppContent />
+      </TamaguiProvider>
+    </QueryProvider>
   );
 }

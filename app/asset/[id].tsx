@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { FlatList, RefreshControl } from 'react-native';
-import { useLocalSearchParams, useFocusEffect, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { confirm } from '../../lib/utils/confirm';
 import { Page } from '../../components/Page';
 import { HeaderIconButton } from '../../components/HeaderButtons';
@@ -8,9 +9,11 @@ import { QuantityAtPrice } from '../../components/QuantityAtPrice';
 import { FloatingActionButton } from '../../components/FloatingActionButton';
 import { CONTENT_HORIZONTAL_PADDING } from '../../lib/constants/layout';
 import { YStack, XStack, Text, Card, Spinner, Separator, Tabs } from 'tamagui';
-import { getAssetById } from '../../lib/db/assets';
-import { getLotsForAsset, getTransactionsByAssetId, deleteTransaction } from '../../lib/db/transactions';
-import { fetchPrice, refreshPrice } from '../../lib/api/prices';
+import { useAsset } from '../../lib/hooks/useAssets';
+import { useLots } from '../../lib/hooks/useLots';
+import { useTransactions, useDeleteTransaction } from '../../lib/hooks/useTransactions';
+import { usePrice } from '../../lib/hooks/usePrices';
+import { queryKeys } from '../../lib/hooks/config/queryKeys';
 import {
   formatCurrency,
   formatPercent,
@@ -21,72 +24,51 @@ import {
 } from '../../lib/utils/format';
 import { calculateLotStats } from '../../lib/utils/calculations';
 import { isSimpleAssetType } from '../../lib/constants/assetTypes';
-import type { Asset, Lot, Transaction } from '../../lib/types';
+import type { Lot, Transaction } from '../../lib/types';
 import { MicroButton } from '../../components/MicroButton';
 import { useColors } from '../../lib/theme/store';
 
 export default function AssetDetailScreen() {
   const { id, portfolioId } = useLocalSearchParams<{ id: string; portfolioId: string }>();
+  const queryClient = useQueryClient();
   const colors = useColors();
-  const [asset, setAsset] = useState<Asset | null>(null);
-  const [lots, setLots] = useState<Lot[]>([]);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [currentPrice, setCurrentPrice] = useState<number | null>(null);
-  const [priceLastUpdated, setPriceLastUpdated] = useState<Date | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('lots');
 
-  useFocusEffect(
-    useCallback(() => {
-      loadData();
-    }, [id, portfolioId])
+  const { data: asset, isLoading: assetLoading } = useAsset(id);
+  const { data: lots = [], isLoading: lotsLoading } = useLots(id);
+  const { data: transactions = [] } = useTransactions(id);
+  const deleteTransactionMutation = useDeleteTransaction();
+
+  const isSimple = asset ? isSimpleAssetType(asset.type) : false;
+
+  // Only fetch price for market assets (not simple assets)
+  const { data: priceData, isLoading: priceLoading } = usePrice(
+    isSimple ? undefined : asset?.symbol,
+    isSimple ? undefined : asset?.type,
+    asset?.currency
   );
 
-  const loadData = async () => {
-    if (!id) {
-      return;
-    }
+  const currentPrice = isSimple ? null : (priceData?.price ?? null);
+  const priceLastUpdated = priceData ? new Date() : null;
 
-    setIsLoading(true);
-    try {
-      const [assetData, lotsData, txData] = await Promise.all([
-        getAssetById(id),
-        getLotsForAsset(id),
-        getTransactionsByAssetId(id),
-      ]);
-
-      setAsset(assetData);
-      setLots(lotsData);
-      setTransactions(txData);
-
-      // Only fetch price for market assets (not simple assets)
-      if (assetData && !isSimpleAssetType(assetData.type)) {
-        const priceResult = await fetchPrice(assetData.symbol, assetData.type, assetData.currency);
-        if (priceResult) {
-          setCurrentPrice(priceResult.price);
-          setPriceLastUpdated(priceResult.fetchedAt);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading asset:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const isLoading = assetLoading || lotsLoading || (!isSimple && priceLoading);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    if (asset && !isSimpleAssetType(asset.type)) {
-      const priceResult = await refreshPrice(asset.symbol, asset.type, asset.currency);
-      if (priceResult) {
-        setCurrentPrice(priceResult.price);
-        setPriceLastUpdated(priceResult.fetchedAt);
-      }
+    // Invalidate price queries to force refetch
+    if (asset && !isSimple) {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.prices.single(asset.symbol, asset.type),
+      });
     }
-    await loadData();
+    // Also refetch lots and transactions
+    if (id) {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.lots.byAsset(id) });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.transactions.byAsset(id) });
+    }
     setRefreshing(false);
-  }, [asset]);
+  }, [asset, isSimple, id, queryClient]);
 
   const handleDeleteTransaction = useCallback(async (tx: Transaction) => {
     const confirmed = await confirm({
@@ -95,11 +77,10 @@ export default function AssetDetailScreen() {
       confirmText: 'Delete',
       destructive: true,
     });
-    if (confirmed) {
-      await deleteTransaction(tx.id);
-      loadData();
+    if (confirmed && id) {
+      await deleteTransactionMutation.mutateAsync({ id: tx.id, assetId: id });
     }
-  }, []);
+  }, [id, deleteTransactionMutation]);
 
   const handleDeleteItem = useCallback(async (lot: Lot) => {
     const confirmed = await confirm({
@@ -108,11 +89,10 @@ export default function AssetDetailScreen() {
       confirmText: 'Delete',
       destructive: true,
     });
-    if (confirmed) {
-      await deleteTransaction(lot.buyTransactionId);
-      loadData();
+    if (confirmed && id) {
+      await deleteTransactionMutation.mutateAsync({ id: lot.buyTransactionId, assetId: id });
     }
-  }, []);
+  }, [id, deleteTransactionMutation]);
 
   // Calculate totals
   const totalQuantity = lots.reduce((sum, lot) => sum + lot.remainingQuantity, 0);
@@ -340,7 +320,7 @@ export default function AssetDetailScreen() {
               </Text>
             )}
           </YStack>
-          {!isSimpleAssetType(asset.type) && (
+          {!isSimple && (
             <YStack alignItems="flex-end">
               {currentPrice !== null ? (
                 <>
@@ -365,12 +345,12 @@ export default function AssetDetailScreen() {
         <XStack justifyContent="space-between">
           <YStack>
             <Text fontSize="$2" color="$gray10">
-              {isSimpleAssetType(asset.type) ? 'Items' : 'Holdings'}
+              {isSimple ? 'Items' : 'Holdings'}
             </Text>
             <Text fontSize="$5" fontWeight="600">
-              {isSimpleAssetType(asset.type) ? `${formatQuantity(totalQuantity)} ${totalQuantity === 1 ? 'item' : 'items'}` : formatQuantity(totalQuantity)}
+              {isSimple ? `${formatQuantity(totalQuantity)} ${totalQuantity === 1 ? 'item' : 'items'}` : formatQuantity(totalQuantity)}
             </Text>
-            {!isSimpleAssetType(asset.type) && (
+            {!isSimple && (
               <Text fontSize="$2" color="$gray10">
                 Avg. Cost: {formatCurrency(averageCost, asset.currency)}
               </Text>
@@ -380,7 +360,7 @@ export default function AssetDetailScreen() {
             <Text fontSize="$2" color="$gray10">
               Total Value
             </Text>
-            {isSimpleAssetType(asset.type) ? (
+            {isSimple ? (
               <Text fontSize="$5" fontWeight="600">
                 {formatCurrency(totalCost, asset.currency)}
               </Text>
@@ -413,7 +393,7 @@ export default function AssetDetailScreen() {
       </Card>
 
       {/* Simple assets: show items list without tabs */}
-      {isSimpleAssetType(asset.type) ? (
+      {isSimple ? (
         <YStack flex={1}>
           <FlatList
             data={lots}

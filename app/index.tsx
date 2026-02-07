@@ -1,9 +1,10 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect } from 'react';
 import { TouchableOpacity } from 'react-native';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { YStack, Text, Spinner } from 'tamagui';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../store';
+import { usePortfolios } from '../lib/hooks/usePortfolios';
 import { Page } from '../components/Page';
 import { CONTENT_HORIZONTAL_PADDING } from '../lib/constants/layout';
 import { LongButton } from '../components/LongButton';
@@ -28,19 +29,14 @@ function MenuButton() {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { portfolios, isLoading, loadPortfolios, getLastPortfolioId } = useAppStore();
   const colors = useColors();
-
-  useFocusEffect(
-    useCallback(() => {
-      loadPortfolios();
-    }, [])
-  );
+  const { getLastPortfolioId } = useAppStore();
+  const { data: portfolios, isLoading } = usePortfolios();
 
   // Redirect to last opened portfolio (or first) when loading completes
   useEffect(() => {
     const redirect = async () => {
-      if (!isLoading && portfolios.length > 0) {
+      if (!isLoading && portfolios && portfolios.length > 0) {
         // Try to get the last opened portfolio
         const lastId = await getLastPortfolioId();
         const targetPortfolio = lastId
@@ -56,7 +52,7 @@ export default function HomeScreen() {
   }, [isLoading, portfolios, router, getLastPortfolioId]);
 
   // Show loading state
-  if (isLoading || portfolios.length > 0) {
+  if (isLoading || !portfolios || portfolios.length > 0) {
     return (
       <Page title="Portfolios" showBack={false} leftComponent={<MenuButton />}>
         <YStack flex={1} justifyContent="center" alignItems="center">

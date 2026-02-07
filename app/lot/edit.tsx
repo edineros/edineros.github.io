@@ -7,12 +7,11 @@ import { Form } from '../../components/Form';
 import { LongButton } from '../../components/LongButton';
 import { FormField } from '../../components/FormField';
 import { InfoRow } from '../../components/InfoRow';
-import { getAssetById } from '../../lib/db/assets';
-import { getTransactionById, updateTransaction } from '../../lib/db/transactions';
+import { useAsset } from '../../lib/hooks/useAssets';
+import { useTransaction, useUpdateTransaction } from '../../lib/hooks/useTransactions';
 import { formatCurrency, parseDecimal } from '../../lib/utils/format';
 import { isSimpleAssetType } from '../../lib/constants/assetTypes';
 import { useColors } from '../../lib/theme/store';
-import type { Asset, Transaction } from '../../lib/types';
 
 export default function EditLotScreen() {
   const { lotId, assetId, portfolioId } = useLocalSearchParams<{
@@ -21,53 +20,40 @@ export default function EditLotScreen() {
     portfolioId?: string;
   }>();
   const colors = useColors();
-  const [asset, setAsset] = useState<Asset | null>(null);
-  const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [quantity, setQuantity] = useState('');
   const [pricePerUnit, setPricePerUnit] = useState('');
   const [fee, setFee] = useState('');
   const [date, setDate] = useState('');
   const [notes, setNotes] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
 
+  const { data: asset, isLoading: assetLoading } = useAsset(assetId);
+  const { data: transaction, isLoading: txLoading } = useTransaction(lotId);
+  const updateTransaction = useUpdateTransaction();
+
+  const isLoading = assetLoading || txLoading;
   const isSimple = asset ? isSimpleAssetType(asset.type) : false;
 
   useEffect(() => {
-    loadData();
-  }, [lotId, assetId]);
-
-  const loadData = async () => {
-    try {
-      const [assetData, txData] = await Promise.all([
-        assetId ? getAssetById(assetId) : null,
-        lotId ? getTransactionById(lotId) : null,
-      ]);
-
-      setAsset(assetData);
-      setTransaction(txData);
-
-      if (txData) {
-        if (assetData && isSimpleAssetType(assetData.type)) {
-          // For simple assets, amount = quantity × pricePerUnit
-          const amount = txData.quantity * txData.pricePerUnit;
-          setQuantity(amount.toString());
-          setPricePerUnit('1'); // Not used for simple assets
-          setFee('');
-        } else {
-          setQuantity(txData.quantity.toString());
-          setPricePerUnit(txData.pricePerUnit.toString());
-          setFee(txData.fee > 0 ? txData.fee.toString() : '');
-        }
-        setDate(txData.date.toISOString().split('T')[0]);
-        setNotes(txData.notes || '');
+    if (transaction && asset) {
+      if (isSimpleAssetType(asset.type)) {
+        // For simple assets, amount = quantity × pricePerUnit
+        const amount = transaction.quantity * transaction.pricePerUnit;
+        setQuantity(amount.toString());
+        setPricePerUnit('1'); // Not used for simple assets
+        setFee('');
+      } else {
+        setQuantity(transaction.quantity.toString());
+        setPricePerUnit(transaction.pricePerUnit.toString());
+        setFee(transaction.fee > 0 ? transaction.fee.toString() : '');
       }
-    } catch (error) {
-      alert('Error', (error as Error).message);
-    } finally {
-      setIsLoading(false);
+      // Handle both Date objects and ISO strings (from cache serialization)
+      const dateValue = transaction.date instanceof Date
+        ? transaction.date.toISOString()
+        : String(transaction.date);
+      setDate(dateValue.split('T')[0]);
+      setNotes(transaction.notes || '');
     }
-  };
+  }, [transaction, asset]);
 
   const total = () => {
     if (isSimple) {
@@ -96,39 +82,44 @@ export default function EditLotScreen() {
       }
     }
 
-    if (!lotId) {
+    if (!lotId || !assetId) {
       alert('Error', 'Lot not found');
       return;
     }
 
-    setIsSaving(true);
     try {
       if (isSimple) {
         // For simple assets: amount is stored as pricePerUnit with quantity=1
-        await updateTransaction(lotId, {
-          quantity: 1,
-          pricePerUnit: amount,
-          fee: 0,
-          date: new Date(date),
-          notes: notes.trim() || null,
+        await updateTransaction.mutateAsync({
+          id: lotId,
+          assetId,
+          updates: {
+            quantity: 1,
+            pricePerUnit: amount,
+            fee: 0,
+            date: new Date(date),
+            notes: notes.trim() || null,
+          },
         });
       } else {
         const qty = amount;
         const price = parseDecimal(pricePerUnit)!;
         const feeVal = parseDecimal(fee) || 0;
-        await updateTransaction(lotId, {
-          quantity: qty,
-          pricePerUnit: price,
-          fee: feeVal,
-          date: new Date(date),
-          notes: notes.trim() || null,
+        await updateTransaction.mutateAsync({
+          id: lotId,
+          assetId,
+          updates: {
+            quantity: qty,
+            pricePerUnit: price,
+            fee: feeVal,
+            date: new Date(date),
+            notes: notes.trim() || null,
+          },
         });
       }
       router.back();
     } catch (error) {
       alert('Error', (error as Error).message);
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -166,9 +157,9 @@ export default function EditLotScreen() {
             />
             <LongButton
               onPress={handleSave}
-              disabled={isSaving || !quantity || (!isSimple && !pricePerUnit)}
+              disabled={updateTransaction.isPending || !quantity || (!isSimple && !pricePerUnit)}
             >
-              {isSaving ? 'Saving...' : 'Save Changes'}
+              {updateTransaction.isPending ? 'Saving...' : 'Save Changes'}
             </LongButton>
           </YStack>
         }

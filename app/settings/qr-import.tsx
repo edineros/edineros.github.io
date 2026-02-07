@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Platform, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { YStack, XStack, Text } from 'tamagui';
+import { useQueryClient } from '@tanstack/react-query';
 import { Page } from '../../components/Page';
 import { LongButton } from '../../components/LongButton';
 import { useColors } from '../../lib/theme/store';
@@ -9,7 +10,6 @@ import { CONTENT_HORIZONTAL_PADDING } from '../../lib/constants/layout';
 import { parseQRChunk, reassembleChunks } from '../../lib/utils/qrData';
 import { importFromJson } from '../../lib/utils/export';
 import { alert, alertAsync, confirm } from '../../lib/utils/confirm';
-import { useAppStore } from '../../store';
 
 // Native camera imports (lazy loaded)
 let CameraView: any;
@@ -175,7 +175,7 @@ function NativeQRScanner({ onScan }: { onScan: (data: string) => void }) {
 export default function QRImportScreen() {
   const colors = useColors();
   const router = useRouter();
-  const { loadPortfolios, clearCache } = useAppStore();
+  const queryClient = useQueryClient();
   const [chunks, setChunks] = useState<Map<number, string>>(new Map());
   const [totalChunks, setTotalChunks] = useState<number | null>(null);
   const [isImporting, setIsImporting] = useState(false);
@@ -238,8 +238,8 @@ export default function QRImportScreen() {
     setIsImporting(true);
     try {
       const result = await importFromJson(jsonData);
-      clearCache();
-      await loadPortfolios();
+      // Clear all cached data
+      queryClient.clear();
       await alertAsync(
         'Import Successful',
         `Imported:\n- ${result.portfoliosImported} portfolios\n- ${result.assetsImported} assets\n- ${result.transactionsImported} transactions`

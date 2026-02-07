@@ -55,23 +55,37 @@ if (!id) {
 ├── theme/
 │   ├── colors.ts         # Color definitions (dark/light)
 │   └── store.ts          # Theme state (dark/light/auto)
+├── providers/
+│   └── QueryProvider.tsx # TanStack Query provider with cache persistence
+├── hooks/                # TanStack Query hooks (data fetching)
+│   ├── config/           # Query configuration
+│   │   ├── queryKeys.ts      # Type-safe query key factory
+│   │   └── queryClient.ts    # QueryClient config with TTLs
+│   ├── stats/            # Computed/derived data hooks
+│   │   ├── useAssetStats.ts      # Computed asset statistics
+│   │   └── usePortfolioStats.ts  # Computed portfolio statistics
+│   ├── usePortfolios.ts  # Portfolio queries & mutations
+│   ├── useAssets.ts      # Asset queries & mutations
+│   ├── useTransactions.ts # Transaction queries & mutations
+│   ├── useLots.ts        # Lot queries
+│   ├── usePrices.ts      # Price fetching hooks
+│   └── useExchangeRates.ts # Exchange rate hooks
 ├── db/
 │   ├── schema.ts         # SQLite schema & migrations
 │   ├── webDatabase.ts    # IndexedDB wrapper for web
 │   ├── webStorage.ts     # Web storage utilities
-│   ├── portfolios.ts     # Portfolio CRUD
-│   ├── assets.ts         # Asset CRUD
-│   ├── transactions.ts   # Transaction CRUD
-│   └── priceCache.ts     # Price & exchange rate cache
+│   ├── portfolios.ts     # Portfolio CRUD (raw DB functions)
+│   ├── assets.ts         # Asset CRUD (raw DB functions)
+│   └── transactions.ts   # Transaction CRUD (raw DB functions)
 ├── api/
-│   ├── prices.ts         # Main price fetching logic
+│   ├── prices.ts         # Price fetching & symbol search
 │   └── providers/
 │       ├── yahoo.ts      # Yahoo Finance (stocks, ETFs)
 │       ├── kraken.ts     # Kraken (crypto)
 │       ├── krakenAssets.ts # Kraken asset mappings
 │       └── frankfurter.ts # Frankfurter (forex)
 └── utils/
-    ├── calculations.ts   # Portfolio/asset calculations
+    ├── calculations.ts   # Lot statistics & realized gains
     ├── format.ts         # Number/currency formatting
     ├── export.ts         # JSON/CSV export
     ├── confirm.ts        # Confirmation dialogs
@@ -100,7 +114,7 @@ if (!id) {
 └── AddAssetMenu.tsx      # Asset type selection menu
 
 /store
-└── index.ts              # Zustand store
+└── index.ts              # Zustand store (UI state only)
 ```
 
 ---
@@ -146,24 +160,68 @@ CREATE TABLE transactions (
   lot_id TEXT,
   created_at INTEGER NOT NULL
 );
+```
 
-CREATE TABLE price_cache (
-  symbol TEXT PRIMARY KEY,
-  asset_type TEXT,
-  price REAL,
-  currency TEXT,
-  fetched_at INTEGER,
-  expires_at INTEGER
-);
+Note: Price and exchange rate caching is handled by TanStack Query (see Data Fetching below).
 
-CREATE TABLE exchange_rates (
-  from_currency TEXT NOT NULL,
-  to_currency TEXT NOT NULL,
-  rate REAL NOT NULL,
-  fetched_at INTEGER NOT NULL,
-  expires_at INTEGER NOT NULL,
-  PRIMARY KEY (from_currency, to_currency)
-);
+---
+
+# Data Fetching
+
+Uses **TanStack Query** (`@tanstack/react-query`) for all async data management. Zustand is used only for UI state (current portfolio selection).
+
+## Architecture
+
+- **Hooks in `lib/hooks/`**: All data fetching goes through React Query hooks
+- **Raw DB functions in `lib/db/`**: Direct database access (used by hooks)
+- **API providers in `lib/api/providers/`**: External API calls (Yahoo, Kraken, Frankfurter)
+
+## Cache TTLs (staleTime)
+
+| Data Type | TTL |
+|-----------|-----|
+| Crypto/Bitcoin | 5 minutes |
+| Stocks/ETFs/Commodities | 15 minutes |
+| Bonds | 60 minutes |
+| Exchange Rates | 60 minutes |
+| Cash/Real Estate | 24 hours |
+| Database queries | 30 seconds |
+
+## Cache Persistence
+
+Query cache persists to localStorage (web) or AsyncStorage (native) with 24-hour max age. Page refreshes won't refetch data if within TTL.
+
+## Key Hooks
+
+```typescript
+// Database queries
+usePortfolios(), usePortfolio(id)
+useAssets(portfolioId), useAsset(id)
+useLots(assetId)
+
+// Price fetching (with TTL)
+usePrice(symbol, assetType, currency)
+usePrices(assets)
+
+// Exchange rates
+useExchangeRate(from, to)
+useConvertCurrency(amount, from, to)
+
+// Computed stats (combines multiple queries)
+useAssetStats(assetId, portfolioCurrency)
+usePortfolioStats(portfolioId)
+
+// Mutations (auto-invalidate cache)
+useCreatePortfolio(), useUpdatePortfolio(), useDeletePortfolio()
+useCreateAsset(), useUpdateAsset(), useDeleteAsset()
+useCreateTransaction(), useDeleteTransaction()
+```
+
+## Pull-to-Refresh
+
+```typescript
+const refreshPrices = useRefreshPrices();
+<ScrollView onRefresh={refreshPrices} />
 ```
 
 ---
@@ -204,9 +262,10 @@ Supports **dark**, **light**, and **auto** (system) modes. Colors are defined in
 # Known Issues
 
 1. **Web OPFS**: expo-sqlite OPFS doesn't work reliably on web; uses pure IndexedDB instead
-2. **Price API Rate Limits**: Free APIs have rate limits; caching helps mitigate
+2. **Price API Rate Limits**: Free APIs have rate limits; TanStack Query caching mitigates this
 3. **Yahoo Finance**: May require CORS proxy for web; works natively on mobile
 4. **expo-dev-client breaks Expo Go**: Do not add `expo-dev-client` to dependencies - it causes "Cannot find native module" errors (e.g., ExpoCamera) in Expo Go on iOS. Only add it if switching to development builds.
+5. **AsyncStorage on web**: Native cache persistence uses dynamic `require()` for AsyncStorage with fallback to no persistence if unavailable
 
 ---
 

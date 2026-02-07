@@ -30,6 +30,7 @@ interface KrakenAssetPairsResponse {
 // Cache for Kraken asset pairs
 let cachedAssetPairs: Map<string, { pair: string; base: string; quote: string; altname: string }> | null = null;
 let cachedAssetPairsTimestamp: number = 0;
+let assetPairsFetchPromise: Promise<Map<string, { pair: string; base: string; quote: string; altname: string }>> | null = null;
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 // Normalize symbol names - Kraken uses X prefix for crypto (XBT for BTC, XETH for ETH)
@@ -47,70 +48,83 @@ function normalizeSymbol(symbol: string): string {
 }
 
 // Fetch and cache all available Kraken trading pairs
+// Uses a promise lock to prevent multiple parallel requests
 async function fetchAssetPairs(): Promise<Map<string, { pair: string; base: string; quote: string; altname: string }>> {
   const now = Date.now();
   if (cachedAssetPairs && now - cachedAssetPairsTimestamp < CACHE_TTL_MS) {
     return cachedAssetPairs;
   }
 
-  try {
-    const response = await fetch('https://api.kraken.com/0/public/AssetPairs');
-    if (!response.ok) {
-      return cachedAssetPairs || new Map();
-    }
-
-    const data = (await response.json()) as KrakenAssetPairsResponse;
-    if (data.error?.length > 0) {
-      console.error('Kraken AssetPairs API error:', data.error);
-      return cachedAssetPairs || new Map();
-    }
-
-    const pairs = new Map<string, { pair: string; base: string; quote: string; altname: string }>();
-
-    for (const [pairKey, pairInfo] of Object.entries(data.result)) {
-      // Skip .d pairs (dark pool)
-      if (pairKey.endsWith('.d')) {
-        continue;
-      }
-
-      // Normalize base symbol (remove X prefix for crypto)
-      let baseSymbol = pairInfo.base;
-      if (baseSymbol.startsWith('X') && baseSymbol.length === 4) {
-        baseSymbol = baseSymbol.substring(1);
-      }
-      // Special case: XBT -> BTC
-      if (baseSymbol === 'XBT') {
-        baseSymbol = 'BTC';
-      }
-      // Special case: XDG -> DOGE
-      if (baseSymbol === 'XDG') {
-        baseSymbol = 'DOGE';
-      }
-
-      // Normalize quote currency (remove Z prefix for fiat)
-      let quoteCurrency = pairInfo.quote;
-      if (quoteCurrency.startsWith('Z') && quoteCurrency.length === 4) {
-        quoteCurrency = quoteCurrency.substring(1);
-      }
-
-      // Create lookup key: SYMBOL:CURRENCY (e.g., BTC:EUR)
-      const lookupKey = `${baseSymbol}:${quoteCurrency}`;
-
-      pairs.set(lookupKey, {
-        pair: pairKey,
-        base: baseSymbol,
-        quote: quoteCurrency,
-        altname: pairInfo.altname,
-      });
-    }
-
-    cachedAssetPairs = pairs;
-    cachedAssetPairsTimestamp = now;
-    return pairs;
-  } catch (error) {
-    console.error('Error fetching Kraken asset pairs:', error);
-    return cachedAssetPairs || new Map();
+  // If a fetch is already in progress, wait for it
+  if (assetPairsFetchPromise) {
+    return assetPairsFetchPromise;
   }
+
+  // Start a new fetch and store the promise
+  assetPairsFetchPromise = (async () => {
+    try {
+      const response = await fetch('https://api.kraken.com/0/public/AssetPairs');
+      if (!response.ok) {
+        return cachedAssetPairs || new Map();
+      }
+
+      const data = (await response.json()) as KrakenAssetPairsResponse;
+      if (data.error?.length > 0) {
+        console.error('Kraken AssetPairs API error:', data.error);
+        return cachedAssetPairs || new Map();
+      }
+
+      const pairs = new Map<string, { pair: string; base: string; quote: string; altname: string }>();
+
+      for (const [pairKey, pairInfo] of Object.entries(data.result)) {
+        // Skip .d pairs (dark pool)
+        if (pairKey.endsWith('.d')) {
+          continue;
+        }
+
+        // Normalize base symbol (remove X prefix for crypto)
+        let baseSymbol = pairInfo.base;
+        if (baseSymbol.startsWith('X') && baseSymbol.length === 4) {
+          baseSymbol = baseSymbol.substring(1);
+        }
+        // Special case: XBT -> BTC
+        if (baseSymbol === 'XBT') {
+          baseSymbol = 'BTC';
+        }
+        // Special case: XDG -> DOGE
+        if (baseSymbol === 'XDG') {
+          baseSymbol = 'DOGE';
+        }
+
+        // Normalize quote currency (remove Z prefix for fiat)
+        let quoteCurrency = pairInfo.quote;
+        if (quoteCurrency.startsWith('Z') && quoteCurrency.length === 4) {
+          quoteCurrency = quoteCurrency.substring(1);
+        }
+
+        // Create lookup key: SYMBOL:CURRENCY (e.g., BTC:EUR)
+        const lookupKey = `${baseSymbol}:${quoteCurrency}`;
+
+        pairs.set(lookupKey, {
+          pair: pairKey,
+          base: baseSymbol,
+          quote: quoteCurrency,
+          altname: pairInfo.altname,
+        });
+      }
+
+      cachedAssetPairs = pairs;
+      cachedAssetPairsTimestamp = Date.now();
+      return pairs;
+    } catch (error) {
+      console.error('Error fetching Kraken asset pairs:', error);
+      return cachedAssetPairs || new Map();
+    } finally {
+      assetPairsFetchPromise = null;
+    }
+  })();
+
+  return assetPairsFetchPromise;
 }
 
 async function getKrakenPair(symbol: string, currency: string): Promise<string | null> {
@@ -184,11 +198,12 @@ export async function fetchKrakenPrice(
 }
 
 // Fetch multiple prices at once (Kraken supports comma-separated pairs)
+// Returns plain object (not Map) for JSON serialization compatibility with cache persistence
 export async function fetchKrakenPrices(
   symbols: string[],
   preferredCurrency?: string
-): Promise<Map<string, { price: number; currency: string }>> {
-  const results = new Map<string, { price: number; currency: string }>();
+): Promise<Record<string, { price: number; currency: string }>> {
+  const results: Record<string, { price: number; currency: string }> = {};
   const currency = preferredCurrency?.toUpperCase() || 'EUR';
 
   // Build pairs list
@@ -238,10 +253,10 @@ export async function fetchKrakenPrices(
       }
 
       if (symbol && ticker?.c?.[0]) {
-        results.set(symbol, {
+        results[symbol] = {
           price: parseFloat(ticker.c[0]),
           currency,
-        });
+        };
       }
     }
   } catch (error) {

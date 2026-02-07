@@ -54,23 +54,6 @@ export interface Lot {
   tags: string[];
 }
 
-export interface CachedPrice {
-  symbol: string;
-  assetType: string;
-  price: number;
-  currency: string;
-  fetchedAt: Date;
-  expiresAt: Date;
-}
-
-export interface ExchangeRate {
-  fromCurrency: string;
-  toCurrency: string;
-  rate: number;
-  fetchedAt: Date;
-  expiresAt: Date;
-}
-
 export interface AssetWithStats extends Asset {
   totalQuantity: number;
   averageCost: number;

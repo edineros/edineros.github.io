@@ -39,3 +39,9 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+
+# Local files
+generate.js
+docs/backlog-p0.md
+docs/backlog-p1.md

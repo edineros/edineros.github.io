@@ -3,7 +3,12 @@ import { FlatList, RefreshControl, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, useFocusEffect, useRouter } from 'expo-router';
 import { YStack, XStack, Text, Spinner } from 'tamagui';
 import { Ionicons } from '@expo/vector-icons';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAppStore, ALL_PORTFOLIOS_ID } from '../../store';
+import { usePortfolios, usePortfolio, useUpdatePortfolio } from '../../lib/hooks/usePortfolios';
+import { useAssets, useAllAssets } from '../../lib/hooks/useAssets';
+import { usePortfolioStats, useAllPortfoliosStats } from '../../lib/hooks/stats/usePortfolioStats';
+import { queryKeys } from '../../lib/hooks/config/queryKeys';
 import { Page } from '../../components/Page';
 import { HeaderIconButton } from '../../components/HeaderButtons';
 import { QuantityAtPrice } from '../../components/QuantityAtPrice';
@@ -26,30 +31,38 @@ import type { Asset } from '../../lib/types';
 export default function PortfolioDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
   const [allocationMode, setAllocationMode] = useState<AllocationMode>('type');
   const colors = useColors();
-  const {
-    portfolios,
-    assets,
-    assetStats,
-    portfolioStats,
-    loadPortfolios,
-    loadAssets,
-    loadAllAssets,
-    loadPortfolioStats,
-    loadAllPortfoliosStats,
-    refreshPrices,
-    setCurrentPortfolio,
-    updatePortfolio,
-  } = useAppStore();
+  const { setCurrentPortfolio } = useAppStore();
+  const updatePortfolioMutation = useUpdatePortfolio();
 
   const isAllPortfolios = id === ALL_PORTFOLIOS_ID;
 
-  // Get portfolio directly from store (already loaded on list screen)
-  const portfolio = isAllPortfolios ? null : portfolios.find(p => p.id === id) || null;
-  const rawAssets = id ? assets.get(id) || [] : [];
-  const stats = id ? portfolioStats.get(id) : null;
+  // Load portfolios for switcher
+  const { data: portfolios = [] } = usePortfolios();
+
+  // Load portfolio (for single portfolio view)
+  const { data: portfolio } = usePortfolio(isAllPortfolios ? undefined : id);
+
+  // Load assets
+  const { data: portfolioAssetsRaw = [] } = useAssets(isAllPortfolios ? undefined : id);
+  const { data: allAssetsRaw = [] } = useAllAssets();
+  const rawAssets = isAllPortfolios ? allAssetsRaw : portfolioAssetsRaw;
+
+  // For "All Portfolios", use the first portfolio's currency as display currency
+  const displayCurrency = isAllPortfolios
+    ? (portfolios[0]?.currency ?? 'EUR')
+    : (portfolio?.currency ?? 'EUR');
+
+  // Load stats
+  const singlePortfolioStats = usePortfolioStats(isAllPortfolios ? undefined : id);
+  const allPortfoliosStats = useAllPortfoliosStats(isAllPortfolios ? displayCurrency : 'EUR');
+
+  const { portfolio: stats, assetStats, isLoading } = isAllPortfolios
+    ? allPortfoliosStats
+    : singlePortfolioStats;
 
   // Sort assets by type (using defined order), then by symbol/name within each type
   const portfolioAssets = useMemo(() => {
@@ -66,11 +79,6 @@ export default function PortfolioDetailScreen() {
     });
   }, [rawAssets]);
 
-  // For "All Portfolios", use the first portfolio's currency as display currency
-  const displayCurrency = isAllPortfolios
-    ? (portfolios[0]?.currency ?? 'EUR')
-    : (portfolio?.currency ?? 'EUR');
-
   // Check if any portfolio is masked (for "All Portfolios" view)
   const isMasked = isAllPortfolios
     ? portfolios.some(p => p.masked)
@@ -78,60 +86,32 @@ export default function PortfolioDetailScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      const loadData = async () => {
-        if (!id) {
-          return;
-        }
-
-        // Save this as the last opened portfolio (unless viewing all)
-        if (!isAllPortfolios) {
-          setCurrentPortfolio(id);
-        }
-
-        // For "All Portfolios", load all portfolios and their assets
-        if (isAllPortfolios) {
-          await loadPortfolios();
-          await loadAllAssets();
-          await loadAllPortfoliosStats(displayCurrency);
-        } else {
-          // If portfolio not in store (direct URL navigation), load all portfolios
-          if (!portfolio) {
-            await loadPortfolios();
-          }
-
-          // Load assets first, then portfolio stats (which also calculates all asset stats)
-          await loadAssets(id);
-          await loadPortfolioStats(id);
-        }
-      };
-
-      loadData();
-    }, [id, portfolio, isAllPortfolios, displayCurrency, setCurrentPortfolio])
+      // Save this as the last opened portfolio (unless viewing all)
+      if (id && !isAllPortfolios) {
+        setCurrentPortfolio(id);
+      }
+    }, [id, isAllPortfolios, setCurrentPortfolio])
   );
 
   const onRefresh = useCallback(async () => {
-    if (!id) {
-      return;
-    }
     setRefreshing(true);
-    await refreshPrices();
-    if (isAllPortfolios) {
-      await loadAllAssets();
-      await loadAllPortfoliosStats(displayCurrency);
-    } else {
-      await loadAssets(id);
-      await loadPortfolioStats(id);
-    }
+    // Invalidate all price and exchange rate queries
+    await queryClient.invalidateQueries({ queryKey: queryKeys.prices.all });
+    await queryClient.invalidateQueries({ queryKey: queryKeys.exchangeRates.all });
     setRefreshing(false);
-  }, [id, isAllPortfolios, displayCurrency]);
+  }, [queryClient]);
+
+  const handleToggleMasked = useCallback(async () => {
+    if (portfolio && !isAllPortfolios) {
+      await updatePortfolioMutation.mutateAsync({
+        id: portfolio.id,
+        updates: { masked: !portfolio.masked },
+      });
+    }
+  }, [portfolio, isAllPortfolios, updatePortfolioMutation]);
 
   const allocationData = useMemo(() => {
-    if (!id) {
-      return { allocations: [], tagAllocations: [], hasAnyTags: false };
-    }
-
-    const assets_list = assets.get(id);
-    if (!assets_list || assets_list.length === 0) {
+    if (rawAssets.length === 0) {
       return { allocations: [], tagAllocations: [], hasAnyTags: false };
     }
 
@@ -139,7 +119,7 @@ export default function PortfolioDetailScreen() {
     const statsWithType = new Map<string, { type: Asset['type']; currentValue: number | null }>();
     const statsWithTags = new Map<string, { tags: string[]; currentValue: number | null }>();
 
-    for (const asset of assets_list) {
+    for (const asset of rawAssets) {
       const stat = assetStats.get(asset.id);
       statsWithType.set(asset.id, {
         type: asset.type,
@@ -159,11 +139,11 @@ export default function PortfolioDetailScreen() {
       tagAllocations: tagResult.tagAllocations,
       hasAnyTags: tagResult.hasAnyTags,
     };
-  }, [id, assets, assetStats]);
+  }, [rawAssets, assetStats]);
 
   const renderAsset = ({ item }: { item: Asset }) => {
-    const stats = assetStats.get(item.id);
-    const gainColor = stats ? getGainColor(stats.unrealizedGain) : 'neutral';
+    const itemStats = assetStats.get(item.id);
+    const gainColor = itemStats ? getGainColor(itemStats.unrealizedGain) : 'neutral';
     const isSimple = isSimpleAssetType(item.type);
 
     return (
@@ -204,16 +184,16 @@ export default function PortfolioDetailScreen() {
                 {item.name}
               </Text>
             )}
-            {stats && (
+            {itemStats && (
               <XStack marginTop={2}>
                 {isSimple ? (
                   <Text color={colors.textMuted} fontSize={12}>
-                    {isMasked ? VALUE_MASK : `${formatQuantity(stats.totalQuantity)} ${stats.totalQuantity === 1 ? 'item' : 'items'}`}
+                    {isMasked ? VALUE_MASK : `${formatQuantity(itemStats.totalQuantity)} ${itemStats.totalQuantity === 1 ? 'item' : 'items'}`}
                   </Text>
                 ) : (
                   <QuantityAtPrice
-                    quantity={stats.totalQuantity}
-                    price={stats.averageCost}
+                    quantity={itemStats.totalQuantity}
+                    price={itemStats.averageCost}
                     currency={item.currency}
                     fontSize={12}
                     masked={isMasked}
@@ -223,10 +203,10 @@ export default function PortfolioDetailScreen() {
             )}
           </YStack>
           <YStack alignItems="flex-end" gap={2}>
-            {stats?.currentValue !== null && stats?.currentValue !== undefined ? (
+            {itemStats?.currentValue !== null && itemStats?.currentValue !== undefined ? (
               <>
                 <Text color={colors.text} fontSize={17} fontWeight="600">
-                  {isMasked ? VALUE_MASK : formatCurrency(stats.currentValue, displayCurrency)}
+                  {isMasked ? VALUE_MASK : formatCurrency(itemStats.currentValue, displayCurrency)}
                 </Text>
                 {!isSimple && (
                   <Text
@@ -234,7 +214,7 @@ export default function PortfolioDetailScreen() {
                     fontWeight="600"
                     color={gainColor === 'gain' ? colors.gain : gainColor === 'loss' ? colors.loss : colors.textSecondary}
                   >
-                    {isMasked ? formatPercent(stats.unrealizedGainPercent) : `${formatCurrency(stats.unrealizedGain, displayCurrency, { showSign: true })} (${formatPercent(stats.unrealizedGainPercent)})`}
+                    {isMasked ? formatPercent(itemStats.unrealizedGainPercent) : `${formatCurrency(itemStats.unrealizedGain, displayCurrency, { showSign: true })} (${formatPercent(itemStats.unrealizedGainPercent)})`}
                   </Text>
                 )}
               </>
@@ -248,7 +228,7 @@ export default function PortfolioDetailScreen() {
   };
 
   // Show loading state unless we're viewing "All Portfolios" or have a specific portfolio
-  if (!isAllPortfolios && !portfolio) {
+  if (!isAllPortfolios && !portfolio && isLoading) {
     return (
       <Page fallbackPath="/" showBack={false} >
         <YStack flex={1} justifyContent="center" alignItems="center">
@@ -285,7 +265,7 @@ export default function PortfolioDetailScreen() {
       }
       titleComponent={
         <PortfolioSwitcher
-          currentPortfolio={portfolio}
+          currentPortfolio={portfolio ?? null}
           portfolios={portfolios}
           isAllPortfolios={isAllPortfolios}
         />
@@ -304,7 +284,7 @@ export default function PortfolioDetailScreen() {
           </Text>
           {!isAllPortfolios && portfolio && (
             <TouchableOpacity
-              onPress={() => updatePortfolio(portfolio.id, { masked: !portfolio.masked })}
+              onPress={handleToggleMasked}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <Ionicons
