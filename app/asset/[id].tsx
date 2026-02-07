@@ -43,7 +43,7 @@ export default function AssetDetailScreen() {
   const isSimple = asset ? isSimpleAssetType(asset.type) : false;
 
   // Only fetch price for market assets (not simple assets)
-  const { data: priceData, isLoading: priceLoading } = usePrice(
+  const { data: priceData } = usePrice(
     isSimple ? undefined : asset?.symbol,
     isSimple ? undefined : asset?.type,
     asset?.currency
@@ -52,7 +52,8 @@ export default function AssetDetailScreen() {
   const currentPrice = isSimple ? null : (priceData?.price ?? null);
   const priceLastUpdated = priceData ? new Date() : null;
 
-  const isLoading = assetLoading || lotsLoading || (!isSimple && priceLoading);
+  // Don't wait for price to load - page shows content immediately, price updates when available
+  const isLoading = assetLoading || lotsLoading;
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
