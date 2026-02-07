@@ -1,15 +1,30 @@
 import { Platform } from 'react-native';
 import { format } from 'date-fns';
-import { getAllPortfolios } from '../db/portfolios';
+import { getAllPortfolios, getPortfolioById } from '../db/portfolios';
 import { getAssetsByPortfolioId } from '../db/assets';
 import { getTransactionsByAssetId } from '../db/transactions';
-import type { ExportData, Asset, Transaction, AssetType } from '../types';
+import type { ExportData, Portfolio, Asset, Transaction, AssetType } from '../types';
 import { isValidAssetType } from '../types';
 
 const EXPORT_VERSION = '1.0';
 
-export async function exportAllData(): Promise<ExportData> {
-  const portfolios = await getAllPortfolios();
+/**
+ * Export portfolio data. If portfolioId is provided, exports only that portfolio.
+ * Otherwise exports all portfolios.
+ */
+export async function exportData(portfolioId?: string): Promise<ExportData> {
+  let portfolios: Portfolio[];
+
+  if (portfolioId) {
+    const portfolio = await getPortfolioById(portfolioId);
+    if (!portfolio) {
+      throw new Error('Portfolio not found');
+    }
+    portfolios = [portfolio];
+  } else {
+    portfolios = await getAllPortfolios();
+  }
+
   const assets: Asset[] = [];
   const transactions: Transaction[] = [];
 
@@ -45,8 +60,8 @@ function downloadFile(content: string, filename: string, mimeType: string): void
   URL.revokeObjectURL(url);
 }
 
-export async function exportToJson(): Promise<string> {
-  const data = await exportAllData();
+export async function exportToJson(portfolioId?: string): Promise<string> {
+  const data = await exportData(portfolioId);
   const json = JSON.stringify(data, null, 2);
   const filename = `portfolio_backup_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.json`;
 

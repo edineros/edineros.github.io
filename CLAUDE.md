@@ -5,7 +5,8 @@ When making significant changes to the codebase (schema, project structure, desi
 ---
 
 # Coding Styles
-- Prefer reusable components and patters if possible
+- **Always check for existing components/utilities before creating new ones** - Look in `/components` and `/lib/utils` first. Reuse existing patterns and abstractions rather than duplicating logic.
+- Prefer reusable components and patterns if possible
 - When refactoring, change existing comments only if needed
 - Always use braces for control statements (no single-line shorthand)
 - Use `Slot` instead of `Stack` for layout files (Stack causes errors in Expo Go)

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Dimensions } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
 import { YStack, XStack, Text, Separator } from 'tamagui';
 import QRCode from 'react-native-qrcode-svg';
 import { Page } from '../../components/Page';
@@ -7,49 +8,42 @@ import { LongButton } from '../../components/LongButton';
 import { useColors } from '../../lib/theme/store';
 import { CONTENT_HORIZONTAL_PADDING } from '../../lib/constants/layout';
 import { encodeForQR } from '../../lib/utils/qrData';
-import { exportAllData } from '../../lib/utils/export';
+import { exportData } from '../../lib/utils/export';
 import { Ionicons } from '@expo/vector-icons';
 
 const ANIMATION_INTERVAL_MS = 500; // Time per QR code frame
 
 export default function QRExportScreen() {
+  const { portfolioId } = useLocalSearchParams<{ portfolioId?: string }>();
   const colors = useColors();
   const [chunks, setChunks] = useState<string[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [originalSize, setOriginalSize] = useState(0);
-  const [compressedSize, setCompressedSize] = useState(0);
 
   const screenWidth = Dimensions.get('window').width;
   const qrSize = Math.min(screenWidth - CONTENT_HORIZONTAL_PADDING * 4, 300);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await exportAllData();
+      const data = await exportData(portfolioId);
       const jsonString = JSON.stringify(data);
-      setOriginalSize(jsonString.length);
       const encoded = encodeForQR(jsonString);
       setChunks(encoded);
-      // Calculate compressed size from chunks (excluding headers)
-      const totalCompressed = encoded.reduce((sum, chunk) => {
-        const dataStart = chunk.lastIndexOf('|') + 1;
-        return sum + chunk.slice(dataStart).length;
-      }, 0);
-      setCompressedSize(totalCompressed);
+      setCurrentIndex(0);
     } catch (err) {
       setError((err as Error).message);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [portfolioId]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   useEffect(() => {
     if (!isPlaying || chunks.length === 0) {
