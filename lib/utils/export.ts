@@ -3,8 +3,10 @@ import { format } from 'date-fns';
 import { getAllPortfolios, getPortfolioById } from '../db/portfolios';
 import { getAssetsByPortfolioId } from '../db/assets';
 import { getTransactionsByAssetId } from '../db/transactions';
+import { getAllCategories } from '../db/categories';
 import type { ExportData, Portfolio, Asset, Transaction, AssetType } from '../types';
 import { isValidAssetType } from '../types';
+import { ImportResult } from './backup';
 
 const EXPORT_VERSION = '1.0';
 
@@ -25,6 +27,7 @@ export async function exportData(portfolioId?: string): Promise<ExportData> {
     portfolios = await getAllPortfolios();
   }
 
+  const categories = await getAllCategories();
   const assets: Asset[] = [];
   const transactions: Transaction[] = [];
 
@@ -42,6 +45,7 @@ export async function exportData(portfolioId?: string): Promise<ExportData> {
     version: EXPORT_VERSION,
     exportedAt: new Date().toISOString(),
     portfolios,
+    categories,
     assets,
     transactions,
   };
@@ -97,11 +101,7 @@ export async function shareFile(filePath: string): Promise<void> {
   });
 }
 
-export async function importFromJson(jsonString: string): Promise<{
-  portfoliosImported: number;
-  assetsImported: number;
-  transactionsImported: number;
-}> {
+export async function importFromJson(jsonString: string): Promise<ImportResult> {
   const data = JSON.parse(jsonString) as ExportData;
 
   if (data.version !== EXPORT_VERSION) {
@@ -109,7 +109,8 @@ export async function importFromJson(jsonString: string): Promise<{
   }
 
   const { createPortfolio, getAllPortfolios, deletePortfolio } = await import('../db/portfolios');
-  const { createAsset } = await import('../db/assets');
+  const { createCategory, getAllCategories: getExistingCategories, deleteCategory } = await import('../db/categories');
+  const { createAsset, updateAsset } = await import('../db/assets');
   const { createTransaction } = await import('../db/transactions');
 
   // Delete all existing data before importing
@@ -119,13 +120,28 @@ export async function importFromJson(jsonString: string): Promise<{
     await deletePortfolio(portfolio.id);
   }
 
+  // Delete existing categories
+  const existingCategories = await getExistingCategories();
+  for (const category of existingCategories) {
+    await deleteCategory(category.id);
+  }
+
   // Map old IDs to new IDs
   const portfolioIdMap = new Map<string, string>();
+  const categoryIdMap = new Map<string, string>();
   const assetIdMap = new Map<string, string>();
 
   let portfoliosImported = 0;
+  let categoriesImported = 0;
   let assetsImported = 0;
   let transactionsImported = 0;
+
+  // Import categories first (assets reference them)
+  for (const category of data.categories || []) {
+    const newCategory = await createCategory(category.name, category.color, category.sortOrder);
+    categoryIdMap.set(category.id, newCategory.id);
+    categoriesImported++;
+  }
 
   // Import portfolios
   for (const portfolio of data.portfolios) {
@@ -155,6 +171,15 @@ export async function importFromJson(jsonString: string): Promise<{
       asset.name || undefined,
       asset.currency
     );
+
+    // Update asset with category if it had one
+    if (asset.categoryId) {
+      const newCategoryId = categoryIdMap.get(asset.categoryId);
+      if (newCategoryId) {
+        await updateAsset(newAsset.id, { categoryId: newCategoryId });
+      }
+    }
+
     assetIdMap.set(asset.id, newAsset.id);
     assetsImported++;
   }
@@ -198,6 +223,7 @@ export async function importFromJson(jsonString: string): Promise<{
 
   return {
     portfoliosImported,
+    categoriesImported,
     assetsImported,
     transactionsImported,
   };

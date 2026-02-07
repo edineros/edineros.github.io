@@ -9,7 +9,8 @@ import { useColors } from '../../lib/theme/store';
 import { CONTENT_HORIZONTAL_PADDING } from '../../lib/constants/layout';
 import { parseQRChunk, reassembleChunks } from '../../lib/utils/qrData';
 import { importFromJson } from '../../lib/utils/export';
-import { alert, alertAsync, confirm } from '../../lib/utils/confirm';
+import { alert, confirm } from '../../lib/utils/confirm';
+import { alertImportSuccess } from '../../lib/utils/backup';
 
 // Native camera imports (lazy loaded)
 let CameraView: any;
@@ -237,10 +238,7 @@ export default function QRImportScreen() {
       const result = await importFromJson(jsonData);
       // Clear all cached data
       queryClient.clear();
-      await alertAsync(
-        'Import Successful',
-        `Imported:\n- ${result.portfoliosImported} portfolios\n- ${result.assetsImported} assets\n- ${result.transactionsImported} transactions`
-      );
+      await alertImportSuccess(result);
 
       // Navigate after alert is dismissed
       if (Platform.OS === 'web') {

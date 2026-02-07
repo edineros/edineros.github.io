@@ -5,13 +5,14 @@ import { YStack, XStack, Text } from 'tamagui';
 import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
 import { exportToJson, shareFile, importFromJson } from '../../lib/utils/export';
-import { alert, alertAsync, confirm } from '../../lib/utils/confirm';
+import { alert, confirm } from '../../lib/utils/confirm';
 import { Page } from '../../components/Page';
 import { LongButton } from '../../components/LongButton';
 import { SettingsSection } from '../../components/SettingsSection';
 import { CategoriesSettings } from '../../components/CategoriesSettings';
 import { CONTENT_HORIZONTAL_PADDING } from '../../lib/constants/layout';
 import { useThemeStore, useColors, type ThemeMode } from '../../lib/theme/store';
+import { alertImportSuccess } from '../../lib/utils/backup';
 
 const THEME_OPTIONS: { value: ThemeMode; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { value: 'light', label: 'Light', icon: 'sunny-outline' },
@@ -48,10 +49,7 @@ export default function SettingsScreen() {
       // Clear all cached data and refetch
       queryClient.clear();
 
-      await alertAsync(
-        'Import Successful',
-        `Imported:\n- ${importResult.portfoliosImported} portfolios\n- ${importResult.assetsImported} assets\n- ${importResult.transactionsImported} transactions`
-      );
+      await alertImportSuccess(importResult);
       router.replace('/');
     } catch (error) {
       alert('Import Failed', (error as Error).message);

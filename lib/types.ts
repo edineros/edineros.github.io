@@ -83,6 +83,7 @@ export interface ExportData {
   version: string;
   exportedAt: string;
   portfolios: Portfolio[];
+  categories: Category[];
   assets: Asset[];
   transactions: Transaction[];
 }
