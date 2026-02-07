@@ -1,7 +1,8 @@
 import { Button, ButtonProps } from 'tamagui';
 import { LabeledElement } from './LabeledElement';
 import { useColors } from '../lib/theme/store';
-import { ReactNode } from 'react';
+import { ComponentProps, ReactNode } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 
 type LongButtonVariant = 'primary' | 'secondary' | 'destructive';
 type LongButtonSize = 'small' | 'medium' | 'large';
@@ -15,6 +16,7 @@ interface LongButtonProps {
   topSpacing?: LongButtonTopSpacing;
   label?: string;
   children: ReactNode;
+  iconName?: ComponentProps<typeof Ionicons>['name'];
 }
 
 const SIZE_MAP: Record<LongButtonSize, ButtonProps['size']> = {
@@ -29,6 +31,12 @@ const TOP_SPACING_MAP: Record<LongButtonTopSpacing, ButtonProps['marginTop']> = 
   large: '$6',
 };
 
+const ICON_SIZE_MAP: Record<LongButtonTopSpacing, number> = {
+  small: 12,
+  medium: 16,
+  large: 18,
+};
+
 export function LongButton({
   onPress,
   disabled = false,
@@ -36,6 +44,7 @@ export function LongButton({
   size = 'medium',
   topSpacing,
   label,
+  iconName,
   children,
 }: LongButtonProps) {
   const colors = useColors();
@@ -57,6 +66,7 @@ export function LongButton({
   return (
     <LabeledElement label={label}>
       <Button
+        icon={iconName ? <Ionicons name={iconName} size={ICON_SIZE_MAP[size]} color={colors.text} /> : undefined}
         size={tamaguiSize}
         onPress={onPress}
         disabled={disabled}

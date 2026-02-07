@@ -187,12 +187,14 @@ export default function SettingsScreen() {
           >
             <YStack gap={12}>
               <LongButton
+                iconName="qr-code-outline"
                 onPress={() => router.push('/settings/qr-export')}
                 variant="secondary"
               >
                 Export via QR Code
               </LongButton>
               <LongButton
+                iconName="code-slash-outline"
                 onPress={handleExportJson}
                 disabled={isExporting}
                 variant="secondary"
@@ -208,12 +210,14 @@ export default function SettingsScreen() {
           >
             <YStack gap={12}>
               <LongButton
+                iconName="qr-code-outline"
                 onPress={() => router.push('/settings/qr-import')}
                 variant="secondary"
               >
                 Import via QR Code
               </LongButton>
               <LongButton
+                iconName="code-slash-outline"
                 onPress={handleImport}
                 disabled={isImporting}
                 variant="secondary"
