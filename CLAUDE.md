@@ -124,7 +124,7 @@ if (!id) {
 
 - **Portfolio**: Container with base currency (default: EUR)
 - **Category**: User-defined grouping for assets (with color for visualization)
-- **Asset**: Symbol with type (stock, etf, crypto, bond, commodity, cash, real-estate, other) and optional category
+- **Asset**: Symbol with type (stock, etf, crypto, bitcoin, bond, commodity, cash, realEstate, other) and optional category
 - **Transaction**: Buy/sell records (source of truth)
 - **Lot**: Computed from buy transactions, tracks remaining quantity
 

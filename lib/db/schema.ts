@@ -2,7 +2,7 @@ import * as SQLite from 'expo-sqlite';
 import { Platform } from 'react-native';
 
 const DATABASE_NAME = 'portfolio.db';
-const SCHEMA_VERSION = 5; // Increment when schema changes require migration
+const SCHEMA_VERSION = 6; // Increment when schema changes require migration
 
 let db: SQLite.SQLiteDatabase | null = null;
 let dbInitPromise: Promise<SQLite.SQLiteDatabase> | null = null;
@@ -214,6 +214,14 @@ async function runMigrations(database: SQLite.SQLiteDatabase, fromVersion: numbe
     // Remove tags column from assets if it exists
     // SQLite doesn't support DROP COLUMN directly, but we can ignore it
     // The column will just be unused going forward
+  }
+
+  // Migration to version 6: Rename 'real-estate' to 'realEstate'
+  // TODO: Remove after 2026-02-20 once all devices have migrated
+  if (fromVersion < 6) {
+    await database.execAsync(
+      "UPDATE assets SET type = 'realEstate' WHERE type = 'real-estate'"
+    );
   }
 
   // Update schema version

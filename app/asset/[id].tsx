@@ -106,7 +106,7 @@ export default function AssetDetailScreen() {
   const unrealizedGainPercent =
     unrealizedGain !== null && totalCost > 0 ? (unrealizedGain / totalCost) * 100 : null;
 
-  // Simplified item renderer for simple assets (cash, real-estate, other)
+  // Simplified item renderer for simple assets (cash, realEstate, other)
   const renderSimpleItem = ({ item }: { item: Lot }) => (
     <Card
       elevate

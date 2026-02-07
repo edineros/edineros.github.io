@@ -19,7 +19,7 @@ async function fetchPriceFromProvider(
   assetType: AssetType,
   preferredCurrency?: string
 ): Promise<PriceData | null> {
-  // Simple asset types (cash, real-estate, other) don't fetch prices
+  // Simple asset types (cash, realEstate, other) don't fetch prices
   // Price is always 1 in the asset's currency
   if (isSimpleAssetType(assetType)) {
     return { price: 1, currency: preferredCurrency || 'EUR' };

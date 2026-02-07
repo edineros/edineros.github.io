@@ -19,7 +19,7 @@ export async function fetchPriceForAsset(
     return fetchKrakenPrice(symbol, preferredCurrency);
   }
 
-  // Simple asset types (cash, real-estate, other) don't fetch prices
+  // Simple asset types (cash, realEstate, other) don't fetch prices
   // Price is always 1 in the asset's currency (value comes from quantity in lots)
   if (isSimpleAssetType(assetType)) {
     return { price: 1, currency: preferredCurrency || 'EUR' };

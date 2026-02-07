@@ -52,7 +52,7 @@ export const ASSET_TYPE_CONFIGS: AssetTypeConfig[] = [
     color: assetColors[6],
   },
   {
-    value: 'real-estate',
+    value: 'realEstate',
     label: 'Real Estate',
     plural: 'Real Estate',
     color: assetColors[7],
@@ -93,7 +93,7 @@ export function getAssetTypeColor(type: AssetType): string {
  * Their current price is the average purchase price from lots.
  * Value is calculated as: quantity × average_purchase_price.
  */
-export const SIMPLE_ASSET_TYPES: AssetType[] = ['cash', 'real-estate', 'other'];
+export const SIMPLE_ASSET_TYPES: AssetType[] = ['cash', 'realEstate', 'other'];
 
 export function isSimpleAssetType(type: AssetType): boolean {
   return SIMPLE_ASSET_TYPES.includes(type);

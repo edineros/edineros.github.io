@@ -4,10 +4,11 @@
 import type { Asset, Category } from '../types';
 
 const DB_NAME = 'portfolio-tracker';
-const DB_VERSION = 5;
+const DB_VERSION = 6;
 
 let idb: IDBDatabase | null = null;
 let idbPromise: Promise<IDBDatabase> | null = null;
+let dataMigrationDone = false;
 
 async function openIDB(): Promise<IDBDatabase> {
   if (idb) return idb;
@@ -68,7 +69,39 @@ async function openIDB(): Promise<IDBDatabase> {
     };
   });
 
-  return idbPromise;
+  const db = await idbPromise;
+
+  // Run data migrations after database is open
+  if (!dataMigrationDone) {
+    await runDataMigrations(db);
+    dataMigrationDone = true;
+  }
+
+  return db;
+}
+
+// Data migrations that can't be done in onupgradeneeded
+// TODO: Remove after 2026-02-20 once all devices have migrated
+async function runDataMigrations(db: IDBDatabase): Promise<void> {
+  // Migration: Rename 'real-estate' to 'realEstate'
+  const tx = db.transaction('assets', 'readwrite');
+  const store = tx.objectStore('assets');
+  const request = store.getAll();
+
+  await new Promise<void>((resolve, reject) => {
+    request.onerror = () => reject(request.error);
+    request.onsuccess = async () => {
+      const assets = request.result;
+      for (const asset of assets) {
+        if (asset.type === 'real-estate') {
+          asset.type = 'realEstate';
+          store.put(asset);
+        }
+      }
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    };
+  });
 }
 
 // Generic CRUD operations

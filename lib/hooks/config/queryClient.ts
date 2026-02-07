@@ -10,7 +10,7 @@ export const PRICE_STALE_TIME: Record<AssetType, number> = {
   bond: 60 * 60 * 1000, // 60 min
   commodity: 15 * 60 * 1000, // 15 min
   cash: 24 * 60 * 60 * 1000, // 24 hours
-  'real-estate': 24 * 60 * 60 * 1000, // 24 hours
+  realEstate: 24 * 60 * 60 * 1000, // 24 hours
   other: 30 * 60 * 1000, // 30 min
 };
 
