@@ -9,7 +9,7 @@ import { alert, alertAsync, confirm } from '../../lib/utils/confirm';
 import { Page } from '../../components/Page';
 import { LongButton } from '../../components/LongButton';
 import { SettingsSection } from '../../components/SettingsSection';
-import { CategoriesSettings } from './CategoriesSettings';
+import { CategoriesSettings } from '../../components/CategoriesSettings';
 import { CONTENT_HORIZONTAL_PADDING } from '../../lib/constants/layout';
 import { useThemeStore, useColors, type ThemeMode } from '../../lib/theme/store';
 

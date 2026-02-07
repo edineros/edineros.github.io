@@ -2,18 +2,18 @@ import { useState } from 'react';
 import { TouchableOpacity, TextInput, Modal } from 'react-native';
 import { YStack, XStack, Text } from 'tamagui';
 import { Ionicons } from '@expo/vector-icons';
-import { alert, confirm } from '../../lib/utils/confirm';
-import { SettingsSection } from '../../components/SettingsSection';
-import { LongButton } from '../../components/LongButton';
-import { useColors } from '../../lib/theme/store';
+import { alert, confirm } from '../lib/utils/confirm';
+import { SettingsSection } from './SettingsSection';
+import { LongButton } from './LongButton';
+import { useColors } from '../lib/theme/store';
 import {
   useCategories,
   useCreateCategory,
   useUpdateCategory,
   useDeleteCategory,
-} from '../../lib/hooks/useCategories';
-import type { Category } from '../../lib/types';
-import { assetColors } from '../../lib/theme/colors';
+} from '../lib/hooks/useCategories';
+import type { Category } from '../lib/types';
+import { assetColors } from '../lib/theme/colors';
 
 export function CategoriesSettings() {
   const [isModalOpen, setIsModalOpen] = useState(false);
