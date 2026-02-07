@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { YStack, Text, Spinner } from 'tamagui';
 import { useAsset, useUpdateAsset, useDeleteAsset } from '../../../lib/hooks/useAssets';
+import { useCategories } from '../../../lib/hooks/useCategories';
 import { Page } from '../../../components/Page';
 import { Form } from '../../../components/Form';
 import { FormField } from '../../../components/FormField';
@@ -19,9 +20,11 @@ export default function EditAssetScreen() {
   const [name, setName] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [existingTags, setExistingTags] = useState<string[]>([]);
+  const [categoryId, setCategoryId] = useState<string | null>(null);
   const tagInputRef = useRef<TagInputRef>(null);
 
   const { data: asset, isLoading } = useAsset(id);
+  const { data: categories = [] } = useCategories();
   const updateAsset = useUpdateAsset();
   const deleteAsset = useDeleteAsset();
 
@@ -29,6 +32,7 @@ export default function EditAssetScreen() {
     if (asset) {
       setName(asset.name || '');
       setTags(asset.tags || []);
+      setCategoryId(asset.categoryId);
     }
   }, [asset]);
 
@@ -44,7 +48,7 @@ export default function EditAssetScreen() {
 
       await updateAsset.mutateAsync({
         id: id!,
-        updates: { name: name.trim() || undefined, tags: finalTags },
+        updates: { name: name.trim() || undefined, tags: finalTags, categoryId },
       });
       router.back();
     } catch (error) {
@@ -120,6 +124,18 @@ export default function EditAssetScreen() {
           placeholder={isSimple ? 'e.g., My Savings Account' : 'e.g., Apple Inc.'}
           helperText="A friendly name to display for the asset"
         />
+
+        {categories.length > 0 && (
+          <FormField
+            type="category"
+            label="Category (Optional)"
+            value={categoryId}
+            onChangeCategory={setCategoryId}
+            categories={categories}
+            placeholder="Select category"
+            helperText="Categories help organize and visualize your asset allocation"
+          />
+        )}
 
         <FormField
           type="tag"

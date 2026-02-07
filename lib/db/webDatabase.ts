@@ -1,10 +1,10 @@
 // Pure IndexedDB implementation for web platform
 // Bypasses expo-sqlite entirely to avoid OPFS issues
 
-import type { Asset } from '../types';
+import type { Asset, Category } from '../types';
 
 const DB_NAME = 'portfolio-tracker';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 
 let idb: IDBDatabase | null = null;
 let idbPromise: Promise<IDBDatabase> | null = null;
@@ -57,6 +57,12 @@ async function openIDB(): Promise<IDBDatabase> {
 
       if (!db.objectStoreNames.contains('exchange_rates')) {
         db.createObjectStore('exchange_rates', { keyPath: ['from_currency', 'to_currency'] });
+      }
+
+      if (!db.objectStoreNames.contains('categories')) {
+        const categories = db.createObjectStore('categories', { keyPath: 'id' });
+        categories.createIndex('name', 'name', { unique: true });
+        categories.createIndex('sort_order', 'sort_order');
       }
     };
   });
@@ -151,6 +157,7 @@ function rowToAsset(row: any): Asset {
     type: row.type,
     currency: row.currency,
     tags: row.tags || [],
+    categoryId: row.category_id ?? null,
     createdAt: new Date(row.created_at),
   };
 }
@@ -297,5 +304,57 @@ export const webDb = {
   async getAllTags(): Promise<string[]> {
     const allTags = await getAll<any>('transaction_tags');
     return [...new Set(allTags.map(t => t.tag))].sort();
+  },
+
+  // Categories
+  async getAllCategories(): Promise<Category[]> {
+    const categories = await getAll<any>('categories');
+    return categories
+      .map((row: any) => ({
+        id: row.id,
+        name: row.name,
+        color: row.color,
+        sortOrder: row.sort_order,
+        createdAt: new Date(row.created_at),
+      }))
+      .sort((a: Category, b: Category) => {
+        if (a.sortOrder !== b.sortOrder) {
+          return a.sortOrder - b.sortOrder;
+        }
+        return a.name.localeCompare(b.name);
+      });
+  },
+
+  async getCategoryById(id: string): Promise<Category | null> {
+    const row = await getOne<any>('categories', id);
+    if (!row) {
+      return null;
+    }
+    return {
+      id: row.id,
+      name: row.name,
+      color: row.color,
+      sortOrder: row.sort_order,
+      createdAt: new Date(row.created_at),
+    };
+  },
+
+  async createCategory(category: any): Promise<void> {
+    await put('categories', category);
+  },
+
+  async updateCategory(category: any): Promise<void> {
+    await put('categories', category);
+  },
+
+  async deleteCategory(id: string): Promise<void> {
+    // Update assets that reference this category to have null category_id
+    const assets = await getAll<any>('assets');
+    for (const asset of assets) {
+      if (asset.category_id === id) {
+        await put('assets', { ...asset, category_id: null });
+      }
+    }
+    await remove('categories', id);
   },
 };

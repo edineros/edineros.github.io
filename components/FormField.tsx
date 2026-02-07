@@ -1,10 +1,12 @@
-import { ReactNode, RefObject } from 'react';
+import { ReactNode, RefObject, useMemo } from 'react';
 import { TextInput, TextInputProps, KeyboardTypeOptions } from 'react-native';
-import { Text } from 'tamagui';
-import { CurrencySelect } from './CurrencySelect';
+import { Text, YStack } from 'tamagui';
+import { Select, SelectOption } from './Select';
 import { TagInput, TagInputRef } from './TagInput';
 import { LabeledElement } from './LabeledElement';
 import { useColors } from '../lib/theme/store';
+import { CURRENCY_OPTIONS } from '../lib/utils/format';
+import type { Category } from '../lib/types';
 
 interface BaseFormFieldProps {
   label: string;
@@ -39,17 +41,67 @@ interface TagFormFieldProps extends BaseFormFieldProps {
   tagInputRef?: RefObject<TagInputRef | null>;
 }
 
-type FormFieldProps = TextFormFieldProps | CurrencyFormFieldProps | TagFormFieldProps;
+interface CategoryFormFieldProps extends BaseFormFieldProps {
+  type: 'category';
+  value: string | null;
+  onChangeCategory: (categoryId: string | null) => void;
+  categories: Category[];
+}
+
+type FormFieldProps = TextFormFieldProps | CurrencyFormFieldProps | TagFormFieldProps | CategoryFormFieldProps;
 
 export function FormField(props: FormFieldProps) {
   const { label, labelRight, helperText, placeholder, children, type = 'text' } = props;
   const colors = useColors();
 
+  const currencyOptions: SelectOption<string>[] = useMemo(
+    () =>
+      CURRENCY_OPTIONS.map((opt) => ({
+        value: opt.value,
+        label: opt.value,
+        sublabel: opt.label.split(' - ')[1],
+      })),
+    []
+  );
+
   let input: ReactNode;
 
   if (type === 'currency') {
     const { value, onChangeText } = props as CurrencyFormFieldProps;
-    input = <CurrencySelect value={value} onChange={onChangeText} />;
+    input = (
+      <Select
+        value={value}
+        onChange={onChangeText}
+        options={currencyOptions}
+        title="Select Currency"
+        placeholder="Select currency"
+      />
+    );
+  } else if (type === 'category') {
+    const { value, onChangeCategory, categories } = props as CategoryFormFieldProps;
+    const categoryOptions: SelectOption<string>[] = categories.map((cat) => ({
+      value: cat.id,
+      label: cat.name,
+      icon: (
+        <YStack
+          width={16}
+          height={16}
+          borderRadius={4}
+          backgroundColor={cat.color}
+        />
+      ),
+    }));
+    input = (
+      <Select
+        value={value}
+        onChange={onChangeCategory}
+        options={categoryOptions}
+        title="Select Category"
+        placeholder={placeholder || 'Select category'}
+        allowNull
+        nullLabel="None"
+      />
+    );
   } else if (type === 'tag') {
     const { tags, onTagsChange, existingTags, tagInputRef } = props as TagFormFieldProps;
     input = (

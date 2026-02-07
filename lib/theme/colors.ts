@@ -109,3 +109,24 @@ export const lightColors: Colors = {
 
 // Default export for backwards compatibility (dark theme)
 export const colors = darkColors;
+
+// Shared color palette for the app
+// Used by asset types, categories, and charts
+
+export const assetColors = [
+  '#007AFF', // stocks
+  '#5856D6', // ETFs
+  '#FF9500', // Bitcoin
+  '#00E5FF', // Crypto
+  '#8E9AAF', // Bonds
+  '#FFCC00', // Commodity
+  '#00B140', // Cash
+  '#FF2D55', // Real Estate
+  '#AF52DE', // Other
+  '#FF6F61',
+  '#E6B89C',
+  '#00C2A8',
+] as const;
+
+// Gray color for "uncategorized" or "other" items
+export const uncategorizedColor = '#636366';

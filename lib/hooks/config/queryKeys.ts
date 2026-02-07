@@ -10,6 +10,10 @@ export const queryKeys = {
     byPortfolio: (portfolioId: string) => ['assets', 'portfolio', portfolioId] as const,
     detail: (id: string) => ['assets', id] as const,
   },
+  categories: {
+    all: ['categories'] as const,
+    detail: (id: string) => ['categories', id] as const,
+  },
   transactions: {
     byAsset: (assetId: string) => ['transactions', 'asset', assetId] as const,
     detail: (id: string) => ['transactions', id] as const,

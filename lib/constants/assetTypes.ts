@@ -1,3 +1,4 @@
+import { assetColors } from '../theme/colors';
 import type { AssetType } from '../types';
 
 export interface AssetTypeConfig {
@@ -12,59 +13,55 @@ export const ASSET_TYPE_CONFIGS: AssetTypeConfig[] = [
     value: 'stock',
     label: 'Stock',
     plural: 'Stocks',
-    color: '#007AFF',
+    color: assetColors[0],
   },
   {
     value: 'etf',
     label: 'ETF',
     plural: 'ETFs',
-    color: '#5856D6',
+    color: assetColors[1],
   },
   {
     value: 'bitcoin',
     label: 'Bitcoin',
     plural: 'Bitcoin',
-    color: '#FF9500',
+    color: assetColors[2],
   },
   {
     value: 'crypto',
     label: 'Crypto',
     plural: 'Crypto',
-    color: '#00E5FF',
-    // alt colors:
-    // color: '#FF6F61',
-    // color: '#E6B89C',
-    // color: '#00C2A8',
+    color: assetColors[3],
   },
   {
     value: 'bond',
     label: 'Bond',
     plural: 'Bonds',
-    color: '#8E9AAF',
+    color: assetColors[4],
   },
   {
     value: 'commodity',
     label: 'Commodity',
     plural: 'Commodities',
-    color: '#FFCC00',
+    color: assetColors[5],
   },
   {
     value: 'cash',
     label: 'Cash',
     plural: 'Cash',
-    color: '#00B140',
+    color: assetColors[6],
   },
   {
     value: 'real-estate',
     label: 'Real Estate',
     plural: 'Real Estate',
-    color: '#FF2D55',
+    color: assetColors[7],
   },
   {
     value: 'other',
     label: 'Other',
     plural: 'Other',
-    color: '#AF52DE',
+    color: assetColors[8],
   },
 ];
 

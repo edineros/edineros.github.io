@@ -5,6 +5,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { YStack, XStack, Text, Spinner } from 'tamagui';
 import { usePortfolio } from '../../lib/hooks/usePortfolios';
 import { useCreateAsset } from '../../lib/hooks/useAssets';
+import { useCategories } from '../../lib/hooks/useCategories';
 import { Page } from '../../components/Page';
 import { Form } from '../../components/Form';
 import { FormField } from '../../components/FormField';
@@ -29,9 +30,11 @@ export default function AddAssetScreen() {
   const [existingTags, setExistingTags] = useState<string[]>([]);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [categoryId, setCategoryId] = useState<string | null>(null);
   const tagInputRef = useRef<TagInputRef>(null);
 
   const { data: portfolio } = usePortfolio(portfolioId);
+  const { data: categories = [] } = useCategories();
   const createAsset = useCreateAsset();
 
   useEffect(() => {
@@ -116,6 +119,7 @@ export default function AddAssetScreen() {
         name: name.trim() || undefined,
         currency,
         tags: finalTags,
+        categoryId,
       });
       router.replace(`/asset/${asset.id}?portfolioId=${portfolioId}`);
     } catch (error) {
@@ -214,6 +218,18 @@ export default function AddAssetScreen() {
           onChangeText={setCurrency}
           helperText="Currency the asset is priced in"
         />
+
+        {categories.length > 0 && (
+          <FormField
+            type="category"
+            label="Category (Optional)"
+            value={categoryId}
+            onChangeCategory={setCategoryId}
+            categories={categories}
+            placeholder="Select category"
+            helperText="Categories help organize and visualize your asset allocation"
+          />
+        )}
 
         <FormField
           type="tag"

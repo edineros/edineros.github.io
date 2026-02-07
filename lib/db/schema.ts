@@ -2,7 +2,7 @@ import * as SQLite from 'expo-sqlite';
 import { Platform } from 'react-native';
 
 const DATABASE_NAME = 'portfolio.db';
-const SCHEMA_VERSION = 3; // Increment when schema changes require migration
+const SCHEMA_VERSION = 4; // Increment when schema changes require migration
 
 let db: SQLite.SQLiteDatabase | null = null;
 let dbInitPromise: Promise<SQLite.SQLiteDatabase> | null = null;
@@ -181,6 +181,37 @@ async function runMigrations(database: SQLite.SQLiteDatabase, fromVersion: numbe
         'ALTER TABLE portfolios ADD COLUMN masked INTEGER DEFAULT 0'
       );
     }
+  }
+
+  // Migration to version 4: Add categories table and category_id to assets
+  if (fromVersion < 4) {
+    // Create categories table
+    await database.execAsync(`
+      CREATE TABLE IF NOT EXISTS categories (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL UNIQUE,
+        color TEXT NOT NULL,
+        sort_order INTEGER DEFAULT 0,
+        created_at INTEGER NOT NULL
+      );
+    `);
+
+    // Add category_id column to assets
+    const assetColumns = await database.getAllAsync<{ name: string }>(
+      "PRAGMA table_info(assets)"
+    );
+    const hasCategoryId = assetColumns.some(col => col.name === 'category_id');
+
+    if (!hasCategoryId) {
+      await database.execAsync(
+        'ALTER TABLE assets ADD COLUMN category_id TEXT REFERENCES categories(id) ON DELETE SET NULL'
+      );
+    }
+
+    // Create index for category lookups
+    await database.execAsync(`
+      CREATE INDEX IF NOT EXISTS idx_assets_category ON assets(category_id);
+    `);
   }
 
   // Update schema version

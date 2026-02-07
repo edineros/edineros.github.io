@@ -18,9 +18,10 @@ import { PortfolioSwitcher } from '../../components/PortfolioSwitcher';
 import {
   AssetAllocationChart,
   calculateAllocations,
-  calculateTagAllocations,
+  calculateCategoryAllocations,
   AllocationMode,
 } from '../../components/AssetAllocationChart';
+import { useCategories } from '../../lib/hooks/useCategories';
 import { formatCurrency, formatPercent, formatQuantity, getGainColor } from '../../lib/utils/format';
 import { CONTENT_HORIZONTAL_PADDING } from '../../lib/constants/layout';
 import { VALUE_MASK } from '../../lib/constants/ui';
@@ -42,6 +43,9 @@ export default function PortfolioDetailScreen() {
 
   // Load portfolios for switcher
   const { data: portfolios = [] } = usePortfolios();
+
+  // Load categories
+  const { data: categories = [] } = useCategories();
 
   // Load portfolio (for single portfolio view)
   const { data: portfolio } = usePortfolio(isAllPortfolios ? undefined : id);
@@ -112,12 +116,12 @@ export default function PortfolioDetailScreen() {
 
   const allocationData = useMemo(() => {
     if (rawAssets.length === 0) {
-      return { allocations: [], tagAllocations: [], hasAnyTags: false };
+      return { allocations: [], categoryAllocations: [], hasAnyCategories: false };
     }
 
     // Build a map with type info from assets and value from assetStats
     const statsWithType = new Map<string, { type: Asset['type']; currentValue: number | null }>();
-    const statsWithTags = new Map<string, { tags: string[]; currentValue: number | null }>();
+    const statsWithCategory = new Map<string, { categoryId: string | null; currentValue: number | null }>();
 
     for (const asset of rawAssets) {
       const stat = assetStats.get(asset.id);
@@ -125,21 +129,21 @@ export default function PortfolioDetailScreen() {
         type: asset.type,
         currentValue: stat?.currentValue ?? null,
       });
-      statsWithTags.set(asset.id, {
-        tags: asset.tags || [],
+      statsWithCategory.set(asset.id, {
+        categoryId: asset.categoryId,
         currentValue: stat?.currentValue ?? null,
       });
     }
 
     const typeResult = calculateAllocations(statsWithType);
-    const tagResult = calculateTagAllocations(statsWithTags);
+    const categoryResult = calculateCategoryAllocations(statsWithCategory, categories);
 
     return {
       allocations: typeResult.allocations,
-      tagAllocations: tagResult.tagAllocations,
-      hasAnyTags: tagResult.hasAnyTags,
+      categoryAllocations: categoryResult.categoryAllocations,
+      hasAnyCategories: categoryResult.hasAnyCategories,
     };
-  }, [rawAssets, assetStats]);
+  }, [rawAssets, assetStats, categories]);
 
   const renderAsset = ({ item }: { item: Asset }) => {
     const itemStats = assetStats.get(item.id);
@@ -363,11 +367,11 @@ export default function PortfolioDetailScreen() {
                 <Text color={colors.textSecondary} fontSize={13} fontWeight="600" textTransform="uppercase">
                   Allocation
                 </Text>
-                {allocationData.hasAnyTags && (
+                {allocationData.hasAnyCategories && (
                   <SegmentedControl
                     options={[
                       { label: 'Type', value: 'type' },
-                      { label: 'Tags', value: 'tags' },
+                      { label: 'Category', value: 'category' },
                     ]}
                     value={allocationMode}
                     onChange={setAllocationMode}
@@ -376,7 +380,7 @@ export default function PortfolioDetailScreen() {
               </XStack>
               <AssetAllocationChart
                 allocations={allocationData.allocations}
-                tagAllocations={allocationData.tagAllocations}
+                categoryAllocations={allocationData.categoryAllocations}
                 currency={displayCurrency}
                 mode={allocationMode}
                 masked={isMasked}

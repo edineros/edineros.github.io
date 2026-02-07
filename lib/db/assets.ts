@@ -11,6 +11,7 @@ interface AssetRow {
   type: AssetType;
   currency: string;
   tags: string; // JSON string for SQLite
+  category_id: string | null;
   created_at: number;
 }
 
@@ -30,6 +31,7 @@ function rowToAsset(row: AssetRow): Asset {
     type: row.type,
     currency: row.currency,
     tags,
+    categoryId: row.category_id ?? null,
     createdAt: new Date(row.created_at),
   };
 }
@@ -101,7 +103,8 @@ export async function createAsset(
   type: AssetType,
   name?: string,
   currency: string = 'EUR',
-  tags: string[] = []
+  tags: string[] = [],
+  categoryId: string | null = null
 ): Promise<Asset> {
   const id = generateUUID();
   const now = Date.now();
@@ -115,13 +118,14 @@ export async function createAsset(
       type,
       currency,
       tags,
+      category_id: categoryId,
       created_at: now,
     });
   } else {
     const db = await getDatabase();
     await db.runAsync(
-      'INSERT INTO assets (id, portfolio_id, symbol, name, type, currency, tags, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [id, portfolioId, symbol.toUpperCase(), name ?? null, type, currency, JSON.stringify(tags), now]
+      'INSERT INTO assets (id, portfolio_id, symbol, name, type, currency, tags, category_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [id, portfolioId, symbol.toUpperCase(), name ?? null, type, currency, JSON.stringify(tags), categoryId, now]
     );
   }
 
@@ -133,13 +137,14 @@ export async function createAsset(
     type,
     currency,
     tags,
+    categoryId,
     createdAt: new Date(now),
   };
 }
 
 export async function updateAsset(
   id: string,
-  updates: { symbol?: string; name?: string; type?: AssetType; currency?: string; tags?: string[] }
+  updates: { symbol?: string; name?: string; type?: AssetType; currency?: string; tags?: string[]; categoryId?: string | null }
 ): Promise<Asset | null> {
   const asset = await getAssetById(id);
   if (!asset) {
@@ -151,6 +156,7 @@ export async function updateAsset(
   const newType = updates.type ?? asset.type;
   const newCurrency = updates.currency ?? asset.currency;
   const newTags = updates.tags ?? asset.tags;
+  const newCategoryId = updates.categoryId !== undefined ? updates.categoryId : asset.categoryId;
 
   if (isWeb()) {
     await webDb.updateAsset({
@@ -161,13 +167,14 @@ export async function updateAsset(
       type: newType,
       currency: newCurrency,
       tags: newTags,
+      category_id: newCategoryId,
       created_at: asset.createdAt.getTime(),
     });
   } else {
     const db = await getDatabase();
     await db.runAsync(
-      'UPDATE assets SET symbol = ?, name = ?, type = ?, currency = ?, tags = ? WHERE id = ?',
-      [newSymbol, newName, newType, newCurrency, JSON.stringify(newTags), id]
+      'UPDATE assets SET symbol = ?, name = ?, type = ?, currency = ?, tags = ?, category_id = ? WHERE id = ?',
+      [newSymbol, newName, newType, newCurrency, JSON.stringify(newTags), newCategoryId, id]
     );
   }
 
@@ -178,6 +185,7 @@ export async function updateAsset(
     type: newType,
     currency: newCurrency,
     tags: newTags,
+    categoryId: newCategoryId,
   };
 }
 

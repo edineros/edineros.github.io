@@ -1,6 +1,14 @@
 export type AssetType = 'stock' | 'etf' | 'crypto' | 'bitcoin' | 'bond' | 'commodity' | 'cash' | 'real-estate' | 'other';
 export type TransactionType = 'buy' | 'sell';
 
+export interface Category {
+  id: string;
+  name: string;
+  color: string;
+  sortOrder: number;
+  createdAt: Date;
+}
+
 // Runtime array for validation (must match AssetType union)
 export const VALID_ASSET_TYPES: AssetType[] = ['cash', 'stock', 'etf', 'bitcoin', 'crypto', 'commodity', 'real-estate', 'bond', 'other'];
 
@@ -25,6 +33,7 @@ export interface Asset {
   type: AssetType;
   currency: string;
   tags: string[];
+  categoryId: string | null;
   createdAt: Date;
 }
 
