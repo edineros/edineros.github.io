@@ -9,19 +9,23 @@ import {
 } from '../db/assets';
 import { queryKeys } from './config/queryKeys';
 import type { AssetType } from '../types';
+import { ALL_PORTFOLIOS_ID } from '../../store';
 
 export function useAssets(portfolioId: string | undefined) {
-  return useQuery({
-    queryKey: queryKeys.assets.byPortfolio(portfolioId ?? ''),
-    queryFn: () => (portfolioId ? getAssetsByPortfolioId(portfolioId) : []),
-    enabled: !!portfolioId,
-  });
-}
+  const isAll = portfolioId === ALL_PORTFOLIOS_ID;
 
-export function useAllAssets() {
   return useQuery({
-    queryKey: queryKeys.assets.all,
-    queryFn: getAllAssets,
+    queryKey: isAll ? queryKeys.assets.all : queryKeys.assets.byPortfolio(portfolioId ?? ''),
+    queryFn: () => {
+      if (isAll) {
+        return getAllAssets();
+      }
+      if (portfolioId) {
+        return getAssetsByPortfolioId(portfolioId);
+      }
+      return [];
+    },
+    enabled: !!portfolioId,
   });
 }
 

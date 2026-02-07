@@ -6,8 +6,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAppStore, ALL_PORTFOLIOS_ID } from '../../store';
 import { usePortfolios, usePortfolio, useUpdatePortfolio } from '../../lib/hooks/usePortfolios';
-import { useAssets, useAllAssets } from '../../lib/hooks/useAssets';
-import { usePortfolioStats, useAllPortfoliosStats } from '../../lib/hooks/stats/usePortfolioStats';
+import { useAssets } from '../../lib/hooks/useAssets';
+import { usePortfolioStats } from '../../lib/hooks/stats/usePortfolioStats';
 import { queryKeys } from '../../lib/hooks/config/queryKeys';
 import { Page } from '../../components/Page';
 import { HeaderIconButton } from '../../components/HeaderButtons';
@@ -50,23 +50,16 @@ export default function PortfolioDetailScreen() {
   // Load portfolio (for single portfolio view)
   const { data: portfolio } = usePortfolio(isAllPortfolios ? undefined : id);
 
-  // Load assets
-  const { data: portfolioAssetsRaw = [] } = useAssets(isAllPortfolios ? undefined : id);
-  const { data: allAssetsRaw = [] } = useAllAssets();
-  const rawAssets = isAllPortfolios ? allAssetsRaw : portfolioAssetsRaw;
+  // Load assets (fetches all when id is ALL_PORTFOLIOS_ID, otherwise for specific portfolio)
+  const { data: rawAssets = [] } = useAssets(id);
 
   // For "All Portfolios", use the first portfolio's currency as display currency
   const displayCurrency = isAllPortfolios
     ? (portfolios[0]?.currency ?? 'EUR')
     : (portfolio?.currency ?? 'EUR');
 
-  // Load stats
-  const singlePortfolioStats = usePortfolioStats(isAllPortfolios ? undefined : id);
-  const allPortfoliosStats = useAllPortfoliosStats(isAllPortfolios ? displayCurrency : 'EUR');
-
-  const { portfolio: stats, assetStats, isLoading } = isAllPortfolios
-    ? allPortfoliosStats
-    : singlePortfolioStats;
+  // Load stats (handles both single portfolio and "All Portfolios" views)
+  const { portfolio: stats, assetStats, isLoading } = usePortfolioStats(id, displayCurrency);
 
   // Sort assets by type (using defined order), then by symbol/name within each type
   const portfolioAssets = useMemo(() => {
