@@ -4,7 +4,7 @@ import { useLocalSearchParams, useFocusEffect, useRouter } from 'expo-router';
 import { YStack, XStack, Text, Spinner } from 'tamagui';
 import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
-import { useAppStore, ALL_PORTFOLIOS_ID } from '../../store';
+import { ALL_PORTFOLIOS_ID, useAppStore } from '../../store';
 import { usePortfolios, usePortfolio, useUpdatePortfolio } from '../../lib/hooks/usePortfolios';
 import { useAssets } from '../../lib/hooks/useAssets';
 import { usePortfolioStats } from '../../lib/hooks/stats/usePortfolioStats';
@@ -39,7 +39,8 @@ export default function PortfolioDetailScreen() {
   const { setCurrentPortfolio } = useAppStore();
   const updatePortfolioMutation = useUpdatePortfolio();
 
-  const isAllPortfolios = id === ALL_PORTFOLIOS_ID;
+  // undefined for "all portfolios", otherwise the specific portfolio ID
+  const portfolioId = id === ALL_PORTFOLIOS_ID ? undefined : id;
 
   // Load portfolios for switcher
   const { data: portfolios = [] } = usePortfolios();
@@ -48,18 +49,18 @@ export default function PortfolioDetailScreen() {
   const { data: categories = [] } = useCategories();
 
   // Load portfolio (for single portfolio view)
-  const { data: portfolio } = usePortfolio(isAllPortfolios ? undefined : id);
+  const { data: portfolio } = usePortfolio(portfolioId);
 
-  // Load assets (fetches all when id is ALL_PORTFOLIOS_ID, otherwise for specific portfolio)
-  const { data: rawAssets = [] } = useAssets(id);
+  // Load assets (undefined = all assets, portfolioId = specific portfolio's assets)
+  const { data: rawAssets = [] } = useAssets(portfolioId);
 
   // For "All Portfolios", use the first portfolio's currency as display currency
-  const displayCurrency = isAllPortfolios
-    ? (portfolios[0]?.currency ?? 'EUR')
-    : (portfolio?.currency ?? 'EUR');
+  const displayCurrency = portfolioId
+    ? (portfolio?.currency ?? 'EUR')
+    : (portfolios[0]?.currency ?? 'EUR');
 
-  // Load stats (handles both single portfolio and "All Portfolios" views)
-  const { portfolio: stats, assetStats, isLoading } = usePortfolioStats(id, displayCurrency);
+  // Load stats (undefined = all portfolios, portfolioId = single portfolio)
+  const { portfolio: stats, assetStats, isLoading } = usePortfolioStats(portfolioId, displayCurrency);
 
   // Sort assets by type (using defined order), then by symbol/name within each type
   const portfolioAssets = useMemo(() => {
@@ -77,17 +78,17 @@ export default function PortfolioDetailScreen() {
   }, [rawAssets]);
 
   // Check if any portfolio is masked (for "All Portfolios" view)
-  const isMasked = isAllPortfolios
-    ? portfolios.some(p => p.masked)
-    : (portfolio?.masked ?? false);
+  const isMasked = portfolioId
+    ? (portfolio?.masked ?? false)
+    : portfolios.some(p => p.masked);
 
   useFocusEffect(
     useCallback(() => {
       // Save this as the last opened portfolio (unless viewing all)
-      if (id && !isAllPortfolios) {
-        setCurrentPortfolio(id);
+      if (portfolioId) {
+        setCurrentPortfolio(portfolioId);
       }
-    }, [id, isAllPortfolios, setCurrentPortfolio])
+    }, [portfolioId, setCurrentPortfolio])
   );
 
   const onRefresh = useCallback(async () => {
@@ -99,13 +100,13 @@ export default function PortfolioDetailScreen() {
   }, [queryClient]);
 
   const handleToggleMasked = useCallback(async () => {
-    if (portfolio && !isAllPortfolios) {
+    if (portfolio && portfolioId) {
       await updatePortfolioMutation.mutateAsync({
         id: portfolio.id,
         updates: { masked: !portfolio.masked },
       });
     }
-  }, [portfolio, isAllPortfolios, updatePortfolioMutation]);
+  }, [portfolio, portfolioId, updatePortfolioMutation]);
 
   const allocationData = useMemo(() => {
     if (rawAssets.length === 0) {
@@ -224,19 +225,8 @@ export default function PortfolioDetailScreen() {
     );
   };
 
-  // Show loading state unless we're viewing "All Portfolios" or have a specific portfolio
-  if (!isAllPortfolios && !portfolio && isLoading) {
-    return (
-      <Page fallbackPath="/" showBack={false} >
-        <YStack flex={1} justifyContent="center" alignItems="center">
-          <Spinner size="large" color={colors.text} />
-        </YStack>
-      </Page>
-    );
-  }
-
-  // For "All Portfolios", wait until portfolios are loaded
-  if (isAllPortfolios && portfolios.length === 0) {
+  // Show loading state
+  if (portfolioId ? (!portfolio && isLoading) : (portfolios.length === 0)) {
     return (
       <Page fallbackPath="/" showBack={false} >
         <YStack flex={1} justifyContent="center" alignItems="center">
@@ -264,13 +254,13 @@ export default function PortfolioDetailScreen() {
         <PortfolioSwitcher
           currentPortfolio={portfolio ?? null}
           portfolios={portfolios}
-          isAllPortfolios={isAllPortfolios}
+          isAllPortfolios={!portfolioId}
         />
       }
       rightComponent={
-        isAllPortfolios ? null : (
-          <HeaderIconButton icon="pencil" color={colors.text} href={`/portfolio/edit/${id}`} />
-        )
+        portfolioId ? (
+          <HeaderIconButton icon="pencil" color={colors.text} href={`/portfolio/edit/${portfolioId}`} />
+        ) : null
       }
     >
       {/* Portfolio Summary */}
@@ -279,7 +269,7 @@ export default function PortfolioDetailScreen() {
           <Text color={colors.textSecondary} fontSize={13}>
             TOTAL VALUE
           </Text>
-          {!isAllPortfolios && portfolio && (
+          {portfolioId && portfolio && (
             <TouchableOpacity
               onPress={handleToggleMasked}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -387,13 +377,13 @@ export default function PortfolioDetailScreen() {
               No assets yet
             </Text>
             <Text color={colors.textSecondary} fontSize={15} textAlign="center" marginTop={8}>
-              {isAllPortfolios ? 'Add assets to your portfolios to see them here' : 'Add your first asset to start tracking'}
+              {portfolioId ? 'Add your first asset to start tracking' : 'Add assets to your portfolios to see them here'}
             </Text>
           </YStack>
         }
       />
 
-      {!isAllPortfolios && <AddAssetMenu portfolioId={id!} />}
+      {portfolioId && <AddAssetMenu portfolioId={portfolioId} />}
     </Page>
   );
 }

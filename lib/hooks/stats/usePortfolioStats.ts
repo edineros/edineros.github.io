@@ -10,7 +10,6 @@ import { fetchYahooPrice } from '../../api/providers/yahoo';
 import { fetchKrakenPrices } from '../../api/providers/kraken';
 import { fetchExchangeRate } from '../../api/providers/frankfurter';
 import type { Asset, AssetWithStats, PortfolioWithStats, Lot } from '../../types';
-import { ALL_PORTFOLIOS_ID } from '../../../store';
 
 interface AssetStatsData {
   asset: Asset;
@@ -84,27 +83,23 @@ export interface PortfolioStatsResult {
 
 /**
  * Hook to get portfolio stats.
- * - For a single portfolio: usePortfolioStats(portfolioId)
- * - For all portfolios: usePortfolioStats(ALL_PORTFOLIOS_ID, displayCurrency)
+ * - undefined → all portfolios (requires displayCurrency)
+ * - portfolioId → single portfolio stats
  */
 export function usePortfolioStats(
   portfolioId: string | undefined,
   displayCurrency?: string
 ): PortfolioStatsResult {
-  const isAllPortfolios = portfolioId === ALL_PORTFOLIOS_ID;
-
   // For single portfolio, fetch portfolio data; for all, fetch all portfolios
-  const { data: portfolio, isLoading: portfolioLoading } = usePortfolio(
-    isAllPortfolios ? undefined : portfolioId
-  );
+  const { data: portfolio, isLoading: portfolioLoading } = usePortfolio(portfolioId);
   const { data: portfolios, isLoading: portfoliosLoading } = usePortfolios();
 
   // Fetch assets (useAssets handles both single and all cases)
   const { data: assets, isLoading: assetsLoading } = useAssets(portfolioId);
 
-  const currency = isAllPortfolios
-    ? (displayCurrency ?? 'EUR')
-    : (portfolio?.currency ?? 'EUR');
+  const currency = portfolioId
+    ? (portfolio?.currency ?? 'EUR')
+    : (displayCurrency ?? 'EUR');
 
   // Fetch lots for all assets
   const lotsQueries = useQueries({
@@ -160,7 +155,7 @@ export function usePortfolioStats(
   });
 
   const isLoading = (
-    (isAllPortfolios ? portfoliosLoading : portfolioLoading) ||
+    (portfolioId ? portfolioLoading : portfoliosLoading) ||
     assetsLoading ||
     lotsQueries.some((q) => q.isLoading) ||
     cryptoPricesLoading ||
@@ -195,12 +190,12 @@ export function usePortfolioStats(
   // Calculate stats for each asset
   const { assetStats, portfolioStats } = useMemo(() => {
     // Validation differs for single vs all portfolios
-    if (isAllPortfolios) {
-      if (!portfolios || portfolios.length === 0 || !assets) {
+    if (portfolioId) {
+      if (!portfolio || !assets) {
         return EMPTY_STATS;
       }
     } else {
-      if (!portfolio || !assets) {
+      if (!portfolios || portfolios.length === 0 || !assets) {
         return EMPTY_STATS;
       }
     }
@@ -267,14 +262,14 @@ export function usePortfolioStats(
 
     // Build portfolio stats differently for single vs all
     const portfolioWithStats: PortfolioWithStats = {
-      ...(isAllPortfolios ? {
-        id: ALL_PORTFOLIOS_ID,
+      ...(portfolioId ? portfolio! : {
+        id: '',
         name: 'All Portfolios',
         currency,
         masked: false,
         createdAt: new Date(),
         updatedAt: new Date(),
-      } : portfolio!),
+      }),
       totalValue,
       totalCost,
       totalGain,
@@ -282,13 +277,12 @@ export function usePortfolioStats(
       assetCount: assets.length,
     };
 
-
     return { assetStats: statsMap, portfolioStats: portfolioWithStats };
-  }, [isAllPortfolios, portfolio, portfolios, assets, lotsQueries, cryptoPrices, otherPriceMap, exchangeRateMap, currency]);
+  }, [portfolioId, portfolio, portfolios, assets, lotsQueries, cryptoPrices, otherPriceMap, exchangeRateMap, currency]);
 
-  const hasPartialData = isAllPortfolios
-    ? (!!portfolios && portfolios.length > 0 && !!assets && assetStats.size > 0)
-    : (!!portfolio && !!assets && assets.length > 0 && assetStats.size > 0);
+  const hasPartialData = portfolioId
+    ? (!!portfolio && !!assets && assets.length > 0 && assetStats.size > 0)
+    : (!!portfolios && portfolios.length > 0 && !!assets && assetStats.size > 0);
 
   return {
     portfolio: portfolioStats,
