@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { TouchableOpacity, TextInput, Modal } from 'react-native';
-import { YStack, XStack, Text } from 'tamagui';
+import { YStack, XStack, Text, Spacer } from 'tamagui';
 import { Ionicons } from '@expo/vector-icons';
 import { alert, confirm } from '../lib/utils/confirm';
 import { SettingsSection } from './SettingsSection';
@@ -88,10 +88,11 @@ export function CategoriesSettings() {
   return (
     <>
       <SettingsSection
-        title="Categories"
+        title={`Categories (${categories.length})`}
         subtitle="Organize your assets into custom categories"
+        collapsed
       >
-        <YStack gap={12}>
+        <YStack gap={4}>
           {categories.map((category) => (
             <XStack
               key={category.id}
@@ -112,7 +113,7 @@ export function CategoriesSettings() {
                   {category.name}
                 </Text>
               </XStack>
-              <XStack gap={8}>
+              <XStack gap={16}>
                 <TouchableOpacity
                   onPress={() => openEdit(category)}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -128,7 +129,8 @@ export function CategoriesSettings() {
               </XStack>
             </XStack>
           ))}
-          <LongButton onPress={openAdd} variant="secondary">
+          <Spacer />
+          <LongButton onPress={openAdd}>
             Add Category
           </LongButton>
         </YStack>

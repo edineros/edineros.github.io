@@ -14,6 +14,8 @@ import { CONTENT_HORIZONTAL_PADDING } from '../../lib/constants/layout';
 import { useThemeStore, useColors, type ThemeMode } from '../../lib/theme/store';
 import { alertImportSuccess } from '../../lib/utils/backup';
 
+const VERSION = '1.0.4';
+
 const THEME_OPTIONS: { value: ThemeMode; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { value: 'light', label: 'Light', icon: 'sunny-outline' },
   { value: 'dark', label: 'Dark', icon: 'moon-outline' },
@@ -231,7 +233,7 @@ export default function SettingsScreen() {
             <YStack gap={8}>
               <XStack justifyContent="space-between">
                 <Text color={colors.textSecondary}>Version</Text>
-                <Text color={colors.text}>1.0.3</Text>
+                <Text color={colors.text}>{VERSION}</Text>
               </XStack>
 
               <YStack height={1} backgroundColor={colors.border} marginVertical={8} />
