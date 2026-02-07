@@ -66,11 +66,15 @@ export function QueryProvider({ children }: QueryProviderProps) {
     return null;
   }
 
+  // Show devtools only on web in development
+  const showDevtools = Platform.OS === 'web' && __DEV__;
+
   // No persistence available (native without AsyncStorage)
   if (!persister) {
     return (
       <QueryClientProvider client={queryClient}>
         {children}
+        {showDevtools && <ReactQueryDevtools initialIsOpen={false} />}
       </QueryClientProvider>
     );
   }
@@ -91,6 +95,7 @@ export function QueryProvider({ children }: QueryProviderProps) {
       }}
     >
       {children}
+      {showDevtools && <ReactQueryDevtools initialIsOpen={false} />}
     </PersistQueryClientProvider>
   );
 }
