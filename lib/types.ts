@@ -72,9 +72,9 @@ export interface AssetWithStats extends Asset {
 }
 
 export interface PortfolioWithStats extends Portfolio {
-  totalValue: number | null;
+  totalValue: number;
   totalCost: number;
-  totalGain: number | null;
+  totalGain: number;
   totalGainPercent: number | null;
   assetCount: number;
 }

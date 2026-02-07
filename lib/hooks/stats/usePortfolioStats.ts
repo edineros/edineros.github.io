@@ -19,7 +19,7 @@ interface AssetStatsData {
   exchangeRate: number | null;
 }
 
-const EMPTY_STATS = { assetStats: new Map<string, AssetWithStats>(), portfolioStats: null };
+const EMPTY_STATS = { assetStats: new Map<string, AssetWithStats>(), portfolioStats: null, pendingPriceCount: 0 };
 
 function calculateSingleAssetStats(
   data: AssetStatsData,
@@ -79,6 +79,8 @@ export interface PortfolioStatsResult {
   assetStats: Map<string, AssetWithStats>;
   isLoading: boolean;
   hasPartialData: boolean;
+  /** Number of assets that still need price data */
+  pendingPriceCount: number;
 }
 
 /**
@@ -188,7 +190,7 @@ export function usePortfolioStats(
   }, [uniqueOtherAssets, otherPriceQueries]);
 
   // Calculate stats for each asset
-  const { assetStats, portfolioStats } = useMemo(() => {
+  const { assetStats, portfolioStats, pendingPriceCount } = useMemo(() => {
     // Validation differs for single vs all portfolios
     if (portfolioId) {
       if (!portfolio || !assets) {
@@ -201,9 +203,9 @@ export function usePortfolioStats(
     }
 
     const statsMap = new Map<string, AssetWithStats>();
-    let totalValue: number | null = 0;
+    let totalValue = 0;
     let totalCost = 0;
-    let hasAllPrices = true;
+    let pendingPriceCount = 0;
 
     assets.forEach((asset, index) => {
       const lots = lotsQueries[index]?.data ?? [];
@@ -246,19 +248,14 @@ export function usePortfolioStats(
       totalCost += assetCost;
 
       if (stats.currentValue !== null) {
-        totalValue = (totalValue ?? 0) + stats.currentValue;
+        totalValue += stats.currentValue;
       } else {
-        hasAllPrices = false;
+        pendingPriceCount++;
       }
     });
 
-    if (!hasAllPrices) {
-      totalValue = null;
-    }
-
-    const totalGain = totalValue !== null ? totalValue - totalCost : null;
-    const totalGainPercent =
-      totalGain !== null && totalCost > 0 ? (totalGain / totalCost) * 100 : null;
+    const totalGain = totalValue - totalCost;
+    const totalGainPercent = totalCost > 0 ? (totalGain / totalCost) * 100 : null;
 
     // Build portfolio stats differently for single vs all
     const portfolioWithStats: PortfolioWithStats = {
@@ -277,7 +274,7 @@ export function usePortfolioStats(
       assetCount: assets.length,
     };
 
-    return { assetStats: statsMap, portfolioStats: portfolioWithStats };
+    return { assetStats: statsMap, portfolioStats: portfolioWithStats, pendingPriceCount };
   }, [portfolioId, portfolio, portfolios, assets, lotsQueries, cryptoPrices, otherPriceMap, exchangeRateMap, currency]);
 
   const hasPartialData = portfolioId
@@ -289,5 +286,6 @@ export function usePortfolioStats(
     assetStats,
     isLoading,
     hasPartialData,
+    pendingPriceCount,
   };
 }

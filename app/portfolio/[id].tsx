@@ -12,6 +12,7 @@ import { queryKeys } from '../../lib/hooks/config/queryKeys';
 import { Page } from '../../components/Page';
 import { HeaderIconButton } from '../../components/HeaderButtons';
 import { QuantityAtPrice } from '../../components/QuantityAtPrice';
+import { AnimatedEllipsis } from '../../components/AnimatedEllipsis';
 import { AddAssetMenu } from '../../components/AddAssetMenu';
 import { SegmentedControl } from '../../components/SegmentedControl';
 import { PortfolioSwitcher } from '../../components/PortfolioSwitcher';
@@ -60,7 +61,7 @@ export default function PortfolioDetailScreen() {
     : (portfolios[0]?.currency ?? 'EUR');
 
   // Load stats (undefined = all portfolios, portfolioId = single portfolio)
-  const { portfolio: stats, assetStats, isLoading } = usePortfolioStats(portfolioId, displayCurrency);
+  const { portfolio: stats, assetStats, isLoading, pendingPriceCount } = usePortfolioStats(portfolioId, displayCurrency);
 
   // Sort assets by type (using defined order), then by symbol/name within each type
   const portfolioAssets = useMemo(() => {
@@ -282,11 +283,21 @@ export default function PortfolioDetailScreen() {
             </TouchableOpacity>
           )}
         </XStack>
-        {stats?.totalValue !== null && stats?.totalValue !== undefined ? (
+        {stats ? (
           <>
-            <Text color={colors.text} fontSize={34} fontWeight="700">
-              {isMasked ? VALUE_MASK : formatCurrency(stats.totalValue, displayCurrency)}
-            </Text>
+            <XStack alignItems="baseline">
+              <Text
+                color={colors.text}
+                fontSize={34}
+                fontWeight="700"
+                style={{ fontVariant: ['tabular-nums'] }}
+              >
+                {isMasked ? VALUE_MASK : formatCurrency(stats.totalValue, displayCurrency)}
+              </Text>
+              {pendingPriceCount > 0 && !isMasked && (
+                <AnimatedEllipsis color={colors.textSecondary} fontSize={34} fontWeight="700" />
+              )}
+            </XStack>
             <XStack alignItems="center" gap={8} marginTop={4}>
               {!isMasked && (
                 <Text
