@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef } from 'react';
 import { ScrollView, Platform, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { YStack, XStack, Text } from 'tamagui';
@@ -10,10 +10,8 @@ import { Page } from '../../components/Page';
 import { LongButton } from '../../components/LongButton';
 import { SettingsSection } from '../../components/SettingsSection';
 import { CategoriesSettings } from '../../components/CategoriesSettings';
-import { Select, type SelectOption } from '../../components/Select';
 import { CONTENT_HORIZONTAL_PADDING } from '../../lib/constants/layout';
 import { useThemeStore, useColors, type ThemeMode } from '../../lib/theme/store';
-import { usePortfolios } from '../../lib/hooks/usePortfolios';
 
 const THEME_OPTIONS: { value: ThemeMode; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { value: 'light', label: 'Light', icon: 'sunny-outline' },
@@ -21,45 +19,25 @@ const THEME_OPTIONS: { value: ThemeMode; label: string; icon: keyof typeof Ionic
   { value: 'auto', label: 'Auto', icon: 'phone-portrait-outline' },
 ];
 
-const ALL_PORTFOLIOS_VALUE = '__all__';
-
 export default function SettingsScreen() {
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
-  const [exportPortfolioId, setExportPortfolioId] = useState<string>(ALL_PORTFOLIOS_VALUE);
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { mode, setMode } = useThemeStore();
   const colors = useColors();
   const router = useRouter();
-  const { data: portfolios = [] } = usePortfolios();
-
-  const exportOptions = useMemo((): SelectOption<string>[] => {
-    const options: SelectOption<string>[] = [
-      { value: ALL_PORTFOLIOS_VALUE, label: 'All Portfolios' },
-    ];
-    for (const portfolio of portfolios) {
-      options.push({ value: portfolio.id, label: portfolio.name });
-    }
-    return options;
-  }, [portfolios]);
 
   const handleExportJson = async () => {
     setIsExporting(true);
     try {
-      const portfolioId = exportPortfolioId === ALL_PORTFOLIOS_VALUE ? undefined : exportPortfolioId;
-      const filePath = await exportToJson(portfolioId);
+      const filePath = await exportToJson();
       await shareFile(filePath);
     } catch (error) {
       alert('Export Failed', (error as Error).message);
     } finally {
       setIsExporting(false);
     }
-  };
-
-  const handleExportQR = () => {
-    const param = exportPortfolioId === ALL_PORTFOLIOS_VALUE ? '' : `?portfolioId=${exportPortfolioId}`;
-    router.push(`/settings/qr-export${param}`);
   };
 
   const processImport = async (content: string) => {
@@ -210,14 +188,8 @@ export default function SettingsScreen() {
             subtitle="Export your portfolio data for backup or transfer"
           >
             <YStack gap={12}>
-              <Select
-                value={exportPortfolioId}
-                onChange={setExportPortfolioId}
-                options={exportOptions}
-                title="Select Portfolio to Export"
-              />
               <LongButton
-                onPress={handleExportQR}
+                onPress={() => router.push('/settings/qr-export')}
                 variant="secondary"
               >
                 Export via QR Code
@@ -257,7 +229,7 @@ export default function SettingsScreen() {
             <YStack gap={8}>
               <XStack justifyContent="space-between">
                 <Text color={colors.textSecondary}>Version</Text>
-                <Text color={colors.text}>1.0.2</Text>
+                <Text color={colors.text}>1.0.3</Text>
               </XStack>
 
               <YStack height={1} backgroundColor={colors.border} marginVertical={8} />

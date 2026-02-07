@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Dimensions } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
 import { YStack, XStack, Text, Separator } from 'tamagui';
 import QRCode from 'react-native-qrcode-svg';
 import { Page } from '../../components/Page';
@@ -14,7 +13,6 @@ import { Ionicons } from '@expo/vector-icons';
 const ANIMATION_INTERVAL_MS = 500; // Time per QR code frame
 
 export default function QRExportScreen() {
-  const { portfolioId } = useLocalSearchParams<{ portfolioId?: string }>();
   const colors = useColors();
   const [chunks, setChunks] = useState<string[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -29,7 +27,7 @@ export default function QRExportScreen() {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await exportData(portfolioId);
+      const data = await exportData();
       const jsonString = JSON.stringify(data);
       const encoded = encodeForQR(jsonString);
       setChunks(encoded);
@@ -39,7 +37,7 @@ export default function QRExportScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [portfolioId]);
+  }, []);
 
   useEffect(() => {
     loadData();
