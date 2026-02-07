@@ -4,7 +4,7 @@
 import type { Asset, Category } from '../types';
 
 const DB_NAME = 'portfolio-tracker';
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 
 let idb: IDBDatabase | null = null;
 let idbPromise: Promise<IDBDatabase> | null = null;
@@ -47,10 +47,6 @@ async function openIDB(): Promise<IDBDatabase> {
         transactions.createIndex('date', 'date');
       }
 
-      if (!db.objectStoreNames.contains('transaction_tags')) {
-        db.createObjectStore('transaction_tags', { keyPath: ['transaction_id', 'tag'] });
-      }
-
       if (!db.objectStoreNames.contains('price_cache')) {
         db.createObjectStore('price_cache', { keyPath: 'symbol' });
       }
@@ -63,6 +59,11 @@ async function openIDB(): Promise<IDBDatabase> {
         const categories = db.createObjectStore('categories', { keyPath: 'id' });
         categories.createIndex('name', 'name', { unique: true });
         categories.createIndex('sort_order', 'sort_order');
+      }
+
+      // Remove deprecated transaction_tags store if it exists
+      if (db.objectStoreNames.contains('transaction_tags')) {
+        db.deleteObjectStore('transaction_tags');
       }
     };
   });
@@ -156,7 +157,6 @@ function rowToAsset(row: any): Asset {
     name: row.name,
     type: row.type,
     currency: row.currency,
-    tags: row.tags || [],
     categoryId: row.category_id ?? null,
     createdAt: new Date(row.created_at),
   };
@@ -190,7 +190,7 @@ export const webDb = {
     await remove('portfolios', id);
   },
 
-  // Assets (tags stored directly in asset object)
+  // Assets
   async getAssetsByPortfolioId(portfolioId: string): Promise<Asset[]> {
     const assets = await getAllByIndex<any>('assets', 'portfolio_id', portfolioId);
     return assets.map(rowToAsset).sort((a, b) => a.symbol.localeCompare(b.symbol));
@@ -224,41 +224,18 @@ export const webDb = {
     await remove('assets', id);
   },
 
-  async getAllAssetTags(): Promise<string[]> {
-    const assets = await getAll<any>('assets');
-    const allTags = new Set<string>();
-    for (const asset of assets) {
-      for (const tag of asset.tags || []) {
-        allTags.add(tag);
-      }
-    }
-    return Array.from(allTags).sort();
-  },
-
   // Transactions
   async getTransactionsByAssetId(assetId: string) {
     const transactions = await getAllByIndex<any>('transactions', 'asset_id', assetId);
-    for (const tx of transactions) {
-      tx.tags = await this.getTagsForTransaction(tx.id);
-    }
     return transactions.sort((a, b) => b.date - a.date);
   },
 
   async getTransactionById(id: string) {
-    const tx = await getOne<any>('transactions', id);
-    if (tx) {
-      tx.tags = await this.getTagsForTransaction(id);
-    }
-    return tx;
+    return getOne<any>('transactions', id);
   },
 
   async createTransaction(transaction: any) {
-    const tags = transaction.tags || [];
-    delete transaction.tags;
     await put('transactions', transaction);
-    for (const tag of tags) {
-      await put('transaction_tags', { transaction_id: transaction.id, tag });
-    }
   },
 
   async updateTransaction(id: string, updates: any) {
@@ -267,43 +244,13 @@ export const webDb = {
       return;
     }
 
-    const tags = updates.tags;
-    delete updates.tags;
-
     const updated = { ...existing, ...updates };
-    delete updated.tags;
     await put('transactions', updated);
-
-    if (tags !== undefined) {
-      const oldTags = await this.getTagsForTransaction(id);
-      for (const tag of oldTags) {
-        await remove('transaction_tags', [id, tag]);
-      }
-      for (const tag of tags) {
-        await put('transaction_tags', { transaction_id: id, tag });
-      }
-    }
   },
 
   async deleteTransaction(id: string): Promise<boolean> {
-    const tags = await this.getTagsForTransaction(id);
-    for (const tag of tags) {
-      await remove('transaction_tags', [id, tag]);
-    }
     await remove('transactions', id);
     return true;
-  },
-
-  async getTagsForTransaction(transactionId: string): Promise<string[]> {
-    const allTags = await getAll<any>('transaction_tags');
-    return allTags
-      .filter(t => t.transaction_id === transactionId)
-      .map(t => t.tag);
-  },
-
-  async getAllTags(): Promise<string[]> {
-    const allTags = await getAll<any>('transaction_tags');
-    return [...new Set(allTags.map(t => t.tag))].sort();
   },
 
   // Categories

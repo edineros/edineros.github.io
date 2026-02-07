@@ -138,8 +138,7 @@ export async function importFromJson(jsonString: string): Promise<{
       asset.symbol,
       assetType,
       asset.name || undefined,
-      asset.currency,
-      asset.tags || []
+      asset.currency
     );
     assetIdMap.set(asset.id, newAsset.id);
     assetsImported++;
@@ -170,7 +169,6 @@ export async function importFromJson(jsonString: string): Promise<{
       {
         fee: tx.fee,
         notes: tx.notes || undefined,
-        tags: tx.tags,
         lotId: newLotId,
       }
     );

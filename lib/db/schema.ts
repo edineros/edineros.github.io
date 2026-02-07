@@ -2,7 +2,7 @@ import * as SQLite from 'expo-sqlite';
 import { Platform } from 'react-native';
 
 const DATABASE_NAME = 'portfolio.db';
-const SCHEMA_VERSION = 4; // Increment when schema changes require migration
+const SCHEMA_VERSION = 5; // Increment when schema changes require migration
 
 let db: SQLite.SQLiteDatabase | null = null;
 let dbInitPromise: Promise<SQLite.SQLiteDatabase> | null = null;
@@ -85,7 +85,6 @@ async function runMigrations(database: SQLite.SQLiteDatabase, fromVersion: numbe
         name TEXT,
         type TEXT NOT NULL,
         currency TEXT DEFAULT 'EUR',
-        tags TEXT DEFAULT '[]',
         created_at INTEGER NOT NULL
       );
 
@@ -100,12 +99,6 @@ async function runMigrations(database: SQLite.SQLiteDatabase, fromVersion: numbe
         notes TEXT,
         lot_id TEXT,
         created_at INTEGER NOT NULL
-      );
-
-      CREATE TABLE IF NOT EXISTS transaction_tags (
-        transaction_id TEXT NOT NULL REFERENCES transactions(id) ON DELETE CASCADE,
-        tag TEXT NOT NULL,
-        PRIMARY KEY (transaction_id, tag)
       );
 
       CREATE TABLE IF NOT EXISTS price_cache (
@@ -144,7 +137,6 @@ async function runMigrations(database: SQLite.SQLiteDatabase, fromVersion: numbe
           name TEXT,
           type TEXT NOT NULL,
           currency TEXT DEFAULT 'EUR',
-          tags TEXT DEFAULT '[]',
           created_at INTEGER NOT NULL
         );
 
@@ -212,6 +204,16 @@ async function runMigrations(database: SQLite.SQLiteDatabase, fromVersion: numbe
     await database.execAsync(`
       CREATE INDEX IF NOT EXISTS idx_assets_category ON assets(category_id);
     `);
+  }
+
+  // Migration to version 5: Remove tags (no longer used)
+  if (fromVersion < 5) {
+    // Drop transaction_tags table if it exists
+    await database.execAsync('DROP TABLE IF EXISTS transaction_tags;');
+
+    // Remove tags column from assets if it exists
+    // SQLite doesn't support DROP COLUMN directly, but we can ignore it
+    // The column will just be unused going forward
   }
 
   // Update schema version

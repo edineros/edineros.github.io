@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { YStack, Text, Spinner } from 'tamagui';
 import { useAsset, useUpdateAsset, useDeleteAsset } from '../../../lib/hooks/useAssets';
@@ -8,8 +8,6 @@ import { Form } from '../../../components/Form';
 import { FormField } from '../../../components/FormField';
 import { LongButton } from '../../../components/LongButton';
 import { alert, confirm } from '../../../lib/utils/confirm';
-import { getAllAssetTags } from '../../../lib/db/assets';
-import { TagInputRef } from '../../../components/TagInput';
 import { isSimpleAssetType } from '../../../lib/constants/assetTypes';
 import { useColors } from '../../../lib/theme/store';
 import { HeaderIconButton } from '../../../components/HeaderButtons';
@@ -18,10 +16,7 @@ export default function EditAssetScreen() {
   const { id, portfolioId } = useLocalSearchParams<{ id: string; portfolioId: string }>();
   const colors = useColors();
   const [name, setName] = useState('');
-  const [tags, setTags] = useState<string[]>([]);
-  const [existingTags, setExistingTags] = useState<string[]>([]);
   const [categoryId, setCategoryId] = useState<string | null>(null);
-  const tagInputRef = useRef<TagInputRef>(null);
 
   const { data: asset, isLoading } = useAsset(id);
   const { data: categories = [] } = useCategories();
@@ -31,24 +26,15 @@ export default function EditAssetScreen() {
   useEffect(() => {
     if (asset) {
       setName(asset.name || '');
-      setTags(asset.tags || []);
       setCategoryId(asset.categoryId);
     }
   }, [asset]);
 
-  useEffect(() => {
-    // Load existing tags for autocomplete
-    getAllAssetTags().then(setExistingTags);
-  }, []);
-
   const handleSave = async () => {
     try {
-      // Commit any pending tag in the input field so that it's not lost if we forgot to explicity save it
-      const finalTags = tagInputRef.current?.commitPending() ?? tags;
-
       await updateAsset.mutateAsync({
         id: id!,
-        updates: { name: name.trim() || undefined, tags: finalTags, categoryId },
+        updates: { name: name.trim() || undefined, categoryId },
       });
       router.back();
     } catch (error) {
@@ -136,17 +122,6 @@ export default function EditAssetScreen() {
             helperText="Categories help organize and visualize your asset allocation"
           />
         )}
-
-        <FormField
-          type="tag"
-          label="Tags (Optional)"
-          tags={tags}
-          onTagsChange={setTags}
-          existingTags={existingTags}
-          tagInputRef={tagInputRef}
-          placeholder="Add tags..."
-          helperText="Tags help organize and filter your assets"
-        />
       </Form>
     </Page>
   );

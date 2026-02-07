@@ -1,8 +1,7 @@
-import { ReactNode, RefObject, useMemo } from 'react';
+import { ReactNode, useMemo } from 'react';
 import { TextInput, TextInputProps, KeyboardTypeOptions } from 'react-native';
 import { Text, YStack } from 'tamagui';
 import { Select, SelectOption } from './Select';
-import { TagInput, TagInputRef } from './TagInput';
 import { LabeledElement } from './LabeledElement';
 import { useColors } from '../lib/theme/store';
 import { CURRENCY_OPTIONS } from '../lib/utils/format';
@@ -33,14 +32,6 @@ interface CurrencyFormFieldProps extends BaseFormFieldProps {
   onChangeText: (text: string) => void;
 }
 
-interface TagFormFieldProps extends BaseFormFieldProps {
-  type: 'tag';
-  tags: string[];
-  onTagsChange: (tags: string[]) => void;
-  existingTags: string[];
-  tagInputRef?: RefObject<TagInputRef | null>;
-}
-
 interface CategoryFormFieldProps extends BaseFormFieldProps {
   type: 'category';
   value: string | null;
@@ -48,7 +39,7 @@ interface CategoryFormFieldProps extends BaseFormFieldProps {
   categories: Category[];
 }
 
-type FormFieldProps = TextFormFieldProps | CurrencyFormFieldProps | TagFormFieldProps | CategoryFormFieldProps;
+type FormFieldProps = TextFormFieldProps | CurrencyFormFieldProps | CategoryFormFieldProps;
 
 export function FormField(props: FormFieldProps) {
   const { label, labelRight, helperText, placeholder, children, type = 'text' } = props;
@@ -100,17 +91,6 @@ export function FormField(props: FormFieldProps) {
         placeholder={placeholder || 'Select category'}
         allowNull
         nullLabel="None"
-      />
-    );
-  } else if (type === 'tag') {
-    const { tags, onTagsChange, existingTags, tagInputRef } = props as TagFormFieldProps;
-    input = (
-      <TagInput
-        ref={tagInputRef}
-        tags={tags}
-        onChange={onTagsChange}
-        existingTags={existingTags}
-        placeholder={placeholder}
       />
     );
   } else {

@@ -43,7 +43,6 @@ export function useCreateAsset() {
       type,
       name,
       currency = 'EUR',
-      tags = [],
       categoryId = null,
     }: {
       portfolioId: string;
@@ -51,10 +50,9 @@ export function useCreateAsset() {
       type: AssetType;
       name?: string;
       currency?: string;
-      tags?: string[];
       categoryId?: string | null;
     }) => {
-      return dbCreateAsset(portfolioId, symbol, type, name, currency, tags, categoryId);
+      return dbCreateAsset(portfolioId, symbol, type, name, currency, categoryId);
     },
     onSuccess: (_, { portfolioId }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.assets.byPortfolio(portfolioId) });
@@ -72,7 +70,7 @@ export function useUpdateAsset() {
       updates,
     }: {
       id: string;
-      updates: { symbol?: string; name?: string; type?: AssetType; currency?: string; tags?: string[]; categoryId?: string | null };
+      updates: { symbol?: string; name?: string; type?: AssetType; currency?: string; categoryId?: string | null };
     }) => {
       return dbUpdateAsset(id, updates);
     },

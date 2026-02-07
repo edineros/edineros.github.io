@@ -68,6 +68,7 @@ if (!id) {
 │   ├── useAssets.ts      # Asset queries & mutations
 │   ├── useTransactions.ts # Transaction queries & mutations
 │   ├── useLots.ts        # Lot queries
+│   ├── useCategories.ts  # Category queries & mutations
 │   ├── usePrices.ts      # Price fetching hooks
 │   └── useExchangeRates.ts # Exchange rate hooks
 ├── db/
@@ -76,7 +77,8 @@ if (!id) {
 │   ├── webStorage.ts     # Web storage utilities
 │   ├── portfolios.ts     # Portfolio CRUD (raw DB functions)
 │   ├── assets.ts         # Asset CRUD (raw DB functions)
-│   └── transactions.ts   # Transaction CRUD (raw DB functions)
+│   ├── transactions.ts   # Transaction CRUD (raw DB functions)
+│   └── categories.ts     # Category CRUD (raw DB functions)
 ├── api/
 │   ├── prices.ts         # Price fetching & symbol search
 │   └── providers/
@@ -102,8 +104,7 @@ if (!id) {
 ├── MicroButton.tsx       # Small icon button
 ├── TextButton.tsx        # Text-only button
 ├── SegmentedControl.tsx  # Tab-like selector
-├── CurrencySelect.tsx    # Currency picker
-├── TagInput.tsx          # Tag input field
+├── Select.tsx            # Generic select/dropdown
 ├── InfoRow.tsx           # Key-value display row
 ├── InfoLabel.tsx         # Labeled info display
 ├── LabeledElement.tsx    # Generic labeled wrapper
@@ -122,7 +123,8 @@ if (!id) {
 # Data Model
 
 - **Portfolio**: Container with base currency (default: EUR)
-- **Asset**: Symbol with type (stock, etf, crypto, bond, commodity, forex, cash, other)
+- **Category**: User-defined grouping for assets (with color for visualization)
+- **Asset**: Symbol with type (stock, etf, crypto, bond, commodity, cash, real-estate, other) and optional category
 - **Transaction**: Buy/sell records (source of truth)
 - **Lot**: Computed from buy transactions, tracks remaining quantity
 
@@ -138,13 +140,22 @@ CREATE TABLE portfolios (
   updated_at INTEGER NOT NULL
 );
 
+CREATE TABLE categories (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE,
+  color TEXT NOT NULL,
+  sort_order INTEGER DEFAULT 0,
+  created_at INTEGER NOT NULL
+);
+
 CREATE TABLE assets (
   id TEXT PRIMARY KEY,
   portfolio_id TEXT NOT NULL REFERENCES portfolios(id) ON DELETE CASCADE,
   symbol TEXT NOT NULL,
   name TEXT,
-  type TEXT CHECK(type IN ('stock','etf','crypto','bond','commodity','forex','cash','other')) NOT NULL,
+  type TEXT NOT NULL,
   currency TEXT DEFAULT 'EUR',
+  category_id TEXT REFERENCES categories(id) ON DELETE SET NULL,
   created_at INTEGER NOT NULL
 );
 
@@ -197,6 +208,7 @@ Query cache persists to localStorage (web) or AsyncStorage (native) with 24-hour
 // Database queries
 usePortfolios(), usePortfolio(id)
 useAssets(portfolioId), useAsset(id)
+useCategories()
 useLots(assetId)
 
 // Price fetching (with TTL)

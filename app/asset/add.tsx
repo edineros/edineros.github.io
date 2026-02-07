@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { ScrollView, TouchableOpacity } from 'react-native';
 import { alert } from '../../lib/utils/confirm';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -10,9 +10,7 @@ import { Page } from '../../components/Page';
 import { Form } from '../../components/Form';
 import { FormField } from '../../components/FormField';
 import { LongButton } from '../../components/LongButton';
-import { TagInputRef } from '../../components/TagInput';
 import { searchSymbol } from '../../lib/api/prices';
-import { getAllAssetTags } from '../../lib/db/assets';
 import { getAssetTypeLabel, isSimpleAssetType } from '../../lib/constants/assetTypes';
 import { useColors } from '../../lib/theme/store';
 import type { AssetType } from '../../lib/types';
@@ -26,12 +24,9 @@ export default function AddAssetScreen() {
   const [symbol, setSymbol] = useState('');
   const [name, setName] = useState('');
   const [currency, setCurrency] = useState('EUR');
-  const [tags, setTags] = useState<string[]>([]);
-  const [existingTags, setExistingTags] = useState<string[]>([]);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [categoryId, setCategoryId] = useState<string | null>(null);
-  const tagInputRef = useRef<TagInputRef>(null);
 
   const { data: portfolio } = usePortfolio(portfolioId);
   const { data: categories = [] } = useCategories();
@@ -42,11 +37,6 @@ export default function AddAssetScreen() {
       setCurrency(portfolio.currency);
     }
   }, [portfolio]);
-
-  useEffect(() => {
-    // Load existing tags for autocomplete
-    getAllAssetTags().then(setExistingTags);
-  }, []);
 
   useEffect(() => {
     // Skip symbol search for simple asset types and bitcoin
@@ -98,9 +88,6 @@ export default function AddAssetScreen() {
     }
 
     try {
-      // Commit any pending tag in the input field so that it's not lost if we forgot to explicity save it
-      const finalTags = tagInputRef.current?.commitPending() ?? tags;
-
       // For simple assets, use the currency as the symbol (price is always 1 in that currency)
       // For bitcoin, always use 'BTC' as the symbol
       let assetSymbol: string;
@@ -118,7 +105,6 @@ export default function AddAssetScreen() {
         type,
         name: name.trim() || undefined,
         currency,
-        tags: finalTags,
         categoryId,
       });
       router.replace(`/asset/${asset.id}?portfolioId=${portfolioId}`);
@@ -230,17 +216,6 @@ export default function AddAssetScreen() {
             helperText="Categories help organize and visualize your asset allocation"
           />
         )}
-
-        <FormField
-          type="tag"
-          label="Tags (Optional)"
-          tags={tags}
-          onTagsChange={setTags}
-          existingTags={existingTags}
-          tagInputRef={tagInputRef}
-          placeholder="Add tags..."
-          helperText="Tags help organize and filter your assets"
-        />
       </Form>
     </Page>
   );

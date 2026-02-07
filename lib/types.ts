@@ -32,7 +32,6 @@ export interface Asset {
   name: string | null;
   type: AssetType;
   currency: string;
-  tags: string[];
   categoryId: string | null;
   createdAt: Date;
 }
@@ -46,7 +45,6 @@ export interface Transaction {
   fee: number;
   date: Date;
   notes: string | null;
-  tags: string[];
   lotId: string | null;
   createdAt: Date;
 }
@@ -60,7 +58,6 @@ export interface Lot {
   purchasePrice: number;
   purchaseDate: Date;
   notes: string | null;
-  tags: string[];
 }
 
 export interface AssetWithStats extends Asset {

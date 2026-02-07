@@ -1,5 +1,4 @@
 import { generateUUID } from '../utils/uuid';
-import type { SQLiteDatabase } from 'expo-sqlite';
 import { getDatabase, isWeb } from './schema';
 import { webDb } from './webDatabase';
 import type { Transaction, TransactionType, Lot } from '../types';
@@ -17,21 +16,7 @@ interface TransactionRow {
   created_at: number;
 }
 
-interface TagRow {
-  transaction_id: string;
-  tag: string;
-}
-
-async function getTagsForTransaction(db: SQLiteDatabase, transactionId: string): Promise<string[]> {
-  const rows = await db.getAllAsync<TagRow>(
-    'SELECT tag FROM transaction_tags WHERE transaction_id = ?',
-    [transactionId]
-  );
-  return rows.map((r: TagRow) => r.tag);
-}
-
-async function rowToTransaction(db: SQLiteDatabase, row: TransactionRow): Promise<Transaction> {
-  const tags = await getTagsForTransaction(db, row.id);
+function rowToTransaction(row: TransactionRow): Transaction {
   return {
     id: row.id,
     assetId: row.asset_id,
@@ -41,23 +26,6 @@ async function rowToTransaction(db: SQLiteDatabase, row: TransactionRow): Promis
     fee: row.fee,
     date: new Date(row.date),
     notes: row.notes,
-    tags,
-    lotId: row.lot_id,
-    createdAt: new Date(row.created_at),
-  };
-}
-
-function rowToTransactionSync(row: TransactionRow, tags: string[]): Transaction {
-  return {
-    id: row.id,
-    assetId: row.asset_id,
-    type: row.type,
-    quantity: row.quantity,
-    pricePerUnit: row.price_per_unit,
-    fee: row.fee,
-    date: new Date(row.date),
-    notes: row.notes,
-    tags,
     lotId: row.lot_id,
     createdAt: new Date(row.created_at),
   };
@@ -66,7 +34,7 @@ function rowToTransactionSync(row: TransactionRow, tags: string[]): Transaction 
 export async function getTransactionsByAssetId(assetId: string): Promise<Transaction[]> {
   if (isWeb()) {
     const rows = await webDb.getTransactionsByAssetId(assetId);
-    return rows.map((row: any) => rowToTransactionSync(row, row.tags || []));
+    return rows.map((row: any) => rowToTransaction(row));
   }
 
   const db = await getDatabase();
@@ -74,13 +42,13 @@ export async function getTransactionsByAssetId(assetId: string): Promise<Transac
     'SELECT * FROM transactions WHERE asset_id = ? ORDER BY date DESC, created_at DESC',
     [assetId]
   );
-  return Promise.all(rows.map((row) => rowToTransaction(db, row)));
+  return rows.map(rowToTransaction);
 }
 
 export async function getTransactionById(id: string): Promise<Transaction | null> {
   if (isWeb()) {
     const row = await webDb.getTransactionById(id);
-    return row ? rowToTransactionSync(row, row.tags || []) : null;
+    return row ? rowToTransaction(row) : null;
   }
 
   const db = await getDatabase();
@@ -88,7 +56,7 @@ export async function getTransactionById(id: string): Promise<Transaction | null
     'SELECT * FROM transactions WHERE id = ?',
     [id]
   );
-  return row ? rowToTransaction(db, row) : null;
+  return row ? rowToTransaction(row) : null;
 }
 
 export async function createTransaction(
@@ -100,13 +68,12 @@ export async function createTransaction(
   options?: {
     fee?: number;
     notes?: string;
-    tags?: string[];
     lotId?: string;
   }
 ): Promise<Transaction> {
   const id = generateUUID();
   const now = Date.now();
-  const { fee = 0, notes = null, tags = [], lotId = null } = options ?? {};
+  const { fee = 0, notes = null, lotId = null } = options ?? {};
 
   if (isWeb()) {
     await webDb.createTransaction({
@@ -120,7 +87,6 @@ export async function createTransaction(
       notes,
       lot_id: lotId,
       created_at: now,
-      tags,
     });
   } else {
     const db = await getDatabase();
@@ -129,14 +95,6 @@ export async function createTransaction(
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [id, assetId, type, quantity, pricePerUnit, fee, date.getTime(), notes, lotId, now]
     );
-
-    // Insert tags
-    for (const tag of tags) {
-      await db.runAsync(
-        'INSERT INTO transaction_tags (transaction_id, tag) VALUES (?, ?)',
-        [id, tag]
-      );
-    }
   }
 
   return {
@@ -148,7 +106,6 @@ export async function createTransaction(
     fee,
     date,
     notes,
-    tags,
     lotId,
     createdAt: new Date(now),
   };
@@ -163,12 +120,13 @@ export async function updateTransaction(
     fee?: number;
     date?: Date;
     notes?: string | null;
-    tags?: string[];
     lotId?: string | null;
   }
 ): Promise<Transaction | null> {
   const existing = await getTransactionById(id);
-  if (!existing) return null;
+  if (!existing) {
+    return null;
+  }
 
   const newType = updates.type ?? existing.type;
   const newQuantity = updates.quantity ?? existing.quantity;
@@ -177,7 +135,6 @@ export async function updateTransaction(
   const newDate = updates.date ?? existing.date;
   const newNotes = updates.notes !== undefined ? updates.notes : existing.notes;
   const newLotId = updates.lotId !== undefined ? updates.lotId : existing.lotId;
-  const newTags = updates.tags ?? existing.tags;
 
   if (isWeb()) {
     await webDb.updateTransaction(id, {
@@ -188,7 +145,6 @@ export async function updateTransaction(
       date: newDate.getTime(),
       notes: newNotes,
       lot_id: newLotId,
-      tags: newTags,
     });
   } else {
     const db = await getDatabase();
@@ -196,17 +152,6 @@ export async function updateTransaction(
       `UPDATE transactions SET type = ?, quantity = ?, price_per_unit = ?, fee = ?, date = ?, notes = ?, lot_id = ? WHERE id = ?`,
       [newType, newQuantity, newPricePerUnit, newFee, newDate.getTime(), newNotes, newLotId, id]
     );
-
-    // Update tags if provided
-    if (updates.tags !== undefined) {
-      await db.runAsync('DELETE FROM transaction_tags WHERE transaction_id = ?', [id]);
-      for (const tag of updates.tags) {
-        await db.runAsync(
-          'INSERT INTO transaction_tags (transaction_id, tag) VALUES (?, ?)',
-          [id, tag]
-        );
-      }
-    }
   }
 
   return {
@@ -217,7 +162,6 @@ export async function updateTransaction(
     fee: newFee,
     date: newDate,
     notes: newNotes,
-    tags: newTags,
     lotId: newLotId,
   };
 }
@@ -257,7 +201,6 @@ export async function getLotsForAsset(assetId: string): Promise<Lot[]> {
           purchasePrice: buy.price_per_unit,
           purchaseDate: new Date(buy.date),
           notes: buy.notes,
-          tags: buy.tags || [],
         });
       }
     }
@@ -281,8 +224,6 @@ export async function getLotsForAsset(assetId: string): Promise<Lot[]> {
   const lots: Lot[] = [];
 
   for (const buy of buyTransactions) {
-    const tags = await getTagsForTransaction(db, buy.id);
-
     // Calculate how much has been sold from this lot
     const soldFromLot = sellTransactions
       .filter((sell) => sell.lot_id === buy.id)
@@ -300,23 +241,9 @@ export async function getLotsForAsset(assetId: string): Promise<Lot[]> {
         purchasePrice: buy.price_per_unit,
         purchaseDate: new Date(buy.date),
         notes: buy.notes,
-        tags,
       });
     }
   }
 
   return lots;
-}
-
-// Get all unique tags
-export async function getAllTags(): Promise<string[]> {
-  if (isWeb()) {
-    return webDb.getAllTags();
-  }
-
-  const db = await getDatabase();
-  const rows = await db.getAllAsync<{ tag: string }>(
-    'SELECT DISTINCT tag FROM transaction_tags ORDER BY tag'
-  );
-  return rows.map((r) => r.tag);
 }

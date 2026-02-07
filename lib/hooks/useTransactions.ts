@@ -45,7 +45,6 @@ export function useCreateTransaction() {
       options?: {
         fee?: number;
         notes?: string;
-        tags?: string[];
         lotId?: string;
       };
     }) => {
@@ -76,7 +75,6 @@ export function useUpdateTransaction() {
         fee?: number;
         date?: Date;
         notes?: string | null;
-        tags?: string[];
         lotId?: string | null;
       };
     }) => {
