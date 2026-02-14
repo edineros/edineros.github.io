@@ -317,8 +317,8 @@ export default function AssetDetailScreen() {
     >
       {/* Asset Summary Card */}
       <Card elevate bordered marginHorizontal={CONTENT_HORIZONTAL_PADDING} marginVertical={8} padding={16} backgroundColor="$background">
-        <XStack justifyContent="space-between" alignItems="flex-start">
-          <YStack>
+        <XStack justifyContent="space-between" alignItems="flex-start" gap="$3">
+          <YStack flex={1} flexShrink={1}>
             <XStack alignItems="center" gap="$2">
               <Text fontSize="$7" fontWeight="700" color="$color">
                 {asset.symbol}
@@ -335,13 +335,13 @@ export default function AssetDetailScreen() {
               </Text>
             </XStack>
             {asset.name && (
-              <Text fontSize="$3" color="$gray10">
+              <Text fontSize="$3" color="$gray10" numberOfLines={2}>
                 {asset.name}
               </Text>
             )}
           </YStack>
           {!isSimple && (
-            <YStack alignItems="flex-end">
+            <YStack alignItems="flex-end" flexShrink={0}>
               {currentPrice !== null ? (
                 <>
                   <Text fontSize="$6" fontWeight="600" color="$color">
