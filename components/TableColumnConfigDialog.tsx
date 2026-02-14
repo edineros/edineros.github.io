@@ -1,5 +1,5 @@
 import { Modal, TouchableOpacity, TouchableWithoutFeedback, View, Switch, StyleSheet } from 'react-native';
-import { YStack, XStack, Text } from 'tamagui';
+import { XStack, Text } from 'tamagui';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../lib/theme/store';
 import { useAppStore } from '../store';
@@ -11,7 +11,7 @@ interface TableColumnConfigDialogProps {
 
 export function TableColumnConfigDialog({ visible, onClose }: TableColumnConfigDialogProps) {
   const colors = useColors();
-  const { tableConfig, toggleColumnVisibility, setCompactMode } = useAppStore();
+  const { tableConfig, toggleColumnVisibility } = useAppStore();
 
   const nameColumn = tableConfig.columns.find((column) => column.id === 'name');
   const editableColumns = tableConfig.columns.filter((column) => column.canHide && column.id !== 'name');
@@ -37,36 +37,8 @@ export function TableColumnConfigDialog({ visible, onClose }: TableColumnConfigD
                 </TouchableOpacity>
               </XStack>
 
-              {/* View mode toggle */}
-              <XStack
-                justifyContent="space-between"
-                alignItems="center"
-                paddingVertical={12}
-                borderBottomWidth={1}
-                borderBottomColor={colors.border}
-              >
-                <YStack>
-                  <Text fontSize={16} color={colors.text}>
-                    Table view
-                  </Text>
-                  <Text fontSize={13} color={colors.textSecondary}>
-                    Show assets in a compact table
-                  </Text>
-                </YStack>
-                <Switch
-                  value={tableConfig.compact}
-                  onValueChange={(value) => {
-                    setCompactMode(value);
-                    if (!value) {
-                      onClose();
-                    }
-                  }}
-                  trackColor={{ false: colors.border, true: colors.accent }}
-                />
-              </XStack>
-
-              {/* Show name toggle - only shown in table view */}
-              {tableConfig.compact && nameColumn && (
+              {/* Show name toggle */}
+              {nameColumn && (
                 <XStack
                   justifyContent="space-between"
                   alignItems="center"
@@ -74,11 +46,9 @@ export function TableColumnConfigDialog({ visible, onClose }: TableColumnConfigD
                   borderBottomWidth={1}
                   borderBottomColor={colors.border}
                 >
-                  <YStack>
-                    <Text fontSize={16} color={colors.text}>
-                      Show name
-                    </Text>
-                  </YStack>
+                  <Text fontSize={16} color={colors.text}>
+                    Show name
+                  </Text>
                   <Switch
                     value={nameColumn.visible}
                     onValueChange={() => toggleColumnVisibility('name')}
@@ -87,42 +57,38 @@ export function TableColumnConfigDialog({ visible, onClose }: TableColumnConfigD
                 </XStack>
               )}
 
-              {/* Column visibility - only shown in table view */}
-              {tableConfig.compact && (
-                <>
-                  <Text
-                    fontSize={13}
-                    fontWeight="600"
-                    color={colors.textSecondary}
-                    textTransform="uppercase"
-                    marginTop={16}
-                    marginBottom={8}
-                  >
-                    Visible Columns
-                  </Text>
+              {/* Column visibility */}
+              <Text
+                fontSize={13}
+                fontWeight="600"
+                color={colors.textSecondary}
+                textTransform="uppercase"
+                marginTop={16}
+                marginBottom={8}
+              >
+                Visible Columns
+              </Text>
 
-                  {editableColumns.map(column => (
-                    <XStack
-                      key={column.id}
-                      justifyContent="space-between"
-                      alignItems="center"
-                      paddingVertical={12}
-                      borderBottomWidth={1}
-                      borderBottomColor={colors.border}
-                      opacity={column.canHide ? 1 : 0.5}
-                    >
-                      <Text fontSize={16} color={colors.text}>
-                        {column.label}
-                      </Text>
-                      <Switch
-                        value={column.visible}
-                        onValueChange={() => toggleColumnVisibility(column.id)}
-                        trackColor={{ false: colors.border, true: colors.accent }}
-                      />
-                    </XStack>
-                  ))}
-                </>
-              )}
+              {editableColumns.map(column => (
+                <XStack
+                  key={column.id}
+                  justifyContent="space-between"
+                  alignItems="center"
+                  paddingVertical={12}
+                  borderBottomWidth={1}
+                  borderBottomColor={colors.border}
+                  opacity={column.canHide ? 1 : 0.5}
+                >
+                  <Text fontSize={16} color={colors.text}>
+                    {column.label}
+                  </Text>
+                  <Switch
+                    value={column.visible}
+                    onValueChange={() => toggleColumnVisibility(column.id)}
+                    trackColor={{ false: colors.border, true: colors.accent }}
+                  />
+                </XStack>
+              ))}
             </View>
           </TouchableWithoutFeedback>
         </View>

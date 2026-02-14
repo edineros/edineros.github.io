@@ -1,5 +1,5 @@
 import { useCallback, useState, useMemo, useEffect } from 'react';
-import { FlatList, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
+import { ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, useFocusEffect, useRouter } from 'expo-router';
 import { YStack, XStack, Text, Spinner } from 'tamagui';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,7 +11,6 @@ import { usePortfolioStats } from '../../lib/hooks/stats/usePortfolioStats';
 import { queryKeys } from '../../lib/hooks/config/queryKeys';
 import { Page } from '../../components/Page';
 import { HeaderIconButton } from '../../components/HeaderButtons';
-import { QuantityAtPrice } from '../../components/QuantityAtPrice';
 import { AnimatedEllipsis } from '../../components/AnimatedEllipsis';
 import { AddAssetMenu } from '../../components/AddAssetMenu';
 import { SegmentedControl } from '../../components/SegmentedControl';
@@ -25,10 +24,10 @@ import {
   AllocationMode,
 } from '../../components/AssetAllocationChart';
 import { useCategories } from '../../lib/hooks/useCategories';
-import { formatCurrency, formatPercent, formatQuantity, getGainColor } from '../../lib/utils/format';
+import { formatCurrency, formatPercent, getGainColor } from '../../lib/utils/format';
 import { CONTENT_HORIZONTAL_PADDING } from '../../lib/constants/layout';
 import { VALUE_MASK } from '../../lib/constants/ui';
-import { isSimpleAssetType, getAssetTypeSortOrder } from '../../lib/constants/assetTypes';
+import { getAssetTypeSortOrder, isSimpleAssetType } from '../../lib/constants/assetTypes';
 import { useColors } from '../../lib/theme/store';
 import type { Asset } from '../../lib/types';
 
@@ -40,9 +39,8 @@ export default function PortfolioDetailScreen() {
   const [allocationMode, setAllocationMode] = useState<AllocationMode>('type');
   const [showTableConfig, setShowTableConfig] = useState(false);
   const colors = useColors();
-  const { setCurrentPortfolio, loadTableConfig, tableConfig } = useAppStore();
+  const { setCurrentPortfolio, loadTableConfig } = useAppStore();
   const updatePortfolioMutation = useUpdatePortfolio();
-  const isCompactView = tableConfig.compact;
 
   // Load table config on mount
   useEffect(() => {
@@ -160,92 +158,6 @@ export default function PortfolioDetailScreen() {
       hasAnyCategories: categoryResult.hasAnyCategories,
     };
   }, [rawAssets, assetStats, categories]);
-
-  const renderAssetCard = ({ item }: { item: Asset }) => {
-    const itemStats = assetStats.get(item.id);
-    const gainColor = itemStats ? getGainColor(itemStats.unrealizedGain) : 'neutral';
-    const isSimple = isSimpleAssetType(item.type);
-
-    return (
-      <TouchableOpacity
-        activeOpacity={0.7}
-        onPress={() => router.push(`/asset/${item.id}?portfolioId=${item.portfolioId}`)}
-        style={{
-          marginHorizontal: CONTENT_HORIZONTAL_PADDING,
-          marginVertical: 4,
-          padding: CONTENT_HORIZONTAL_PADDING,
-          backgroundColor: colors.card,
-          borderRadius: 12,
-          borderWidth: 1,
-          borderColor: colors.cardBorder,
-        }}
-      >
-        <XStack justifyContent="space-between" alignItems="flex-start">
-          <YStack flex={1} gap={2}>
-            <XStack alignItems="center" gap={8}>
-              <Text color={colors.text} fontSize={17} fontWeight="600">
-                {isSimple ? item.name : item.symbol}
-              </Text>
-              <Text
-                fontSize={11}
-                fontWeight="600"
-                color={colors.textSecondary}
-                backgroundColor={colors.border}
-                paddingHorizontal={6}
-                paddingVertical={2}
-                borderRadius={4}
-                textTransform="uppercase"
-              >
-                {item.type}
-              </Text>
-            </XStack>
-            {item.name && !isSimple && (
-              <Text color={colors.textTertiary} fontSize={13} numberOfLines={1}>
-                {item.name}
-              </Text>
-            )}
-            {itemStats && (
-              <XStack marginTop={2}>
-                {isSimple ? (
-                  <Text color={colors.textMuted} fontSize={12}>
-                    {isMasked ? VALUE_MASK : `${formatQuantity(itemStats.totalQuantity)} ${itemStats.totalQuantity === 1 ? 'item' : 'items'}`}
-                  </Text>
-                ) : (
-                  <QuantityAtPrice
-                    quantity={itemStats.totalQuantity}
-                    price={itemStats.averageCost}
-                    currency={item.currency}
-                    fontSize={12}
-                    masked={isMasked}
-                  />
-                )}
-              </XStack>
-            )}
-          </YStack>
-          <YStack alignItems="flex-end" gap={2}>
-            {itemStats?.currentValue !== null && itemStats?.currentValue !== undefined ? (
-              <>
-                <Text color={colors.text} fontSize={17} fontWeight="600">
-                  {isMasked ? VALUE_MASK : formatCurrency(itemStats.currentValue, item.currency)}
-                </Text>
-                {!isSimple && (
-                  <Text
-                    fontSize={13}
-                    fontWeight="600"
-                    color={gainColor === 'gain' ? colors.gain : gainColor === 'loss' ? colors.loss : colors.textSecondary}
-                  >
-                    {isMasked ? formatPercent(itemStats.unrealizedGainPercent) : `${formatCurrency(itemStats.unrealizedGain, item.currency, { showSign: true })} (${formatPercent(itemStats.unrealizedGainPercent)})`}
-                  </Text>
-                )}
-              </>
-            ) : (
-              <Spinner size="small" color={colors.textSecondary} />
-            )}
-          </YStack>
-        </XStack>
-      </TouchableOpacity>
-    );
-  };
 
   // Show loading state (or while redirecting to valid portfolio)
   if (portfolioId ? (!portfolio) : (portfolios.length === 0)) {
@@ -373,83 +285,28 @@ export default function PortfolioDetailScreen() {
         </XStack>
       </XStack>
 
-      {isCompactView ? (
-        // Table view (compact)
-        <ScrollView
-          contentContainerStyle={{ paddingBottom: 100, flexGrow: 1 }}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={colors.text}
-            />
-          }
-        >
-          {portfolioAssets.length > 0 ? (
-            <>
-              <YStack paddingHorizontal={CONTENT_HORIZONTAL_PADDING}>
-                <AssetsTable
-                  assets={portfolioAssets}
-                  assetStats={assetStats}
-                  masked={isMasked}
-                />
-              </YStack>
-
-              {portfolioAssets.length >= 2 && (
-                <YStack paddingHorizontal={CONTENT_HORIZONTAL_PADDING} paddingTop={24} gap={12}>
-                  <XStack justifyContent="space-between" alignItems="center">
-                    <Text color={colors.textSecondary} fontSize={13} fontWeight="600" textTransform="uppercase">
-                      Allocation
-                    </Text>
-                    {allocationData.hasAnyCategories && (
-                      <SegmentedControl
-                        options={[
-                          { label: 'Type', value: 'type' },
-                          { label: 'Category', value: 'category' },
-                        ]}
-                        value={allocationMode}
-                        onChange={setAllocationMode}
-                      />
-                    )}
-                  </XStack>
-                  <AssetAllocationChart
-                    allocations={allocationData.allocations}
-                    categoryAllocations={allocationData.categoryAllocations}
-                    currency={displayCurrency}
-                    mode={allocationMode}
-                    masked={isMasked}
-                  />
-                </YStack>
-              )}
-            </>
-          ) : (
-            <YStack flex={1} padding={32} alignItems="center" justifyContent="center">
-              <Text color={colors.text} fontSize={18} fontWeight="600" textAlign="center">
-                No assets yet
-              </Text>
-              <Text color={colors.textSecondary} fontSize={15} textAlign="center" marginTop={8}>
-                {portfolioId ? 'Add your first asset to start tracking' : 'Add assets to your portfolios to see them here'}
-              </Text>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 100, flexGrow: 1 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.text}
+          />
+        }
+      >
+        {portfolioAssets.length > 0 ? (
+          <>
+            <YStack paddingHorizontal={CONTENT_HORIZONTAL_PADDING}>
+              <AssetsTable
+                assets={portfolioAssets}
+                assetStats={assetStats}
+                masked={isMasked}
+              />
             </YStack>
-          )}
-        </ScrollView>
-      ) : (
-        // Card view (default)
-        <FlatList
-          data={portfolioAssets}
-          keyExtractor={(item) => item.id}
-          renderItem={renderAssetCard}
-          contentContainerStyle={{ paddingBottom: 100, flexGrow: 1 }}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={colors.text}
-            />
-          }
-          ListFooterComponent={
-            portfolioAssets.length >= 2 ? (
-              <YStack paddingHorizontal={CONTENT_HORIZONTAL_PADDING} paddingTop={16} gap={12}>
+
+            {portfolioAssets.length >= 2 && (
+              <YStack paddingHorizontal={CONTENT_HORIZONTAL_PADDING} paddingTop={24} gap={12}>
                 <XStack justifyContent="space-between" alignItems="center">
                   <Text color={colors.textSecondary} fontSize={13} fontWeight="600" textTransform="uppercase">
                     Allocation
@@ -473,20 +330,19 @@ export default function PortfolioDetailScreen() {
                   masked={isMasked}
                 />
               </YStack>
-            ) : null
-          }
-          ListEmptyComponent={
-            <YStack flex={1} padding={32} alignItems="center" justifyContent="center">
-              <Text color={colors.text} fontSize={18} fontWeight="600" textAlign="center">
-                No assets yet
-              </Text>
-              <Text color={colors.textSecondary} fontSize={15} textAlign="center" marginTop={8}>
-                {portfolioId ? 'Add your first asset to start tracking' : 'Add assets to your portfolios to see them here'}
-              </Text>
-            </YStack>
-          }
-        />
-      )}
+            )}
+          </>
+        ) : (
+          <YStack flex={1} padding={32} alignItems="center" justifyContent="center">
+            <Text color={colors.text} fontSize={18} fontWeight="600" textAlign="center">
+              No assets yet
+            </Text>
+            <Text color={colors.textSecondary} fontSize={15} textAlign="center" marginTop={8}>
+              {portfolioId ? 'Add your first asset to start tracking' : 'Add assets to your portfolios to see them here'}
+            </Text>
+          </YStack>
+        )}
+      </ScrollView>
 
       <TableColumnConfigDialog
         visible={showTableConfig}

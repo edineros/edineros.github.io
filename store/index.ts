@@ -26,12 +26,10 @@ export const DEFAULT_TABLE_COLUMNS: TableColumnConfig[] = [
 
 export interface TableConfig {
   columns: TableColumnConfig[];
-  compact: boolean;
 }
 
 const DEFAULT_TABLE_CONFIG: TableConfig = {
   columns: DEFAULT_TABLE_COLUMNS,
-  compact: false,
 };
 
 // Simple storage abstraction
@@ -84,7 +82,6 @@ const tableConfigStorage = {
         const parsed = JSON.parse(stored) as Partial<TableConfig>;
         // Merge with defaults to handle new columns added in updates
         return {
-          compact: parsed.compact ?? DEFAULT_TABLE_CONFIG.compact,
           columns: DEFAULT_TABLE_COLUMNS.map(defaultCol => {
             const savedCol = parsed.columns?.find(c => c.id === defaultCol.id);
             return savedCol ? { ...defaultCol, visible: savedCol.visible } : defaultCol;
@@ -120,7 +117,6 @@ interface UIState {
   loadTableConfig: () => Promise<void>;
   setTableConfig: (config: TableConfig) => void;
   toggleColumnVisibility: (columnId: TableColumnId) => void;
-  setCompactMode: (compact: boolean) => void;
 }
 
 export const useAppStore = create<UIState>((set, get) => ({
@@ -161,13 +157,6 @@ export const useAppStore = create<UIState>((set, get) => ({
         : col
     );
     const newConfig = { ...tableConfig, columns: newColumns };
-    set({ tableConfig: newConfig });
-    tableConfigStorage.set(newConfig);
-  },
-
-  setCompactMode: (compact: boolean) => {
-    const { tableConfig } = get();
-    const newConfig = { ...tableConfig, compact };
     set({ tableConfig: newConfig });
     tableConfigStorage.set(newConfig);
   },
