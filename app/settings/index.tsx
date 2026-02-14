@@ -14,7 +14,8 @@ import { CONTENT_HORIZONTAL_PADDING } from '../../lib/constants/layout';
 import { useThemeStore, useColors, type ThemeMode } from '../../lib/theme/store';
 import { alertImportSuccess } from '../../lib/utils/backup';
 
-const VERSION = '1.0.5';
+const VERSION = '1.0.5.2';
+const CACHE_KEY = 'portfolio-query-cache';
 
 const THEME_OPTIONS: { value: ThemeMode; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { value: 'light', label: 'Light', icon: 'sunny-outline' },
@@ -48,8 +49,19 @@ export default function SettingsScreen() {
     try {
       const importResult = await importFromJson(content);
 
-      // Clear all cached data and refetch
+      // Clear all cached data (in-memory)
       queryClient.clear();
+      // Also clear persisted cache from storage to prevent stale data restoration
+      if (Platform.OS === 'web') {
+        window.localStorage.removeItem(CACHE_KEY);
+      } else {
+        try {
+          const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+          await AsyncStorage.removeItem(CACHE_KEY);
+        } catch {
+          // AsyncStorage not available, ignore
+        }
+      }
 
       await alertImportSuccess(importResult);
       router.replace('/');

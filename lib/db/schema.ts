@@ -43,6 +43,8 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
 
 async function initializeDatabase(database: SQLite.SQLiteDatabase) {
   await database.execAsync('PRAGMA journal_mode = WAL;');
+  // Enable foreign key constraints (required for CASCADE delete to work)
+  await database.execAsync('PRAGMA foreign_keys = ON;');
 
   // Create schema version table if it doesn't exist
   await database.execAsync(`

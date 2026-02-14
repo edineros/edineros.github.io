@@ -85,11 +85,21 @@ export function QueryProvider({ children }: QueryProviderProps) {
       persistOptions={{
         persister,
         maxAge: 24 * 60 * 60 * 1000, // 24 hours max cache age
-        buster: '2', // Increment to invalidate all cached data
+        buster: '3', // Increment to invalidate all cached data
         dehydrateOptions: {
-          // Don't persist queries with null/undefined data (failed fetches)
+          // Don't persist database queries (portfolios, assets, etc.) - only persist prices/exchange rates
+          // This prevents stale data issues after import
           shouldDehydrateQuery: (query) => {
-            return query.state.status === 'success' && query.state.data != null;
+            if (query.state.status !== 'success' || query.state.data == null) {
+              return false;
+            }
+            // Only persist price and exchange rate queries
+            const key = query.queryKey;
+            if (Array.isArray(key) && key.length > 0) {
+              const firstKey = key[0];
+              return firstKey === 'prices' || firstKey === 'exchangeRates';
+            }
+            return false;
           },
         },
       }}

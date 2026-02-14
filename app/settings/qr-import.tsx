@@ -12,6 +12,8 @@ import { importFromJson } from '../../lib/utils/export';
 import { alert, confirm } from '../../lib/utils/confirm';
 import { alertImportSuccess } from '../../lib/utils/backup';
 
+const CACHE_KEY = 'portfolio-query-cache';
+
 // Native camera imports (lazy loaded)
 let CameraView: any;
 let useCameraPermissions: any;
@@ -236,7 +238,17 @@ export default function QRImportScreen() {
     setIsImporting(true);
     try {
       const result = await importFromJson(jsonData);
-      // Clear all cached data
+      // Clear cached data (both persisted and in-memory)
+      if (Platform.OS === 'web') {
+        window.localStorage.removeItem(CACHE_KEY);
+      } else {
+        try {
+          const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+          await AsyncStorage.removeItem(CACHE_KEY);
+        } catch {
+          // AsyncStorage not available, ignore
+        }
+      }
       queryClient.clear();
       await alertImportSuccess(result);
 

@@ -120,6 +120,15 @@ export async function importFromJson(jsonString: string): Promise<ImportResult> 
     await deletePortfolio(portfolio.id);
   }
 
+  // Safety: delete any orphaned assets (in case CASCADE didn't work on older app versions)
+  const { getAllAssets, deleteAsset } = await import('../db/assets');
+  const remainingAssets = await getAllAssets();
+  if (remainingAssets.length > 0) {
+    for (const asset of remainingAssets) {
+      await deleteAsset(asset.id);
+    }
+  }
+
   // Delete existing categories
   const existingCategories = await getExistingCategories();
   for (const category of existingCategories) {
