@@ -13,6 +13,7 @@ import { useAsset } from '../../lib/hooks/useAssets';
 import { useLots } from '../../lib/hooks/useLots';
 import { useTransactions, useDeleteTransaction } from '../../lib/hooks/useTransactions';
 import { usePrice } from '../../lib/hooks/usePrices';
+import { useExchangeRate } from '../../lib/hooks/useExchangeRates';
 import { queryKeys } from '../../lib/hooks/config/queryKeys';
 import {
   formatCurrency,
@@ -49,7 +50,25 @@ export default function AssetDetailScreen() {
     asset?.currency
   );
 
-  const currentPrice = isSimple ? null : (priceData?.price ?? null);
+  // Convert price from API currency to asset currency if they differ
+  const needsPriceConversion = !isSimple && priceData && priceData.currency !== asset?.currency;
+  const { data: priceToAssetRate } = useExchangeRate(
+    needsPriceConversion ? priceData?.currency : undefined,
+    needsPriceConversion ? asset?.currency : undefined
+  );
+
+  // Apply price conversion if needed
+  // If conversion is needed but rate not available, don't show wrong value
+  const rawPrice = isSimple ? null : (priceData?.price ?? null);
+  let currentPrice: number | null = null;
+  if (rawPrice !== null) {
+    if (needsPriceConversion) {
+      // Only show price if we have the conversion rate
+      currentPrice = priceToAssetRate ? rawPrice * priceToAssetRate : null;
+    } else {
+      currentPrice = rawPrice;
+    }
+  }
   const priceLastUpdated = priceData ? new Date() : null;
 
   // Don't wait for price to load - page shows content immediately, price updates when available

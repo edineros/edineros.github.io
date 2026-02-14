@@ -4,7 +4,7 @@ import { usePortfolio, usePortfolios } from '../usePortfolios';
 import { useAssets } from '../useAssets';
 import { queryKeys } from '../config/queryKeys';
 import { PRICE_STALE_TIME, EXCHANGE_RATE_STALE_TIME } from '../config/queryClient';
-import { isSimpleAssetType } from '../../constants/assetTypes';
+import { isSimpleAssetType, CRYPTO_BASE_CURRENCY } from '../../constants/assetTypes';
 import { getLotsForAsset } from '../../db/transactions';
 import { fetchYahooPrice } from '../../api/providers/yahoo';
 import { fetchKrakenPrices } from '../../api/providers/kraken';
@@ -16,16 +16,25 @@ interface AssetStatsData {
   lots: Lot[];
   price: number | null;
   priceCurrency: string | null;
-  exchangeRate: number | null;
+  priceToAssetRate: number | null;
+  assetToPortfolioRate: number | null;
 }
 
 const EMPTY_STATS = { assetStats: new Map<string, AssetWithStats>(), portfolioStats: null, pendingPriceCount: 0 };
 
+interface SingleAssetStatsResult {
+  stats: AssetWithStats;
+  /** Value in portfolio currency for aggregation */
+  valueInPortfolioCurrency: number | null;
+  /** Cost in portfolio currency for aggregation */
+  costInPortfolioCurrency: number | null;
+}
+
 function calculateSingleAssetStats(
   data: AssetStatsData,
   portfolioCurrency: string
-): AssetWithStats {
-  const { asset, lots, price, priceCurrency, exchangeRate } = data;
+): SingleAssetStatsResult {
+  const { asset, lots, price, priceCurrency, priceToAssetRate, assetToPortfolioRate } = data;
   const isSimple = isSimpleAssetType(asset.type);
 
   const totalQuantity = lots.reduce((sum, lot) => sum + lot.remainingQuantity, 0);
@@ -39,38 +48,47 @@ function calculateSingleAssetStats(
   let currentValue: number | null = null;
   let unrealizedGain: number | null = null;
   let unrealizedGainPercent: number | null = null;
+  let valueInPortfolioCurrency: number | null = null;
+  let costInPortfolioCurrency: number | null = null;
 
   if (currentPrice !== null) {
-    // Convert price to asset currency if needed (for market assets)
-    if (!isSimple && priceCurrency && priceCurrency !== asset.currency) {
-      // This would need price-to-asset rate, but we simplify by assuming provider returns in correct currency
+    // Convert price from API currency to asset currency if needed
+    if (!isSimple && priceCurrency && priceCurrency !== asset.currency && priceToAssetRate !== null) {
+      currentPrice = currentPrice * priceToAssetRate;
     }
 
+    // currentValue stays in asset currency
     currentValue = totalQuantity * currentPrice;
 
-    // Convert to portfolio currency
+    // Calculate gains in asset currency
+    unrealizedGain = currentValue - totalCost;
+    unrealizedGainPercent = totalCost > 0 ? (unrealizedGain / totalCost) * 100 : 0;
+
+    // Calculate portfolio currency values for aggregation
     const needsConversion = asset.currency !== portfolioCurrency;
-    if (needsConversion && exchangeRate !== null) {
-      currentValue = currentValue * exchangeRate;
-      const costConverted = totalCost * exchangeRate;
-      unrealizedGain = currentValue - costConverted;
-      unrealizedGainPercent = costConverted > 0 ? (unrealizedGain / costConverted) * 100 : 0;
+    if (needsConversion && assetToPortfolioRate !== null) {
+      valueInPortfolioCurrency = currentValue * assetToPortfolioRate;
+      costInPortfolioCurrency = totalCost * assetToPortfolioRate;
     } else if (!needsConversion) {
-      unrealizedGain = currentValue - totalCost;
-      unrealizedGainPercent = totalCost > 0 ? (unrealizedGain / totalCost) * 100 : 0;
+      valueInPortfolioCurrency = currentValue;
+      costInPortfolioCurrency = totalCost;
     }
   }
 
   return {
-    ...asset,
-    totalQuantity,
-    averageCost,
-    totalCost,
-    currentPrice,
-    currentValue,
-    unrealizedGain,
-    unrealizedGainPercent,
-    lots,
+    stats: {
+      ...asset,
+      totalQuantity,
+      averageCost,
+      totalCost,
+      currentPrice,
+      currentValue,
+      unrealizedGain,
+      unrealizedGainPercent,
+      lots,
+    },
+    valueInPortfolioCurrency,
+    costInPortfolioCurrency,
   };
 }
 
@@ -118,15 +136,15 @@ export function usePortfolioStats(
   const cryptoAssets = marketAssets.filter((a) => a.type === 'crypto' || a.type === 'bitcoin');
   const otherMarketAssets = marketAssets.filter((a) => a.type !== 'crypto' && a.type !== 'bitcoin');
 
-  // Batch fetch crypto prices (deduplicated and sorted for consistent query key)
+  // Batch fetch crypto prices (always in USD, conversion handled by exchange rates)
   const cryptoSymbols = [...new Set(cryptoAssets.map((a) => a.symbol))].sort();
   const { data: cryptoPrices, isLoading: cryptoPricesLoading } = useQuery({
-    queryKey: ['prices', 'crypto', 'batch', currency, ...cryptoSymbols],
+    queryKey: ['prices', 'crypto', 'batch', ...cryptoSymbols],
     queryFn: async () => {
       if (cryptoSymbols.length === 0) {
         return {} as Record<string, { price: number; currency: string }>;
       }
-      return fetchKrakenPrices(cryptoSymbols, currency);
+      return fetchKrakenPrices(cryptoSymbols);
     },
     enabled: cryptoSymbols.length > 0,
     staleTime: PRICE_STALE_TIME.crypto,
@@ -144,14 +162,25 @@ export function usePortfolioStats(
     })),
   });
 
-  // Fetch exchange rates for assets not in portfolio currency
-  const uniqueCurrencies = [...new Set((assets ?? []).map((a) => a.currency))];
-  const currenciesNeedingConversion = uniqueCurrencies.filter((c) => c !== currency);
+  // Fetch exchange rates
+  const uniqueAssetCurrencies = [...new Set((assets ?? []).map((a) => a.currency))];
 
-  const exchangeRateQueries = useQueries({
-    queries: currenciesNeedingConversion.map((curr) => ({
+  // Asset → portfolio rates (for value aggregation)
+  const currenciesNeedingPortfolioConversion = uniqueAssetCurrencies.filter((c) => c !== currency);
+  const assetToPortfolioRateQueries = useQueries({
+    queries: currenciesNeedingPortfolioConversion.map((curr) => ({
       queryKey: queryKeys.exchangeRates.pair(curr, currency),
       queryFn: () => fetchExchangeRate(curr, currency),
+      staleTime: EXCHANGE_RATE_STALE_TIME,
+    })),
+  });
+
+  // USD → asset rates (for converting crypto prices to asset currency)
+  const currenciesNeedingCryptoConversion = uniqueAssetCurrencies.filter((c) => c !== CRYPTO_BASE_CURRENCY);
+  const cryptoToAssetRateQueries = useQueries({
+    queries: currenciesNeedingCryptoConversion.map((curr) => ({
+      queryKey: queryKeys.exchangeRates.pair(CRYPTO_BASE_CURRENCY, curr),
+      queryFn: () => fetchExchangeRate(CRYPTO_BASE_CURRENCY, curr),
       staleTime: EXCHANGE_RATE_STALE_TIME,
     })),
   });
@@ -162,20 +191,34 @@ export function usePortfolioStats(
     lotsQueries.some((q) => q.isLoading) ||
     cryptoPricesLoading ||
     otherPriceQueries.some((q) => q.isLoading) ||
-    exchangeRateQueries.some((q) => q.isLoading)
+    assetToPortfolioRateQueries.some((q) => q.isLoading) ||
+    cryptoToAssetRateQueries.some((q) => q.isLoading)
   )
 
-  // Build exchange rate map
-  const exchangeRateMap = useMemo(() => {
+  // Build exchange rate maps
+  // assetToPortfolioRateMap: assetCurrency → rate to convert to portfolio currency
+  const assetToPortfolioRateMap = useMemo(() => {
     const map = new Map<string, number>();
-    currenciesNeedingConversion.forEach((curr, index) => {
-      const rate = exchangeRateQueries[index]?.data;
+    currenciesNeedingPortfolioConversion.forEach((curr, index) => {
+      const rate = assetToPortfolioRateQueries[index]?.data;
       if (rate !== null && rate !== undefined) {
         map.set(curr, rate);
       }
     });
     return map;
-  }, [currenciesNeedingConversion, exchangeRateQueries]);
+  }, [currenciesNeedingPortfolioConversion, assetToPortfolioRateQueries]);
+
+  // cryptoToAssetRateMap: cryptoBaseCurrency → assetCurrency (for converting crypto prices)
+  const cryptoToAssetRateMap = useMemo(() => {
+    const map = new Map<string, number>();
+    currenciesNeedingCryptoConversion.forEach((curr, index) => {
+      const rate = cryptoToAssetRateQueries[index]?.data;
+      if (rate !== null && rate !== undefined) {
+        map.set(curr, rate);
+      }
+    });
+    return map;
+  }, [currenciesNeedingCryptoConversion, cryptoToAssetRateQueries]);
 
   // Build price map for other market assets
   const otherPriceMap = useMemo(() => {
@@ -230,27 +273,38 @@ export function usePortfolioStats(
         }
       }
 
-      const exchangeRate = asset.currency !== currency
-        ? exchangeRateMap.get(asset.currency) ?? null
+      // Get exchange rates
+      const assetToPortfolioRate = asset.currency !== currency
+        ? assetToPortfolioRateMap.get(asset.currency) ?? null
         : 1;
 
-      const stats = calculateSingleAssetStats(
-        { asset, lots, price, priceCurrency, exchangeRate },
+      // For price-to-asset conversion, check if price currency differs from asset currency
+      let priceToAssetRate: number | null = null;
+      if (priceCurrency && priceCurrency !== asset.currency) {
+        if (priceCurrency === CRYPTO_BASE_CURRENCY) {
+          // Crypto prices are in USD, convert to asset currency
+          priceToAssetRate = cryptoToAssetRateMap.get(asset.currency) ?? null;
+        }
+        // For Yahoo (stocks), priceCurrency matches trading currency
+        // If it differs from asset currency, we'd need more rates
+        // For now, those will show as pending
+      }
+
+      const result = calculateSingleAssetStats(
+        { asset, lots, price, priceCurrency, priceToAssetRate, assetToPortfolioRate },
         currency
       );
-      statsMap.set(asset.id, stats);
+      statsMap.set(asset.id, result.stats);
 
-      // Accumulate totals
-      let assetCost = stats.totalCost;
-      if (asset.currency !== currency && exchangeRate !== null) {
-        assetCost = stats.totalCost * exchangeRate;
-      }
-      totalCost += assetCost;
-
-      if (stats.currentValue !== null) {
-        totalValue += stats.currentValue;
+      // Accumulate totals in portfolio currency
+      if (result.valueInPortfolioCurrency !== null) {
+        totalValue += result.valueInPortfolioCurrency;
       } else {
         pendingPriceCount++;
+      }
+
+      if (result.costInPortfolioCurrency !== null) {
+        totalCost += result.costInPortfolioCurrency;
       }
     });
 
@@ -275,7 +329,7 @@ export function usePortfolioStats(
     };
 
     return { assetStats: statsMap, portfolioStats: portfolioWithStats, pendingPriceCount };
-  }, [portfolioId, portfolio, portfolios, assets, lotsQueries, cryptoPrices, otherPriceMap, exchangeRateMap, currency]);
+  }, [portfolioId, portfolio, portfolios, assets, lotsQueries, cryptoPrices, otherPriceMap, assetToPortfolioRateMap, cryptoToAssetRateMap, currency]);
 
   const hasPartialData = portfolioId
     ? (!!portfolio && !!assets && assets.length > 0 && assetStats.size > 0)

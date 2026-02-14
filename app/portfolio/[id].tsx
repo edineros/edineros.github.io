@@ -215,7 +215,7 @@ export default function PortfolioDetailScreen() {
             {itemStats?.currentValue !== null && itemStats?.currentValue !== undefined ? (
               <>
                 <Text color={colors.text} fontSize={17} fontWeight="600">
-                  {isMasked ? VALUE_MASK : formatCurrency(itemStats.currentValue, displayCurrency)}
+                  {isMasked ? VALUE_MASK : formatCurrency(itemStats.currentValue, item.currency)}
                 </Text>
                 {!isSimple && (
                   <Text
@@ -223,7 +223,7 @@ export default function PortfolioDetailScreen() {
                     fontWeight="600"
                     color={gainColor === 'gain' ? colors.gain : gainColor === 'loss' ? colors.loss : colors.textSecondary}
                   >
-                    {isMasked ? formatPercent(itemStats.unrealizedGainPercent) : `${formatCurrency(itemStats.unrealizedGain, displayCurrency, { showSign: true })} (${formatPercent(itemStats.unrealizedGainPercent)})`}
+                    {isMasked ? formatPercent(itemStats.unrealizedGainPercent) : `${formatCurrency(itemStats.unrealizedGain, item.currency, { showSign: true })} (${formatPercent(itemStats.unrealizedGainPercent)})`}
                   </Text>
                 )}
               </>

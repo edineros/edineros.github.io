@@ -17,16 +17,17 @@ export interface PriceData {
 async function fetchPriceFromProvider(
   symbol: string,
   assetType: AssetType,
-  preferredCurrency?: string
+  assetCurrency?: string
 ): Promise<PriceData | null> {
   // Simple asset types (cash, realEstate, other) don't fetch prices
   // Price is always 1 in the asset's currency
   if (isSimpleAssetType(assetType)) {
-    return { price: 1, currency: preferredCurrency || 'EUR' };
+    return { price: 1, currency: assetCurrency || 'EUR' };
   }
 
+  // Crypto prices are in USD, conversion handled by exchange rates
   if (assetType === 'crypto' || assetType === 'bitcoin') {
-    return fetchKrakenPrice(symbol, preferredCurrency);
+    return fetchKrakenPrice(symbol);
   }
 
   // Stocks, ETFs, bonds, commodities - use Yahoo Finance
@@ -59,15 +60,15 @@ export function usePrices(assets: Asset[] | undefined, portfolioCurrency?: strin
 }
 
 // Hook to batch fetch crypto prices (more efficient for multiple crypto assets)
-// Returns plain object (not Map) for JSON serialization compatibility with cache persistence
-export function useCryptoPrices(symbols: string[] | undefined, preferredCurrency?: string) {
+// Always fetches in EUR, conversion handled by exchange rates
+export function useCryptoPrices(symbols: string[] | undefined) {
   return useQuery({
     queryKey: ['prices', 'crypto', 'batch', ...(symbols ?? [])],
     queryFn: async () => {
       if (!symbols || symbols.length === 0) {
         return {} as Record<string, PriceData>;
       }
-      return fetchKrakenPrices(symbols, preferredCurrency);
+      return fetchKrakenPrices(symbols);
     },
     enabled: !!symbols && symbols.length > 0,
     staleTime: PRICE_STALE_TIME.crypto,

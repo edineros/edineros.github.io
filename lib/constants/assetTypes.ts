@@ -108,3 +108,9 @@ ASSET_TYPE_CONFIGS.forEach((config, index) => {
 export function getAssetTypeSortOrder(type: AssetType): number {
   return typeOrderMap.get(type) ?? 999;
 }
+
+/**
+ * Base currency for all crypto prices.
+ * All crypto providers (Kraken, future providers) return prices in USD.
+ */
+export const CRYPTO_BASE_CURRENCY = 'USD';

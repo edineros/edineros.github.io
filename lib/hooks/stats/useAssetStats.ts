@@ -80,11 +80,18 @@ export function useAssetStats(
       currentPrice = priceData.price;
 
       // Convert price to asset currency if needed
-      if (needsPriceToAssetConversion && priceToAssetRate) {
-        currentPrice = currentPrice * priceToAssetRate;
+      if (needsPriceToAssetConversion) {
+        if (priceToAssetRate) {
+          currentPrice = currentPrice * priceToAssetRate;
+        } else {
+          // Rate not available yet, don't show incorrect values
+          currentPrice = null;
+        }
       }
 
-      currentValue = totalQuantity * currentPrice;
+      if (currentPrice !== null) {
+        currentValue = totalQuantity * currentPrice;
+      }
     }
 
     // Convert value to portfolio currency for gain calculation

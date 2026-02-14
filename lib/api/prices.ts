@@ -13,16 +13,17 @@ export interface PriceResult {
 export async function fetchPriceForAsset(
   symbol: string,
   assetType: AssetType,
-  preferredCurrency?: string
+  assetCurrency?: string
 ): Promise<PriceResult | null> {
+  // Crypto prices are in USD, conversion handled by exchange rates
   if (assetType === 'crypto' || assetType === 'bitcoin') {
-    return fetchKrakenPrice(symbol, preferredCurrency);
+    return fetchKrakenPrice(symbol);
   }
 
   // Simple asset types (cash, realEstate, other) don't fetch prices
   // Price is always 1 in the asset's currency (value comes from quantity in lots)
   if (isSimpleAssetType(assetType)) {
-    return { price: 1, currency: preferredCurrency || 'EUR' };
+    return { price: 1, currency: assetCurrency || 'EUR' };
   }
 
   // Stocks, ETFs, bonds, commodities - use Yahoo Finance

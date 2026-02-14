@@ -1,3 +1,5 @@
+import { CRYPTO_BASE_CURRENCY } from '../../constants/assetTypes';
+
 interface KrakenTickerResponse {
   error: string[];
   result: {
@@ -150,69 +152,57 @@ async function getKrakenPair(symbol: string, currency: string): Promise<string |
 }
 
 export async function fetchKrakenPrice(
-  symbol: string,
-  preferredCurrency?: string
+  symbol: string
 ): Promise<{ price: number; currency: string } | null> {
-  // Try preferred currency first, then EUR, then USD as fallback
-  const currencies = preferredCurrency
-    ? [preferredCurrency.toUpperCase(), 'EUR', 'USD']
-    : ['EUR', 'USD'];
+  const pair = await getKrakenPair(symbol, CRYPTO_BASE_CURRENCY);
+  if (!pair) {
+    return null;
+  }
 
-  for (const currency of currencies) {
-    const pair = await getKrakenPair(symbol, currency);
-    if (!pair) {
-      continue;
+  try {
+    const url = `https://api.kraken.com/0/public/Ticker?pair=${pair}`;
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      return null;
     }
 
-    try {
-      const url = `https://api.kraken.com/0/public/Ticker?pair=${pair}`;
-      const response = await fetch(url);
+    const data = (await response.json()) as KrakenTickerResponse;
 
-      if (!response.ok) {
-        continue;
-      }
-
-      const data = (await response.json()) as KrakenTickerResponse;
-
-      if (data.error?.length > 0) {
-        console.error('Kraken API error:', data.error);
-        continue;
-      }
-
-      // Get the first (and only) result
-      const resultKey = Object.keys(data.result)[0];
-      const ticker = data.result[resultKey];
-
-      if (ticker?.c?.[0]) {
-        return {
-          price: parseFloat(ticker.c[0]),
-          currency,
-        };
-      }
-    } catch (error) {
-      console.error('Error fetching Kraken price:', error);
+    if (data.error?.length > 0) {
+      console.error('Kraken API error:', data.error);
+      return null;
     }
+
+    // Get the first (and only) result
+    const resultKey = Object.keys(data.result)[0];
+    const ticker = data.result[resultKey];
+
+    if (ticker?.c?.[0]) {
+      return {
+        price: parseFloat(ticker.c[0]),
+        currency: CRYPTO_BASE_CURRENCY,
+      };
+    }
+  } catch (error) {
+    console.error('Error fetching Kraken price:', error);
   }
 
   return null;
 }
 
 // Fetch multiple prices at once (Kraken supports comma-separated pairs)
-// Returns plain object (not Map) for JSON serialization compatibility with cache persistence
 export async function fetchKrakenPrices(
-  symbols: string[],
-  preferredCurrency?: string
+  symbols: string[]
 ): Promise<Record<string, { price: number; currency: string }>> {
   const results: Record<string, { price: number; currency: string }> = {};
-  const currency = preferredCurrency?.toUpperCase() || 'EUR';
 
   // Build pairs list
   const pairs: string[] = [];
   const pairToSymbol = new Map<string, string>();
 
-  // Resolve all pairs first
   for (const symbol of symbols) {
-    const pair = await getKrakenPair(symbol, currency);
+    const pair = await getKrakenPair(symbol, CRYPTO_BASE_CURRENCY);
     if (pair) {
       pairs.push(pair);
       pairToSymbol.set(pair, symbol.toUpperCase());
@@ -255,7 +245,7 @@ export async function fetchKrakenPrices(
       if (symbol && ticker?.c?.[0]) {
         results[symbol] = {
           price: parseFloat(ticker.c[0]),
-          currency,
+          currency: CRYPTO_BASE_CURRENCY,
         };
       }
     }
