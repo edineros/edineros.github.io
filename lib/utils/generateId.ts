@@ -4,7 +4,8 @@
  */
 export function generateId(): string {
   const time = Date.now().toString(36).slice(-6);
-  const random = crypto.getRandomValues(new Uint16Array(1))[0]
+  // Use Math.random() for cross-platform compatibility (React Native doesn't have crypto.getRandomValues)
+  const random = Math.floor(Math.random() * 0xFFFF)
     .toString(36)
     .padStart(4, '0')
     .slice(0, 4);
