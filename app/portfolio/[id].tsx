@@ -124,19 +124,21 @@ export default function PortfolioDetailScreen() {
       return { allocations: [], categoryAllocations: [], hasAnyCategories: false };
     }
 
-    // Build a map with type info from assets and value from assetStats
+    // Build maps with type/category info and portfolio currency values for allocations
     const statsWithType = new Map<string, { type: Asset['type']; currentValue: number | null }>();
     const statsWithCategory = new Map<string, { categoryId: string | null; currentValue: number | null }>();
 
     for (const asset of rawAssets) {
       const stat = assetStats.get(asset.id);
+      // Use valueInPortfolioCurrency for allocation calculations
+      const valueForAllocation = stat?.valueInPortfolioCurrency ?? null;
       statsWithType.set(asset.id, {
         type: asset.type,
-        currentValue: stat?.currentValue ?? null,
+        currentValue: valueForAllocation,
       });
       statsWithCategory.set(asset.id, {
         categoryId: asset.categoryId,
-        currentValue: stat?.currentValue ?? null,
+        currentValue: valueForAllocation,
       });
     }
 
@@ -365,7 +367,7 @@ export default function PortfolioDetailScreen() {
           />
         }
         ListFooterComponent={
-          allocationData.allocations.length > 1 ? (
+          portfolioAssets.length >= 2 ? (
             <YStack paddingHorizontal={CONTENT_HORIZONTAL_PADDING} paddingTop={16} gap={12}>
               <XStack justifyContent="space-between" alignItems="center">
                 <Text color={colors.textSecondary} fontSize={13} fontWeight="600" textTransform="uppercase">

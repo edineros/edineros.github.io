@@ -83,6 +83,7 @@ function calculateSingleAssetStats(
       totalCost,
       currentPrice,
       currentValue,
+      valueInPortfolioCurrency,
       unrealizedGain,
       unrealizedGainPercent,
       lots,

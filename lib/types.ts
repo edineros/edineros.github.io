@@ -65,7 +65,10 @@ export interface AssetWithStats extends Asset {
   averageCost: number;
   totalCost: number;
   currentPrice: number | null;
+  /** Current value in asset's currency */
   currentValue: number | null;
+  /** Current value converted to portfolio currency (for aggregation/charts) */
+  valueInPortfolioCurrency: number | null;
   unrealizedGain: number | null;
   unrealizedGainPercent: number | null;
   lots: Lot[];

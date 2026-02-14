@@ -63,7 +63,6 @@ if (!id) {
 │   │   ├── queryKeys.ts      # Type-safe query key factory
 │   │   └── queryClient.ts    # QueryClient config with TTLs
 │   ├── stats/            # Computed/derived data hooks
-│   │   ├── useAssetStats.ts      # Computed asset statistics
 │   │   └── usePortfolioStats.ts  # Computed portfolio statistics
 │   ├── usePortfolios.ts  # Portfolio queries & mutations
 │   ├── useAssets.ts      # Asset queries & mutations
@@ -221,7 +220,6 @@ useExchangeRate(from, to)
 useConvertCurrency(amount, from, to)
 
 // Computed stats (combines multiple queries)
-useAssetStats(assetId, portfolioCurrency)
 usePortfolioStats(portfolioId)
 
 // Mutations (auto-invalidate cache)
@@ -229,6 +227,18 @@ useCreatePortfolio(), useUpdatePortfolio(), useDeletePortfolio()
 useCreateAsset(), useUpdateAsset(), useDeleteAsset()
 useCreateTransaction(), useDeleteTransaction()
 ```
+
+## Currency Conversion
+
+Prices from external APIs may be in different currencies than the asset or portfolio currency. Conversion is handled automatically:
+
+- **Crypto prices**: Always fetched in USD (`CRYPTO_BASE_CURRENCY` in `assetTypes.ts`), then converted to asset/portfolio currency
+- **Stock prices**: Fetched in trading currency (from Yahoo), converted as needed
+- **Exchange rates**: Fetched from Frankfurter API
+
+`usePortfolioStats` returns two value fields per asset:
+- `currentValue`: Value in the asset's own currency (for individual asset display)
+- `valueInPortfolioCurrency`: Value converted to portfolio currency (for totals and charts)
 
 ## Pull-to-Refresh
 
