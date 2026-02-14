@@ -1,4 +1,6 @@
 import { Platform } from 'react-native';
+import { calculatePercentChange } from '../../utils/calculations';
+import type { PriceData } from '../../types';
 
 const DELAY = 200; // 200ms delay makes sure we fire no more than 5 yahoo requests per second
 const RETRY_DELAY = 7000; // 7 seconds delay before retrying on 429/500 errors
@@ -64,6 +66,9 @@ interface YahooChartResult {
     currency: string;
     shortName?: string;
     longName?: string;
+    previousClose?: number;
+    regularMarketOpen?: number;
+    chartPreviousClose?: number;
   };
 }
 
@@ -107,11 +112,7 @@ async function fetchWithRetry(url: string, retries = MAX_RETRIES): Promise<Respo
   }
 }
 
-export async function fetchYahooPrice(symbol: string): Promise<{
-  price: number;
-  currency: string;
-  name?: string;
-} | null> {
+export async function fetchYahooPrice(symbol: string): Promise<(PriceData & { name?: string }) | null> {
   return yahooQueue.enqueue(async () => {
     try {
       // Use the chart API endpoint which is more accessible
@@ -132,10 +133,16 @@ export async function fetchYahooPrice(symbol: string): Promise<{
         return null;
       }
 
+      const currentPrice = result.meta.regularMarketPrice;
+      // Use previousClose for day change calculation (most accurate)
+      // Fall back to chartPreviousClose or regularMarketOpen if not available
+      const previousClose = result.meta.previousClose ?? result.meta.chartPreviousClose ?? result.meta.regularMarketOpen;
+
       return {
-        price: result.meta.regularMarketPrice,
+        price: currentPrice,
         currency: result.meta.currency || 'USD',
         name: result.meta.longName || result.meta.shortName,
+        todayChangePercent: calculatePercentChange(currentPrice, previousClose),
       };
     } catch (error) {
       console.error('Error fetching Yahoo price:', error);

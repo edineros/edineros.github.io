@@ -60,6 +60,13 @@ export interface Lot {
   notes: string | null;
 }
 
+/** Price data returned from external APIs (Yahoo, Kraken, etc.) */
+export interface PriceData {
+  price: number;
+  currency: string;
+  todayChangePercent: number | null;
+}
+
 export interface AssetWithStats extends Asset {
   totalQuantity: number;
   averageCost: number;
@@ -71,6 +78,8 @@ export interface AssetWithStats extends Asset {
   valueInPortfolioCurrency: number | null;
   unrealizedGain: number | null;
   unrealizedGainPercent: number | null;
+  /** Today's (24h) price change percentage */
+  todayChangePercent: number | null;
   lots: Lot[];
 }
 

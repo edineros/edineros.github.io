@@ -54,7 +54,7 @@ export function AssetsTable({ assets, assetStats, masked = false }: AssetsTableP
         return masked ? VALUE_MASK : formatQuantity(stats.totalQuantity);
 
       case 'value':
-        if (stats?.currentValue === null || stats?.currentValue === undefined) {
+        if (stats?.currentValue == null) {
           return null; // Show spinner
         }
         return masked ?
@@ -62,16 +62,24 @@ export function AssetsTable({ assets, assetStats, masked = false }: AssetsTableP
           formatCurrency(stats.currentValue, asset.currency, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
       case 'pnl':
-        if (isSimple || stats?.unrealizedGain === null || stats?.unrealizedGain === undefined) {
+        if (isSimple || stats?.unrealizedGain == null) {
           return '—';
         }
-        return masked ? VALUE_MASK : formatCurrency(stats.unrealizedGain, asset.currency, { showSign: true });
+        return masked ?
+          VALUE_MASK :
+          formatCurrency(stats.unrealizedGain, asset.currency, { showSign: true, minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
       case 'pnlPercent':
-        if (isSimple || stats?.unrealizedGainPercent === null || stats?.unrealizedGainPercent === undefined) {
+        if (isSimple || stats?.unrealizedGainPercent == null) {
           return '—';
         }
         return formatPercent(stats.unrealizedGainPercent);
+
+      case 'today':
+        if (isSimple || stats?.todayChangePercent == null) {
+          return '—';
+        }
+        return formatPercent(stats.todayChangePercent);
 
       default:
         return '—';
@@ -81,6 +89,9 @@ export function AssetsTable({ assets, assetStats, masked = false }: AssetsTableP
   const getGainColorForCell = (columnId: TableColumnId, stats: AssetWithStats | undefined) => {
     if (columnId === 'pnl' || columnId === 'pnlPercent') {
       return stats ? getGainColor(stats.unrealizedGain) : 'neutral';
+    }
+    if (columnId === 'today') {
+      return stats?.todayChangePercent != null ? getGainColor(stats.todayChangePercent) : 'neutral';
     }
     return 'neutral';
   };

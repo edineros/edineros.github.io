@@ -1,4 +1,6 @@
 import { CRYPTO_BASE_CURRENCY } from '../../constants/assetTypes';
+import { calculatePercentChange } from '../../utils/calculations';
+import type { PriceData } from '../../types';
 
 interface KrakenTickerResponse {
   error: string[];
@@ -151,9 +153,7 @@ async function getKrakenPair(symbol: string, currency: string): Promise<string |
   return null;
 }
 
-export async function fetchKrakenPrice(
-  symbol: string
-): Promise<{ price: number; currency: string } | null> {
+export async function fetchKrakenPrice(symbol: string): Promise<PriceData | null> {
   const pair = await getKrakenPair(symbol, CRYPTO_BASE_CURRENCY);
   if (!pair) {
     return null;
@@ -179,9 +179,13 @@ export async function fetchKrakenPrice(
     const ticker = data.result[resultKey];
 
     if (ticker?.c?.[0]) {
+      const currentPrice = parseFloat(ticker.c[0]);
+      const openPrice = ticker.o ? parseFloat(ticker.o) : null;
+
       return {
-        price: parseFloat(ticker.c[0]),
+        price: currentPrice,
         currency: CRYPTO_BASE_CURRENCY,
+        todayChangePercent: calculatePercentChange(currentPrice, openPrice),
       };
     }
   } catch (error) {
@@ -194,8 +198,8 @@ export async function fetchKrakenPrice(
 // Fetch multiple prices at once (Kraken supports comma-separated pairs)
 export async function fetchKrakenPrices(
   symbols: string[]
-): Promise<Record<string, { price: number; currency: string }>> {
-  const results: Record<string, { price: number; currency: string }> = {};
+): Promise<Record<string, PriceData>> {
+  const results: Record<string, PriceData> = {};
 
   // Build pairs list
   const pairs: string[] = [];
@@ -243,9 +247,13 @@ export async function fetchKrakenPrices(
       }
 
       if (symbol && ticker?.c?.[0]) {
+        const currentPrice = parseFloat(ticker.c[0]);
+        const openPrice = ticker.o ? parseFloat(ticker.o) : null;
+
         results[symbol] = {
-          price: parseFloat(ticker.c[0]),
+          price: currentPrice,
           currency: CRYPTO_BASE_CURRENCY,
+          todayChangePercent: calculatePercentChange(currentPrice, openPrice),
         };
       }
     }

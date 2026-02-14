@@ -5,7 +5,7 @@ const LAST_PORTFOLIO_KEY = 'last_portfolio_id';
 const TABLE_CONFIG_KEY = 'assets_table_config';
 
 // Table column configuration
-export type TableColumnId = 'symbol' | 'name' | 'price' | 'amount' | 'value' | 'pnl' | 'pnlPercent';
+export type TableColumnId = 'symbol' | 'name' | 'price' | 'today' | 'amount' | 'value' | 'pnl' | 'pnlPercent';
 
 export interface TableColumnConfig {
   id: TableColumnId;
@@ -18,6 +18,7 @@ export const DEFAULT_TABLE_COLUMNS: TableColumnConfig[] = [
   { id: 'symbol', label: 'Symbol', visible: true, canHide: false },
   { id: 'name', label: 'Name', visible: true, canHide: true },
   { id: 'price', label: 'Price', visible: true, canHide: true },
+  { id: 'today', label: 'Today', visible: true, canHide: true },
   { id: 'amount', label: 'Amount', visible: true, canHide: true },
   { id: 'value', label: 'Total Value', visible: true, canHide: true },
   { id: 'pnl', label: 'P&L', visible: false, canHide: true },

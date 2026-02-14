@@ -1,5 +1,19 @@
 import type { Transaction, Lot } from '../types';
 
+/**
+ * Calculate percentage change between two values.
+ * Returns null if previousValue is null, undefined, or zero.
+ */
+export function calculatePercentChange(
+  currentValue: number,
+  previousValue: number | null | undefined
+): number | null {
+  if (previousValue === null || previousValue === undefined || previousValue === 0) {
+    return null;
+  }
+  return ((currentValue - previousValue) / previousValue) * 100;
+}
+
 export function calculateLotStats(lot: Lot, currentPrice: number | null): {
   currentValue: number | null;
   unrealizedGain: number | null;

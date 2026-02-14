@@ -9,7 +9,7 @@ import { getLotsForAsset } from '../../db/transactions';
 import { fetchYahooPrice } from '../../api/providers/yahoo';
 import { fetchKrakenPrices } from '../../api/providers/kraken';
 import { fetchExchangeRate } from '../../api/providers/frankfurter';
-import type { Asset, AssetWithStats, PortfolioWithStats, Lot } from '../../types';
+import type { Asset, AssetWithStats, PortfolioWithStats, Lot, PriceData } from '../../types';
 
 interface AssetStatsData {
   asset: Asset;
@@ -18,6 +18,7 @@ interface AssetStatsData {
   priceCurrency: string | null;
   priceToAssetRate: number | null;
   assetToPortfolioRate: number | null;
+  todayChangePercent: number | null;
 }
 
 const EMPTY_STATS = { assetStats: new Map<string, AssetWithStats>(), portfolioStats: null, pendingPriceCount: 0 };
@@ -34,7 +35,7 @@ function calculateSingleAssetStats(
   data: AssetStatsData,
   portfolioCurrency: string
 ): SingleAssetStatsResult {
-  const { asset, lots, price, priceCurrency, priceToAssetRate, assetToPortfolioRate } = data;
+  const { asset, lots, price, priceCurrency, priceToAssetRate, assetToPortfolioRate, todayChangePercent } = data;
   const isSimple = isSimpleAssetType(asset.type);
 
   const totalQuantity = lots.reduce((sum, lot) => sum + lot.remainingQuantity, 0);
@@ -86,6 +87,7 @@ function calculateSingleAssetStats(
       valueInPortfolioCurrency,
       unrealizedGain,
       unrealizedGainPercent,
+      todayChangePercent: isSimple ? null : todayChangePercent,
       lots,
     },
     valueInPortfolioCurrency,
@@ -143,7 +145,7 @@ export function usePortfolioStats(
     queryKey: ['prices', 'crypto', 'batch', ...cryptoSymbols],
     queryFn: async () => {
       if (cryptoSymbols.length === 0) {
-        return {} as Record<string, { price: number; currency: string }>;
+        return {} as Record<string, PriceData>;
       }
       return fetchKrakenPrices(cryptoSymbols);
     },
@@ -223,11 +225,15 @@ export function usePortfolioStats(
 
   // Build price map for other market assets
   const otherPriceMap = useMemo(() => {
-    const map = new Map<string, { price: number; currency: string }>();
+    const map = new Map<string, PriceData>();
     uniqueOtherAssets.forEach((asset, index) => {
       const priceData = otherPriceQueries[index]?.data;
       if (priceData) {
-        map.set(asset.symbol, priceData);
+        map.set(asset.symbol, {
+          price: priceData.price,
+          currency: priceData.currency,
+          todayChangePercent: priceData.todayChangePercent ?? null,
+        });
       }
     });
     return map;
@@ -257,6 +263,7 @@ export function usePortfolioStats(
 
       let price: number | null = null;
       let priceCurrency: string | null = null;
+      let todayChangePercent: number | null = null;
 
       if (!isSimple) {
         if (asset.type === 'crypto' || asset.type === 'bitcoin') {
@@ -264,12 +271,14 @@ export function usePortfolioStats(
           if (priceData) {
             price = priceData.price;
             priceCurrency = priceData.currency;
+            todayChangePercent = priceData.todayChangePercent ?? null;
           }
         } else {
           const priceData = otherPriceMap.get(asset.symbol);
           if (priceData) {
             price = priceData.price;
             priceCurrency = priceData.currency;
+            todayChangePercent = priceData.todayChangePercent ?? null;
           }
         }
       }
@@ -292,7 +301,7 @@ export function usePortfolioStats(
       }
 
       const result = calculateSingleAssetStats(
-        { asset, lots, price, priceCurrency, priceToAssetRate, assetToPortfolioRate },
+        { asset, lots, price, priceCurrency, priceToAssetRate, assetToPortfolioRate, todayChangePercent },
         currency
       );
       statsMap.set(asset.id, result.stats);
