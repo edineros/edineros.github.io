@@ -1,13 +1,13 @@
 module.exports = {
   expo: {
-    name: "Private Portfolio",
-    slug: "private-portfolio",
-    version: "1.0.0",
+    name: "Edineros",
+    slug: "edineros",
+    version: "1.0.5.3",
     orientation: "portrait",
     icon: "./assets/icon.png",
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
-    scheme: "private-portfolio",
+    scheme: "edineros",
     splash: {
       image: "./assets/splash-icon.png",
       resizeMode: "contain",
@@ -15,7 +15,7 @@ module.exports = {
     },
     ios: {
       supportsTablet: true,
-      bundleIdentifier: "com.private.portfolio",
+      bundleIdentifier: "com.edineros.app",
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false
       }
@@ -26,7 +26,7 @@ module.exports = {
         backgroundColor: "#ffffff"
       },
       edgeToEdgeEnabled: true,
-      package: "com.private.portfolio"
+      package: "com.edineros.app"
     },
     web: {
       favicon: "./assets/favicon.png",

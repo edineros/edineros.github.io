@@ -1,4 +1,4 @@
-# Private Portfolio
+# Edineros
 
 A privacy-first, offline-capable portfolio tracking application for iOS, Android, and Web.
 

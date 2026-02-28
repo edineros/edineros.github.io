@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { YStack, XStack, Text } from 'tamagui';
 import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
+import Constants from 'expo-constants';
 import { exportToJson, shareFile, importFromJson } from '../../lib/utils/export';
 import { alert, confirm } from '../../lib/utils/confirm';
 import { Page } from '../../components/Page';
@@ -14,7 +15,6 @@ import { CONTENT_HORIZONTAL_PADDING } from '../../lib/constants/layout';
 import { useThemeStore, useColors, type ThemeMode } from '../../lib/theme/store';
 import { alertImportSuccess } from '../../lib/utils/backup';
 
-const VERSION = '1.0.5.2';
 const CACHE_KEY = 'portfolio-query-cache';
 
 const THEME_OPTIONS: { value: ThemeMode; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
@@ -245,13 +245,13 @@ export default function SettingsScreen() {
             <YStack gap={8}>
               <XStack justifyContent="space-between">
                 <Text color={colors.textSecondary}>Version</Text>
-                <Text color={colors.text}>{VERSION}</Text>
+                <Text color={colors.text}>{Constants.expoConfig?.version ?? '–'}</Text>
               </XStack>
 
               <YStack height={1} backgroundColor={colors.border} marginVertical={8} />
 
               <Text color={colors.textSecondary} fontSize={15}>
-                Portfolio Tracker is a privacy-first, offline-capable portfolio tracking
+                Edineros is a privacy-first, offline-capable portfolio tracking
                 application. Your data is stored locally on your device and is never sent
                 to any server.
               </Text>
