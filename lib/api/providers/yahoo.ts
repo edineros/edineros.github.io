@@ -80,33 +80,83 @@ interface YahooSearchResult {
   exchDisp?: string;
 }
 
-// Use allorigins for web CORS proxy (more reliable than corsproxy.io)
+// CORS proxies for web (try multiple in case one fails)
+const CORS_PROXIES = [
+  (url: string) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+  (url: string) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+  (url: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  (url: string) => `https://thingproxy.freeboard.io/fetch/${url}`,
+];
+
+let currentProxyIndex = 0;
+
 function getProxiedUrl(url: string): string {
   if (Platform.OS === 'web') {
-    return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+    return CORS_PROXIES[currentProxyIndex](url);
+  }
+  return url;
+}
+
+function switchToNextProxy(): boolean {
+  if (currentProxyIndex < CORS_PROXIES.length - 1) {
+    currentProxyIndex++;
+    console.log(`[Yahoo] Switching to proxy ${currentProxyIndex}`);
+    return true;
+  }
+  return false;
+}
+
+// Extract base Yahoo URL from a proxied URL
+function extractBaseUrl(url: string): string {
+  // Check each proxy pattern
+  if (url.includes('corsproxy.io')) {
+    return decodeURIComponent(url.split('?url=')[1] || '');
+  }
+  if (url.includes('codetabs.com')) {
+    return decodeURIComponent(url.split('quest=')[1] || '');
+  }
+  if (url.includes('allorigins.win')) {
+    return decodeURIComponent(url.split('url=')[1] || '');
+  }
+  if (url.includes('thingproxy.freeboard.io')) {
+    return url.replace('https://thingproxy.freeboard.io/fetch/', '');
   }
   return url;
 }
 
 // Fetch with retry for network errors, 429 (rate limit), and 5xx (server errors)
-async function fetchWithRetry(url: string, retries = MAX_RETRIES): Promise<Response> {
+async function fetchWithRetry(url: string, retries = MAX_RETRIES, triedProxySwitch = false): Promise<Response> {
   try {
     const response = await fetch(url);
 
     // Retry on rate limit or server errors
     if ((response.status === 429 || response.status >= 500) && retries > 0) {
-      console.log(`Yahoo API returned ${response.status}, retrying in ${RETRY_DELAY}ms...`);
+      // On 5xx errors, try switching proxy first (on web)
+      if (Platform.OS === 'web' && response.status >= 500 && !triedProxySwitch && switchToNextProxy()) {
+        const baseUrl = extractBaseUrl(url);
+        const newUrl = getProxiedUrl(baseUrl);
+        return fetchWithRetry(newUrl, retries, true);
+      }
+
+      console.log(`[Yahoo] API returned ${response.status}, retrying in ${RETRY_DELAY}ms...`);
       await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-      return fetchWithRetry(url, retries - 1);
+      return fetchWithRetry(url, retries - 1, triedProxySwitch);
     }
 
     return response;
   } catch (error) {
+    // On network errors, try switching proxy first (on web)
+    if (Platform.OS === 'web' && !triedProxySwitch && switchToNextProxy()) {
+      const baseUrl = extractBaseUrl(url);
+      const newUrl = getProxiedUrl(baseUrl);
+      return fetchWithRetry(newUrl, retries, true);
+    }
+
     // Retry on network failures (timeout, CORS, connection errors)
     if (retries > 0) {
-      console.log(`Yahoo API fetch failed: ${error}, retrying in ${RETRY_DELAY}ms...`);
+      console.log(`[Yahoo] Fetch failed: ${error}, retrying in ${RETRY_DELAY}ms...`);
       await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-      return fetchWithRetry(url, retries - 1);
+      return fetchWithRetry(url, retries - 1, triedProxySwitch);
     }
     throw error;
   }
