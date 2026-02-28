@@ -55,7 +55,7 @@ export function AssetsTable({ assets, assetStats, masked = false }: AssetsTableP
 
       case 'value':
         if (stats?.currentValue == null) {
-          return null; // Show spinner
+          return '—';
         }
         return masked ?
           VALUE_MASK :
@@ -169,6 +169,7 @@ export function AssetsTable({ assets, assetStats, masked = false }: AssetsTableP
             const gainColor = stats ? getGainColor(stats.unrealizedGain) : 'neutral';
             const isSimple = isSimpleAssetType(asset.type);
             const isLastRow = index === assets.length - 1;
+            const isPriceLoading = !isSimple && stats?.currentPrice == null;
 
             return (
               <TouchableOpacity
@@ -196,14 +197,19 @@ export function AssetsTable({ assets, assetStats, masked = false }: AssetsTableP
                   ]}
                 />
                 <YStack flex={1} paddingLeft={6} justifyContent="center" gap={3}>
-                  <Text
-                    fontSize={13}
-                    fontWeight="500"
-                    color={colors.text}
-                    numberOfLines={1}
-                  >
-                    {isSimple ? (asset.name || 'Item') : asset.symbol}
-                  </Text>
+                  <View style={styles.symbolRow}>
+                    <Text
+                      fontSize={13}
+                      fontWeight="500"
+                      color={colors.text}
+                      numberOfLines={1}
+                    >
+                      {isSimple ? (asset.name || 'Item') : asset.symbol}
+                    </Text>
+                    {isPriceLoading && (
+                      <Spinner size="small" color={colors.textTertiary} style={styles.loadingSpinner} />
+                    )}
+                  </View>
                   {asset.name && tableConfig.columns.find(c => c.id === 'name')?.visible && !isSimple && (
                     <Text
                       fontSize={11}
@@ -327,6 +333,15 @@ const styles = StyleSheet.create({
   indicator: {
     width: INDICATOR_WIDTH,
     height: '100%',
+  },
+  symbolRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 16,
+    gap: 6,
+  },
+  loadingSpinner: {
+    transform: [{ scale: 0.6 }],
   },
   scrollableRow: {
     flexDirection: 'row',
