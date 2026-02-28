@@ -42,7 +42,7 @@ export function AssetsTable({ assets, assetStats, masked = false }: AssetsTableP
         if (isSimple || !stats?.currentPrice) {
           return '—';
         }
-        return masked ? VALUE_MASK : formatCurrency(stats.currentPrice, asset.currency);
+        return formatCurrency(stats.currentPrice, asset.currency);
 
       case 'amount':
         if (!stats) {
