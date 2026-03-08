@@ -9,6 +9,7 @@ import { getLotsForAsset } from '../../db/transactions';
 import { fetchYahooPrice } from '../../api/providers/yahoo';
 import { fetchKrakenPrices } from '../../api/providers/kraken';
 import { fetchExchangeRate } from '../../api/providers/frankfurter';
+import { calculateCAGR } from '../../utils/calculations';
 import type { Asset, AssetWithStats, PortfolioWithStats, Lot, PriceData } from '../../types';
 
 interface AssetStatsData {
@@ -76,6 +77,9 @@ function calculateSingleAssetStats(
     }
   }
 
+  // Calculate CAGR
+  const cagr = calculateCAGR(lots, currentValue, totalCost);
+
   return {
     stats: {
       ...asset,
@@ -88,6 +92,7 @@ function calculateSingleAssetStats(
       unrealizedGain,
       unrealizedGainPercent,
       todayChangePercent: isSimple ? null : todayChangePercent,
+      cagr,
       lots,
     },
     valueInPortfolioCurrency,

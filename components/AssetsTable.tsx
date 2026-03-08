@@ -81,17 +81,30 @@ export function AssetsTable({ assets, assetStats, masked = false }: AssetsTableP
         }
         return formatPercent(stats.todayChangePercent);
 
+      case 'cagr':
+        if (isSimple || stats?.cagr == null) {
+          return '—';
+        }
+        return formatPercent(stats.cagr);
+
       default:
         return '—';
     }
   };
 
-  const getGainColorForCell = (columnId: TableColumnId, stats: AssetWithStats | undefined) => {
+  const getGainColorForCell = (columnId: TableColumnId, stats: AssetWithStats | undefined, isSimple: boolean) => {
+    // For simple assets, always return neutral
+    if (isSimple) {
+      return 'neutral';
+    }
     if (columnId === 'pnl' || columnId === 'pnlPercent') {
       return stats ? getGainColor(stats.unrealizedGain) : 'neutral';
     }
     if (columnId === 'today') {
       return stats?.todayChangePercent != null ? getGainColor(stats.todayChangePercent) : 'neutral';
+    }
+    if (columnId === 'cagr') {
+      return stats?.cagr != null ? getGainColor(stats.cagr) : 'neutral';
     }
     return 'neutral';
   };
@@ -236,13 +249,14 @@ export function AssetsTable({ assets, assetStats, masked = false }: AssetsTableP
             <View>
               {assets.map((asset, index) => {
                 const stats = assetStats.get(asset.id);
+                const isSimple = isSimpleAssetType(asset.type);
                 const isLastRow = index === assets.length - 1;
 
                 return (
                   <View key={asset.id} style={styles.scrollableRow}>
                     {visibleColumns.map(col => {
                       const value = getCellValue(col.id, asset, stats);
-                      const cellGainColor = getGainColorForCell(col.id, stats);
+                      const cellGainColor = getGainColorForCell(col.id, stats, isSimple);
 
                       return (
                         <TouchableOpacity

@@ -80,6 +80,8 @@ export interface AssetWithStats extends Asset {
   unrealizedGainPercent: number | null;
   /** Today's (24h) price change percentage */
   todayChangePercent: number | null;
+  /** Compound Annual Growth Rate based on lot purchase dates */
+  cagr: number | null;
   lots: Lot[];
 }
 
