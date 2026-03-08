@@ -45,7 +45,7 @@ export function AssetsTable({ assets, assetStats, masked = false }: AssetsTableP
         return formatCurrency(stats.currentPrice, asset.currency);
 
       case 'amount':
-        if (!stats) {
+        if (!stats || !stats.totalQuantity) {
           return '—';
         }
         if (isSimple) {
@@ -54,7 +54,7 @@ export function AssetsTable({ assets, assetStats, masked = false }: AssetsTableP
         return masked ? VALUE_MASK : formatQuantity(stats.totalQuantity);
 
       case 'value':
-        if (stats?.currentValue == null) {
+        if (!stats || !stats.totalQuantity || stats?.currentValue == null) {
           return '—';
         }
         return masked ?
@@ -62,7 +62,7 @@ export function AssetsTable({ assets, assetStats, masked = false }: AssetsTableP
           formatCurrency(stats.currentValue, asset.currency, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
       case 'pnl':
-        if (isSimple || stats?.unrealizedGain == null) {
+        if (isSimple || !stats || !stats.totalQuantity || stats?.unrealizedGain == null) {
           return '—';
         }
         return masked ?
@@ -70,7 +70,7 @@ export function AssetsTable({ assets, assetStats, masked = false }: AssetsTableP
           formatCurrency(stats.unrealizedGain, asset.currency, { showSign: true, minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
       case 'pnlPercent':
-        if (isSimple || stats?.unrealizedGainPercent == null) {
+        if (isSimple || !stats || !stats.totalQuantity || stats?.unrealizedGainPercent == null) {
           return '—';
         }
         return formatPercent(stats.unrealizedGainPercent);
