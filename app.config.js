@@ -2,7 +2,7 @@ module.exports = {
   expo: {
     name: "Edineros",
     slug: "edineros",
-    version: "1.0.5.3",
+    version: "1.0.5.4",
     orientation: "portrait",
     icon: "./assets/icon.png",
     userInterfaceStyle: "automatic",
