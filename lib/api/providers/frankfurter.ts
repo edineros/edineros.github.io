@@ -1,9 +1,18 @@
-interface FrankfurterRates {
-  amount: number;
-  base: string;
+// v2 API response: array of rate objects
+interface FrankfurterRateV2 {
   date: string;
-  rates: Record<string, number>;
+  base: string;
+  quote: string;
+  rate: number;
 }
+
+// v2 API currencies response: array of currency objects
+interface FrankfurterCurrencyV2 {
+  iso_code: string;
+  name: string;
+}
+
+const BASE_URL = 'https://api.frankfurter.dev/v2';
 
 // Map to store in-flight requests to prevent duplicate API calls
 const inFlightRequests = new Map<string, Promise<number | null>>();
@@ -31,7 +40,7 @@ export async function fetchExchangeRate(
   // Create the actual fetch promise
   const fetchPromise = (async () => {
     try {
-      const url = `https://api.frankfurter.app/latest?from=${encodeURIComponent(fromCurrency.toUpperCase())}&to=${encodeURIComponent(toCurrency.toUpperCase())}`;
+      const url = `${BASE_URL}/rates?base=${encodeURIComponent(fromCurrency.toUpperCase())}&quotes=${encodeURIComponent(toCurrency.toUpperCase())}`;
 
       const response = await fetch(url, {
         headers: {
@@ -44,9 +53,14 @@ export async function fetchExchangeRate(
         return null;
       }
 
-      const data = (await response.json()) as FrankfurterRates;
-      const rate = data.rates[toCurrency.toUpperCase()];
+      const data = (await response.json()) as FrankfurterRateV2[];
 
+      if (!Array.isArray(data) || data.length === 0) {
+        console.error('Frankfurter API: unexpected response format');
+        return null;
+      }
+
+      const rate = data[0].rate;
       return rate ?? null;
     } catch (error) {
       console.error('Error fetching exchange rate:', error);
@@ -66,7 +80,7 @@ export async function fetchExchangeRate(
 // Get list of supported currencies
 export async function getSupportedCurrencies(): Promise<string[]> {
   try {
-    const response = await fetch('https://api.frankfurter.app/currencies', {
+    const response = await fetch(`${BASE_URL}/currencies`, {
       headers: {
         Accept: 'application/json',
       },
@@ -76,8 +90,8 @@ export async function getSupportedCurrencies(): Promise<string[]> {
       return ['USD', 'EUR', 'GBP', 'JPY', 'CHF', 'CAD', 'AUD'];
     }
 
-    const data = (await response.json()) as Record<string, string>;
-    return Object.keys(data);
+    const data = (await response.json()) as FrankfurterCurrencyV2[];
+    return data.map((c) => c.iso_code);
   } catch (error) {
     console.error('Error fetching supported currencies:', error);
     return ['USD', 'EUR', 'GBP', 'JPY', 'CHF', 'CAD', 'AUD'];
