@@ -3,7 +3,7 @@ import { TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { YStack, Text, Spinner } from 'tamagui';
 import { Ionicons } from '@expo/vector-icons';
-import { useAppStore } from '../store';
+import { ALL_PORTFOLIOS_ID, useAppStore } from '../store';
 import { usePortfolios } from '../lib/hooks/usePortfolios';
 import { Page } from '../components/Page';
 import { CONTENT_HORIZONTAL_PADDING } from '../lib/constants/layout';
@@ -30,26 +30,31 @@ function MenuButton() {
 export default function HomeScreen() {
   const router = useRouter();
   const colors = useColors();
-  const { getLastPortfolioId } = useAppStore();
+  const { loadSelectedPortfolioIds } = useAppStore();
   const { data: portfolios, isLoading } = usePortfolios();
 
-  // Redirect to last opened portfolio (or first) when loading completes
+  // Redirect to last viewed portfolio(s) when loading completes
   useEffect(() => {
     const redirect = async () => {
       if (!isLoading && portfolios && portfolios.length > 0) {
-        // Try to get the last opened portfolio
-        const lastId = await getLastPortfolioId();
-        const targetPortfolio = lastId
-          ? portfolios.find(p => p.id === lastId)
-          : null;
+        const selection = await loadSelectedPortfolioIds();
 
-        // Use last opened portfolio if it exists, otherwise use first
-        const portfolioId = targetPortfolio?.id || portfolios[0].id;
-        router.replace(`/portfolio/${portfolioId}`);
+        if (selection === null) {
+          // No persisted selection – go to the first portfolio
+          router.replace(`/portfolio/${portfolios[0].id}`);
+        } else if (selection.length === 1) {
+          // Single portfolio persisted – go straight to it (or first if deleted)
+          const target = portfolios.find(p => p.id === selection[0]);
+          router.replace(`/portfolio/${target?.id ?? portfolios[0].id}`);
+        } else {
+          // Multi-portfolio selection – restore the "all" view with that filter
+          // (selectedPortfolioIds is already set in the store by loadSelectedPortfolioIds)
+          router.replace(`/portfolio/${ALL_PORTFOLIOS_ID}`);
+        }
       }
     };
     redirect();
-  }, [isLoading, portfolios, router, getLastPortfolioId]);
+  }, [isLoading, portfolios, router, loadSelectedPortfolioIds]);
 
   // Show loading state
   if (isLoading || !portfolios || portfolios.length > 0) {

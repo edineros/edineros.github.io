@@ -39,13 +39,14 @@ export default function PortfolioDetailScreen() {
   const [allocationMode, setAllocationMode] = useState<AllocationMode>('type');
   const [showTableConfig, setShowTableConfig] = useState(false);
   const colors = useColors();
-  const { setCurrentPortfolio, loadTableConfig } = useAppStore();
+  const { setSelectedPortfolioIds, loadTableConfig, selectedPortfolioIds, loadSelectedPortfolioIds } = useAppStore();
   const updatePortfolioMutation = useUpdatePortfolio();
 
-  // Load table config on mount
+  // Load table config and persisted portfolio selection on mount
   useEffect(() => {
     loadTableConfig();
-  }, [loadTableConfig]);
+    loadSelectedPortfolioIds();
+  }, [loadTableConfig, loadSelectedPortfolioIds]);
 
   // undefined for "all portfolios", otherwise the specific portfolio ID
   const portfolioId = id === ALL_PORTFOLIOS_ID ? undefined : id;
@@ -57,22 +58,42 @@ export default function PortfolioDetailScreen() {
   const { data: categories = [] } = useCategories();
 
   // Load portfolio (for single portfolio view)
-  const { data: portfolio } = usePortfolio(portfolioId);
+  const { data: portfolio, isLoading: portfolioLoading } = usePortfolio(portfolioId);
 
   // Load assets (undefined = all assets, portfolioId = specific portfolio's assets)
   const { data: rawAssets = [] } = useAssets(portfolioId);
 
-  // For "All Portfolios", use the first portfolio's currency as display currency
-  const displayCurrency = portfolioId
-    ? (portfolio?.currency ?? 'EUR')
-    : (portfolios[0]?.currency ?? 'EUR');
+  // For multi-portfolio selection, use the first selected portfolio's currency
+  const displayCurrency = useMemo(() => {
+    if (portfolioId) return portfolio?.currency ?? 'EUR';
+    if (selectedPortfolioIds !== null && selectedPortfolioIds.length > 0) {
+      return portfolios.find((p) => p.id === selectedPortfolioIds[0])?.currency ?? portfolios[0]?.currency ?? 'EUR';
+    }
+    return portfolios[0]?.currency ?? 'EUR';
+  }, [portfolioId, portfolio, selectedPortfolioIds, portfolios]);
 
-  // Load stats (undefined = all portfolios, portfolioId = single portfolio)
-  const { portfolio: stats, assetStats, isLoading, pendingPriceCount } = usePortfolioStats(portfolioId, displayCurrency);
+  // Unified selection passed to the stats hook:
+  //   [portfolioId] for a single portfolio, or selectedPortfolioIds (null/array) for the "all" route
+  const statsPortfolioIds = useMemo(
+    () => (portfolioId ? [portfolioId] : selectedPortfolioIds),
+    [portfolioId, selectedPortfolioIds]
+  );
 
-  // Sort assets by type (using defined order), then by symbol/name within each type
+  // Load stats
+  const { portfolio: stats, assetStats, isLoading, pendingPriceCount } = usePortfolioStats(statsPortfolioIds, displayCurrency);
+
+  // When in multi-portfolio mode, narrow the raw assets to just the selected portfolios.
+  // Reused by both the table and the allocation chart.
+  const filteredAssets = useMemo(() => {
+    if (!portfolioId && selectedPortfolioIds !== null) {
+      return rawAssets.filter((a) => selectedPortfolioIds.includes(a.portfolioId));
+    }
+    return rawAssets;
+  }, [rawAssets, portfolioId, selectedPortfolioIds]);
+
+  // Sort assets by type (using defined order), then by symbol/name within each type.
   const portfolioAssets = useMemo(() => {
-    return [...rawAssets].sort((a, b) => {
+    return [...filteredAssets].sort((a, b) => {
       const typeOrderA = getAssetTypeSortOrder(a.type);
       const typeOrderB = getAssetTypeSortOrder(b.type);
       if (typeOrderA !== typeOrderB) {
@@ -83,30 +104,34 @@ export default function PortfolioDetailScreen() {
       const nameB = (isSimpleAssetType(b.type) ? b.name : b.symbol) || '';
       return nameA.localeCompare(nameB);
     });
-  }, [rawAssets]);
+  }, [filteredAssets]);
 
-  // Check if any portfolio is masked (for "All Portfolios" view)
-  const isMasked = portfolioId
-    ? (portfolio?.masked ?? false)
-    : portfolios.some(p => p.masked);
+  // Check if any relevant portfolio is masked
+  const isMasked = useMemo(() => {
+    if (portfolioId) return portfolio?.masked ?? false;
+    if (selectedPortfolioIds !== null) {
+      return portfolios.filter((p) => selectedPortfolioIds.includes(p.id)).some((p) => p.masked);
+    }
+    return portfolios.some((p) => p.masked);
+  }, [portfolioId, portfolio, selectedPortfolioIds, portfolios]);
 
   useFocusEffect(
     useCallback(() => {
-      // Save this as the last opened portfolio (unless viewing all)
+      // Persist the current single-portfolio view as the selection (for startup navigation)
       if (portfolioId) {
-        setCurrentPortfolio(portfolioId);
+        setSelectedPortfolioIds([portfolioId]);
       }
-    }, [portfolioId, setCurrentPortfolio])
+    }, [portfolioId, setSelectedPortfolioIds])
   );
 
   // Redirect to first portfolio if current portfolio doesn't exist
   useFocusEffect(
     useCallback(() => {
-      if (portfolioId && !isLoading && !portfolio && portfolios.length > 0) {
+      if (portfolioId && !portfolioLoading && !portfolio && portfolios.length > 0) {
         // Portfolio doesn't exist (maybe ID changed after migration)
         router.replace(`/portfolio/${portfolios[0].id}`);
       }
-    }, [portfolioId, isLoading, portfolio, portfolios, router])
+    }, [portfolioId, portfolioLoading, portfolio, portfolios, router])
   );
 
   const onRefresh = useCallback(async () => {
@@ -118,20 +143,32 @@ export default function PortfolioDetailScreen() {
   }, [queryClient]);
 
   const handleToggleMasked = useCallback(async () => {
-    if (portfolio && portfolioId) {
+    if (portfolioId && portfolio) {
+      // Single portfolio: simple toggle
       await updatePortfolioMutation.mutateAsync({
         id: portfolio.id,
         updates: { masked: !portfolio.masked },
       });
+    } else {
+      // Multi / all portfolios: apply the same new state to every relevant portfolio.
+      // If any are currently masked, unmask all; if none are masked, mask all.
+      const relevantPortfolios = selectedPortfolioIds !== null
+        ? portfolios.filter((p) => selectedPortfolioIds.includes(p.id))
+        : portfolios;
+      const newMasked = !isMasked;
+      await Promise.all(
+        relevantPortfolios.map((p) =>
+          updatePortfolioMutation.mutateAsync({ id: p.id, updates: { masked: newMasked } })
+        )
+      );
     }
-  }, [portfolio, portfolioId, updatePortfolioMutation]);
+  }, [portfolio, portfolioId, portfolios, selectedPortfolioIds, isMasked, updatePortfolioMutation]);
 
   const allocationData = useMemo(() => {
-    if (rawAssets.length === 0) {
+    if (filteredAssets.length === 0) {
       return { allocations: [], categoryAllocations: [], hasAnyCategories: false, pendingTypes: new Set<string>(), pendingCategoryIds: new Set<string | null>() };
     }
 
-    // Build maps with type/category info and portfolio currency values for allocations
     const statsWithType = new Map<string, { type: Asset['type']; currentValue: number | null }>();
     const statsWithCategory = new Map<string, { categoryId: string | null; currentValue: number | null }>();
 
@@ -139,7 +176,7 @@ export default function PortfolioDetailScreen() {
     const pendingTypes = new Set<string>();
     const pendingCategoryIds = new Set<string | null>();
 
-    for (const asset of rawAssets) {
+    for (const asset of filteredAssets) {
       const stat = assetStats.get(asset.id);
       // Use valueInPortfolioCurrency for allocation calculations
       const valueForAllocation = stat?.valueInPortfolioCurrency ?? null;
@@ -169,7 +206,7 @@ export default function PortfolioDetailScreen() {
       pendingTypes,
       pendingCategoryIds,
     };
-  }, [rawAssets, assetStats, categories]);
+  }, [filteredAssets, assetStats, categories]);
 
   // Show loading state (or while redirecting to valid portfolio)
   if (portfolioId ? (!portfolio) : (portfolios.length === 0)) {
@@ -215,18 +252,16 @@ export default function PortfolioDetailScreen() {
           <Text color={colors.textSecondary} fontSize={13}>
             TOTAL VALUE
           </Text>
-          {portfolioId && portfolio && (
-            <TouchableOpacity
-              onPress={handleToggleMasked}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Ionicons
-                name={portfolio.masked ? 'eye-off-outline' : 'eye-outline'}
-                size={16}
-                color={colors.textSecondary}
-              />
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity
+            onPress={handleToggleMasked}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons
+              name={isMasked ? 'eye-off-outline' : 'eye-outline'}
+              size={16}
+              color={colors.textSecondary}
+            />
+          </TouchableOpacity>
         </XStack>
         {stats ? (
           <>

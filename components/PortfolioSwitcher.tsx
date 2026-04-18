@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Modal, TouchableOpacity, ScrollView, Platform } from 'react-native';
 import { router } from 'expo-router';
-import { YStack, Text } from 'tamagui';
+import { YStack, XStack, Text } from 'tamagui';
 import { Ionicons } from '@expo/vector-icons';
 import type { Portfolio } from '../lib/types';
 import { useColors } from '../lib/theme/store';
-import { ALL_PORTFOLIOS_ID } from '../store';
+import { ALL_PORTFOLIOS_ID, useAppStore } from '../store';
 
 interface DropdownItemProps {
   title: string;
@@ -58,36 +58,110 @@ interface PortfolioSwitcherProps {
 
 export function PortfolioSwitcher({ currentPortfolio, portfolios, isAllPortfolios = false }: PortfolioSwitcherProps) {
   const [isOpen, setIsOpen] = useState(false);
+  // pendingSelection: null = all portfolios, array = specific subset being edited in modal
+  const [pendingSelection, setPendingSelection] = useState<string[] | null>(null);
   const colors = useColors();
+  const { selectedPortfolioIds, setSelectedPortfolioIds } = useAppStore();
 
-  const handleSelect = (portfolio: Portfolio) => {
-    setIsOpen(false);
-    const currentId = isAllPortfolios ? ALL_PORTFOLIOS_ID : currentPortfolio?.id;
-    if (portfolio.id !== currentId) {
-      router.replace(`/portfolio/${portfolio.id}`);
+  const handleOpen = () => {
+    // Initialise the in-modal selection from the current committed state
+    if (!isAllPortfolios && currentPortfolio) {
+      setPendingSelection([currentPortfolio.id]);
+    } else {
+      // On the "all" route: use the persisted selection (null = truly all)
+      setPendingSelection(selectedPortfolioIds);
+    }
+    setIsOpen(true);
+  };
+
+  const handleTogglePortfolio = (portfolioId: string) => {
+    if (pendingSelection === null) {
+      // Currently in "all selected" mode – select only the clicked portfolio
+      setPendingSelection([portfolioId]);
+    } else if (pendingSelection.includes(portfolioId)) {
+      // Deselect this portfolio
+      const next = pendingSelection.filter((id) => id !== portfolioId);
+      // If that would leave nothing selected, revert to "all"
+      setPendingSelection(next.length === 0 ? null : next);
+    } else {
+      // Add this portfolio to the selection
+      setPendingSelection([...pendingSelection, portfolioId]);
     }
   };
 
   const handleSelectAll = () => {
+    setPendingSelection(null); // null means "All Portfolios"
+  };
+
+  const handleDone = () => {
     setIsOpen(false);
-    if (!isAllPortfolios) {
-      router.replace(`/portfolio/${ALL_PORTFOLIOS_ID}`);
+
+    if (pendingSelection === null) {
+      // All portfolios
+      setSelectedPortfolioIds(null);
+      if (!isAllPortfolios) {
+        router.replace(`/portfolio/${ALL_PORTFOLIOS_ID}`);
+      }
+      return;
+    }
+
+    if (pendingSelection.length === 1) {
+      // Single portfolio → navigate to its own route and persist as [id]
+      const targetId = pendingSelection[0];
+      setSelectedPortfolioIds([targetId]);
+      const currentId = isAllPortfolios ? null : currentPortfolio?.id;
+      if (targetId !== currentId) {
+        router.replace(`/portfolio/${targetId}`);
+      }
+      return;
+    }
+
+    // Multiple (but not necessarily all) portfolios selected
+    const allSelected = portfolios.every((p) => pendingSelection.includes(p.id));
+    if (allSelected) {
+      setSelectedPortfolioIds(null);
+      if (!isAllPortfolios) {
+        router.replace(`/portfolio/${ALL_PORTFOLIOS_ID}`);
+      }
+    } else {
+      setSelectedPortfolioIds(pendingSelection);
+      if (!isAllPortfolios) {
+        router.replace(`/portfolio/${ALL_PORTFOLIOS_ID}`);
+      }
     }
   };
 
-  const handleCreateNew = () => {
+  const handleCancel = () => {
     setIsOpen(false);
-    router.push('/portfolio/create');
+    // discard pendingSelection – do not commit any changes
   };
 
-  const displayName = isAllPortfolios ? 'All Portfolios' : currentPortfolio?.name ?? '';
+  // ── Display name shown in the header trigger ──────────────────────────────
+  const displayName = useMemo(() => {
+    if (!isAllPortfolios) {
+      return currentPortfolio?.name ?? '';
+    }
+    if (selectedPortfolioIds === null) {
+      return 'All Portfolios';
+    }
+    if (selectedPortfolioIds.length === 1) {
+      return portfolios.find((p) => p.id === selectedPortfolioIds[0])?.name ?? 'All Portfolios';
+    }
+    return `Portfolios (${selectedPortfolioIds.length})`;
+  }, [isAllPortfolios, currentPortfolio, selectedPortfolioIds, portfolios]);
+
+  // ── Selection helpers for the modal list ─────────────────────────────────
+  const isAllPending = pendingSelection === null;
+  const isPortfolioPending = (portfolioId: string) =>
+    pendingSelection !== null && pendingSelection.includes(portfolioId);
+
   const showAllOption = portfolios.length > 1;
 
   return (
     <>
       <TouchableOpacity
         activeOpacity={0.7}
-        onPress={() => setIsOpen(true)}
+        onPress={handleOpen}
         style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
       >
         <Text color={colors.text} fontSize={17} fontWeight="600">
@@ -100,11 +174,11 @@ export function PortfolioSwitcher({ currentPortfolio, portfolios, isAllPortfolio
         visible={isOpen}
         transparent
         animationType="fade"
-        onRequestClose={() => setIsOpen(false)}
+        onRequestClose={handleCancel}
       >
         <TouchableOpacity
           style={{ flex: 1, backgroundColor: colors.overlay }}
-          onPress={() => setIsOpen(false)}
+          onPress={handleCancel}
         >
           <YStack
             flex={1}
@@ -119,17 +193,19 @@ export function PortfolioSwitcher({ currentPortfolio, portfolios, isAllPortfolio
                 overflow="hidden"
                 maxHeight={400}
               >
+                {/* Modal header */}
                 <YStack padding={16} borderBottomWidth={1} borderBottomColor={colors.modalBorder}>
                   <Text color={colors.text} fontSize={17} fontWeight="600" textAlign="center">
-                    Switch Portfolio
+                    Select Portfolios
                   </Text>
                 </YStack>
+
                 <ScrollView style={{ maxHeight: 300 }}>
                   {showAllOption && (
                     <DropdownItem
                       title="All Portfolios"
                       subtitle={`${portfolios.length} portfolios`}
-                      isSelected={isAllPortfolios}
+                      isSelected={isAllPending}
                       onPress={handleSelectAll}
                     />
                   )}
@@ -138,13 +214,16 @@ export function PortfolioSwitcher({ currentPortfolio, portfolios, isAllPortfolio
                       key={portfolio.id}
                       title={portfolio.name}
                       subtitle={portfolio.currency}
-                      isSelected={!isAllPortfolios && portfolio.id === currentPortfolio?.id}
-                      onPress={() => handleSelect(portfolio)}
+                      isSelected={isPortfolioPending(portfolio.id)}
+                      onPress={() => handleTogglePortfolio(portfolio.id)}
                     />
                   ))}
                   <TouchableOpacity
                     activeOpacity={0.7}
-                    onPress={handleCreateNew}
+                    onPress={() => {
+                      setIsOpen(false);
+                      router.push('/portfolio/create');
+                    }}
                     style={{
                       padding: 16,
                       flexDirection: 'row',
@@ -159,21 +238,40 @@ export function PortfolioSwitcher({ currentPortfolio, portfolios, isAllPortfolio
                   </TouchableOpacity>
                 </ScrollView>
               </YStack>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => setIsOpen(false)}
-                style={{
-                  backgroundColor: colors.modalBackground,
-                  borderRadius: 14,
-                  marginTop: 8,
-                  padding: 16,
-                  alignItems: 'center',
-                }}
-              >
-                <Text color={colors.accent} fontSize={17} fontWeight="600">
-                  Cancel
-                </Text>
-              </TouchableOpacity>
+
+              {/* Done / Cancel buttons */}
+              <XStack gap={8} marginTop={8}>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={handleCancel}
+                  style={{
+                    flex: 1,
+                    backgroundColor: colors.modalBackground,
+                    borderRadius: 14,
+                    padding: 16,
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text color={colors.accent} fontSize={17} fontWeight="400">
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={handleDone}
+                  style={{
+                    flex: 1,
+                    backgroundColor: colors.modalBackground,
+                    borderRadius: 14,
+                    padding: 16,
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text color={colors.accent} fontSize={17} fontWeight="600">
+                    Done
+                  </Text>
+                </TouchableOpacity>
+              </XStack>
             </TouchableOpacity>
           </YStack>
         </TouchableOpacity>

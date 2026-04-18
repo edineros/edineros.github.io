@@ -16,7 +16,7 @@ export default function EditPortfolioScreen() {
   const colors = useColors();
   const [name, setName] = useState('');
   const [currency, setCurrency] = useState('EUR');
-  const { clearLastPortfolioId } = useAppStore();
+  const { clearPortfolioFromSelection } = useAppStore();
 
   const { data: portfolio, isLoading } = usePortfolio(id);
   const updatePortfolio = useUpdatePortfolio();
@@ -54,7 +54,7 @@ export default function EditPortfolioScreen() {
     if (confirmed) {
       try {
         await deletePortfolio.mutateAsync(id!);
-        await clearLastPortfolioId(id!);
+        clearPortfolioFromSelection(id!);
         router.replace('/');
       } catch (error) {
         alert('Error', (error as Error).message);

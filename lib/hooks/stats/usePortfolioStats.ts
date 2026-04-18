@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useQueries, useQuery } from '@tanstack/react-query';
-import { usePortfolio, usePortfolios } from '../usePortfolios';
+import { usePortfolios } from '../usePortfolios';
 import { useAssets } from '../useAssets';
 import { queryKeys } from '../config/queryKeys';
 import { PRICE_STALE_TIME, EXCHANGE_RATE_STALE_TIME } from '../config/queryClient';
@@ -110,39 +110,46 @@ export interface PortfolioStatsResult {
 }
 
 /**
- * Hook to get portfolio stats.
- * - undefined → all portfolios (requires displayCurrency)
- * - portfolioId → single portfolio stats
+ * Compute portfolio stats for any selection of portfolios.
+ *
+ * @param portfolioIds
+ *   - null          → all portfolios
+ *   - [id]          → single portfolio (uses an efficient per-portfolio asset query)
+ *   - [id1, id2, …] → custom subset (fetches all assets, then filters in memory)
+ * @param displayCurrency  Currency used to express aggregated totals.
  */
 export function usePortfolioStats(
-  portfolioId: string | undefined,
-  displayCurrency?: string
+  portfolioIds: string[] | null,
+  displayCurrency: string
 ): PortfolioStatsResult {
-  // For single portfolio, fetch portfolio data; for all, fetch all portfolios
-  const { data: portfolio, isLoading: portfolioLoading } = usePortfolio(portfolioId);
+  // When there is exactly one portfolio, use the efficient per-portfolio asset query.
+  const singlePortfolioId = portfolioIds?.length === 1 ? portfolioIds[0] : undefined;
+
+  // Always load the full portfolio list (needed for validation and name lookup).
   const { data: portfolios, isLoading: portfoliosLoading } = usePortfolios();
 
-  // Fetch assets (useAssets handles both single and all cases)
-  const { data: assets, isLoading: assetsLoading } = useAssets(portfolioId);
+  // Fetch assets: scoped to one portfolio when single, all portfolios otherwise.
+  const { data: assets, isLoading: assetsLoading } = useAssets(singlePortfolioId);
 
-  const currency = portfolioId
-    ? (portfolio?.currency ?? 'EUR')
-    : (displayCurrency ?? 'EUR');
+  // For a multi-portfolio filter, narrow the full asset list down in memory.
+  const effectiveAssets = useMemo(() => {
+    if (portfolioIds !== null && portfolioIds.length > 1) {
+      return (assets ?? []).filter((a) => portfolioIds.includes(a.portfolioId));
+    }
+    return assets ?? [];
+  }, [assets, portfolioIds]);
 
-  // Fetch lots for all assets
+  // Fetch lots for all relevant assets
   const lotsQueries = useQueries({
-    queries: (assets ?? []).map((asset) => ({
+    queries: effectiveAssets.map((asset) => ({
       queryKey: queryKeys.lots.byAsset(asset.id),
       queryFn: () => getLotsForAsset(asset.id),
     })),
   });
 
-  // Fetch prices for market assets (non-simple)
-  const marketAssets = (assets ?? []).filter((a) => !isSimpleAssetType(a.type));
-
-  // Group assets by type for efficient fetching
-  const cryptoAssets = marketAssets.filter((a) => a.type === 'crypto' || a.type === 'bitcoin');
-  const otherMarketAssets = marketAssets.filter((a) => a.type !== 'crypto' && a.type !== 'bitcoin');
+  // Group assets by type for price fetching
+  const cryptoAssets = effectiveAssets.filter((a) => a.type === 'crypto' || a.type === 'bitcoin');
+  const otherMarketAssets = effectiveAssets.filter((a) => !isSimpleAssetType(a.type) && a.type !== 'crypto' && a.type !== 'bitcoin');
 
   // Batch fetch crypto prices (always in USD, conversion handled by exchange rates)
   const cryptoSymbols = [...new Set(cryptoAssets.map((a) => a.symbol))].sort();
@@ -171,19 +178,19 @@ export function usePortfolioStats(
   });
 
   // Fetch exchange rates
-  const uniqueAssetCurrencies = [...new Set((assets ?? []).map((a) => a.currency))];
+  const uniqueAssetCurrencies = [...new Set(effectiveAssets.map((a) => a.currency))];
 
-  // Asset → portfolio rates (for value aggregation)
-  const currenciesNeedingPortfolioConversion = uniqueAssetCurrencies.filter((c) => c !== currency);
+  // Asset → display currency rates (for value aggregation)
+  const currenciesNeedingPortfolioConversion = uniqueAssetCurrencies.filter((c) => c !== displayCurrency);
   const assetToPortfolioRateQueries = useQueries({
     queries: currenciesNeedingPortfolioConversion.map((curr) => ({
-      queryKey: queryKeys.exchangeRates.pair(curr, currency),
-      queryFn: () => fetchExchangeRate(curr, currency),
+      queryKey: queryKeys.exchangeRates.pair(curr, displayCurrency),
+      queryFn: () => fetchExchangeRate(curr, displayCurrency),
       staleTime: EXCHANGE_RATE_STALE_TIME,
     })),
   });
 
-  // USD → asset rates (for converting crypto prices to asset currency)
+  // USD → asset currency rates (for converting crypto prices)
   const currenciesNeedingCryptoConversion = uniqueAssetCurrencies.filter((c) => c !== CRYPTO_BASE_CURRENCY);
   const cryptoToAssetRateQueries = useQueries({
     queries: currenciesNeedingCryptoConversion.map((curr) => ({
@@ -194,17 +201,16 @@ export function usePortfolioStats(
   });
 
   const isLoading = (
-    (portfolioId ? portfolioLoading : portfoliosLoading) ||
+    portfoliosLoading ||
     assetsLoading ||
     lotsQueries.some((q) => q.isLoading) ||
     cryptoPricesLoading ||
     otherPriceQueries.some((q) => q.isLoading) ||
     assetToPortfolioRateQueries.some((q) => q.isLoading) ||
     cryptoToAssetRateQueries.some((q) => q.isLoading)
-  )
+  );
 
-  // Build exchange rate maps
-  // assetToPortfolioRateMap: assetCurrency → rate to convert to portfolio currency
+  // assetCurrency → rate to convert to display currency
   const assetToPortfolioRateMap = useMemo(() => {
     const map = new Map<string, number>();
     currenciesNeedingPortfolioConversion.forEach((curr, index) => {
@@ -216,7 +222,7 @@ export function usePortfolioStats(
     return map;
   }, [currenciesNeedingPortfolioConversion, assetToPortfolioRateQueries]);
 
-  // cryptoToAssetRateMap: cryptoBaseCurrency → assetCurrency (for converting crypto prices)
+  // cryptoBaseCurrency → assetCurrency rates (for converting crypto prices)
   const cryptoToAssetRateMap = useMemo(() => {
     const map = new Map<string, number>();
     currenciesNeedingCryptoConversion.forEach((curr, index) => {
@@ -246,15 +252,8 @@ export function usePortfolioStats(
 
   // Calculate stats for each asset
   const { assetStats, portfolioStats, pendingPriceCount } = useMemo(() => {
-    // Validation differs for single vs all portfolios
-    if (portfolioId) {
-      if (!portfolio || !assets) {
-        return EMPTY_STATS;
-      }
-    } else {
-      if (!portfolios || portfolios.length === 0 || !assets) {
-        return EMPTY_STATS;
-      }
+    if (!portfolios || portfolios.length === 0 || !assets) {
+      return EMPTY_STATS;
     }
 
     const statsMap = new Map<string, AssetWithStats>();
@@ -262,7 +261,7 @@ export function usePortfolioStats(
     let totalCost = 0;
     let pendingPriceCount = 0;
 
-    assets.forEach((asset, index) => {
+    effectiveAssets.forEach((asset, index) => {
       const lots = lotsQueries[index]?.data ?? [];
       const isSimple = isSimpleAssetType(asset.type);
 
@@ -288,30 +287,23 @@ export function usePortfolioStats(
         }
       }
 
-      // Get exchange rates
-      const assetToPortfolioRate = asset.currency !== currency
+      const assetToPortfolioRate = asset.currency !== displayCurrency
         ? assetToPortfolioRateMap.get(asset.currency) ?? null
         : 1;
 
-      // For price-to-asset conversion, check if price currency differs from asset currency
       let priceToAssetRate: number | null = null;
       if (priceCurrency && priceCurrency !== asset.currency) {
         if (priceCurrency === CRYPTO_BASE_CURRENCY) {
-          // Crypto prices are in USD, convert to asset currency
           priceToAssetRate = cryptoToAssetRateMap.get(asset.currency) ?? null;
         }
-        // For Yahoo (stocks), priceCurrency matches trading currency
-        // If it differs from asset currency, we'd need more rates
-        // For now, those will show as pending
       }
 
       const result = calculateSingleAssetStats(
         { asset, lots, price, priceCurrency, priceToAssetRate, assetToPortfolioRate, todayChangePercent },
-        currency
+        displayCurrency
       );
       statsMap.set(asset.id, result.stats);
 
-      // Accumulate totals in portfolio currency
       if (result.valueInPortfolioCurrency !== null) {
         totalValue += result.valueInPortfolioCurrency;
       } else {
@@ -326,12 +318,16 @@ export function usePortfolioStats(
     const totalGain = totalValue - totalCost;
     const totalGainPercent = totalCost > 0 ? (totalGain / totalCost) * 100 : null;
 
-    // Build portfolio stats differently for single vs all
+    // For a single portfolio, look it up from the list for its name / metadata.
+    const singlePortfolio = singlePortfolioId
+      ? portfolios.find((p) => p.id === singlePortfolioId) ?? null
+      : null;
+
     const portfolioWithStats: PortfolioWithStats = {
-      ...(portfolioId ? portfolio! : {
+      ...(singlePortfolio ?? {
         id: '',
         name: 'All Portfolios',
-        currency,
+        currency: displayCurrency,
         masked: false,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -340,15 +336,24 @@ export function usePortfolioStats(
       totalCost,
       totalGain,
       totalGainPercent,
-      assetCount: assets.length,
+      assetCount: effectiveAssets.length,
     };
 
     return { assetStats: statsMap, portfolioStats: portfolioWithStats, pendingPriceCount };
-  }, [portfolioId, portfolio, portfolios, assets, lotsQueries, cryptoPrices, otherPriceMap, assetToPortfolioRateMap, cryptoToAssetRateMap, currency]);
+  }, [
+    portfolios,
+    assets,
+    effectiveAssets,
+    lotsQueries,
+    cryptoPrices,
+    otherPriceMap,
+    assetToPortfolioRateMap,
+    cryptoToAssetRateMap,
+    displayCurrency,
+    singlePortfolioId,
+  ]);
 
-  const hasPartialData = portfolioId
-    ? (!!portfolio && !!assets && assets.length > 0 && assetStats.size > 0)
-    : (!!portfolios && portfolios.length > 0 && !!assets && assetStats.size > 0);
+  const hasPartialData = !!portfolios && portfolios.length > 0 && !!assets && effectiveAssets.length > 0 && assetStats.size > 0;
 
   return {
     portfolio: portfolioStats,

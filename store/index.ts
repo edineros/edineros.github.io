@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import { Platform } from 'react-native';
 
-const LAST_PORTFOLIO_KEY = 'last_portfolio_id';
 const TABLE_CONFIG_KEY = 'assets_table_config';
+const SELECTED_PORTFOLIOS_KEY = 'selected_portfolio_ids';
 
 // Table column configuration
 export type TableColumnId = 'symbol' | 'name' | 'price' | 'today' | 'amount' | 'value' | 'pnl' | 'pnlPercent' | 'cagr';
@@ -69,12 +69,6 @@ const storage = {
   },
 };
 
-// Legacy wrapper for portfolio storage
-const portfolioStorage = {
-  get: async (): Promise<string | null> => storage.get(LAST_PORTFOLIO_KEY),
-  set: async (value: string | null): Promise<void> => storage.set(LAST_PORTFOLIO_KEY, value),
-};
-
 // Table config storage
 const tableConfigStorage = {
   get: async (): Promise<TableConfig> => {
@@ -104,16 +98,28 @@ const tableConfigStorage = {
 export const ALL_PORTFOLIOS_ID = 'all';
 
 interface UIState {
-  // Current portfolio selection
-  currentPortfolioId: string | null;
+  /**
+   * Which portfolios are currently selected / in view.
+   *
+   * - null        → no preference; startup falls back to the first portfolio.
+   *                 In the "all" view this means show every portfolio.
+   * - [id]        → a single portfolio (doubles as "last opened" for startup).
+   * - [id1, id2]  → a custom multi-portfolio subset.
+   */
+  selectedPortfolioIds: string[] | null;
 
   // Table configuration
   tableConfig: TableConfig;
 
-  // Actions
-  setCurrentPortfolio: (id: string | null) => void;
-  getLastPortfolioId: () => Promise<string | null>;
-  clearLastPortfolioId: (deletedId: string) => Promise<void>;
+  // Portfolio selection actions
+  setSelectedPortfolioIds: (ids: string[] | null) => void;
+  /**
+   * Load persisted selection from storage and return it so the caller can
+   * use the value immediately (e.g. for startup navigation in index.tsx).
+   */
+  loadSelectedPortfolioIds: () => Promise<string[] | null>;
+  /** Remove a deleted portfolio from the persisted selection. */
+  clearPortfolioFromSelection: (deletedId: string) => void;
 
   // Table config actions
   loadTableConfig: () => Promise<void>;
@@ -122,23 +128,46 @@ interface UIState {
 }
 
 export const useAppStore = create<UIState>((set, get) => ({
-  currentPortfolioId: null,
+  selectedPortfolioIds: null,
   tableConfig: DEFAULT_TABLE_CONFIG,
 
-  setCurrentPortfolio: (id: string | null) => {
-    set({ currentPortfolioId: id });
-    portfolioStorage.set(id);
+  setSelectedPortfolioIds: (ids: string[] | null) => {
+    // Skip if the value is semantically the same to avoid unnecessary re-renders
+    // (e.g. useFocusEffect may call this with a new array reference but identical content).
+    const current = get().selectedPortfolioIds;
+    if (ids === current) return;
+    if (
+      ids !== null && current !== null &&
+      ids.length === current.length &&
+      ids.every((id, i) => id === current[i])
+    ) return;
+
+    set({ selectedPortfolioIds: ids });
+    storage.set(SELECTED_PORTFOLIOS_KEY, ids ? JSON.stringify(ids) : null);
   },
 
-  getLastPortfolioId: async () => {
-    return portfolioStorage.get();
-  },
-
-  clearLastPortfolioId: async (deletedId: string) => {
-    const lastId = await portfolioStorage.get();
-    if (lastId === deletedId) {
-      await portfolioStorage.set(null);
+  loadSelectedPortfolioIds: async () => {
+    const stored = await storage.get(SELECTED_PORTFOLIOS_KEY);
+    if (stored) {
+      try {
+        const ids = JSON.parse(stored) as string[];
+        const validIds = Array.isArray(ids) && ids.length > 0 ? ids : null;
+        set({ selectedPortfolioIds: validIds });
+        return validIds;
+      } catch {
+        set({ selectedPortfolioIds: null });
+      }
     }
+    return null;
+  },
+
+  clearPortfolioFromSelection: (deletedId: string) => {
+    const { selectedPortfolioIds } = get();
+    if (selectedPortfolioIds === null) return;
+    const updated = selectedPortfolioIds.filter(id => id !== deletedId);
+    const newSelection = updated.length > 0 ? updated : null;
+    set({ selectedPortfolioIds: newSelection });
+    storage.set(SELECTED_PORTFOLIOS_KEY, newSelection ? JSON.stringify(newSelection) : null);
   },
 
   loadTableConfig: async () => {
