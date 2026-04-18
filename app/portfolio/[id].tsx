@@ -128,12 +128,16 @@ export default function PortfolioDetailScreen() {
 
   const allocationData = useMemo(() => {
     if (rawAssets.length === 0) {
-      return { allocations: [], categoryAllocations: [], hasAnyCategories: false };
+      return { allocations: [], categoryAllocations: [], hasAnyCategories: false, pendingTypes: new Set<string>(), pendingCategoryIds: new Set<string | null>() };
     }
 
     // Build maps with type/category info and portfolio currency values for allocations
     const statsWithType = new Map<string, { type: Asset['type']; currentValue: number | null }>();
     const statsWithCategory = new Map<string, { categoryId: string | null; currentValue: number | null }>();
+
+    // Track types/categories that have at least one asset with no portfolio currency value yet
+    const pendingTypes = new Set<string>();
+    const pendingCategoryIds = new Set<string | null>();
 
     for (const asset of rawAssets) {
       const stat = assetStats.get(asset.id);
@@ -147,6 +151,12 @@ export default function PortfolioDetailScreen() {
         categoryId: asset.categoryId,
         currentValue: valueForAllocation,
       });
+
+      // Mark type/category as pending if this asset's value couldn't be converted
+      if (valueForAllocation === null) {
+        pendingTypes.add(asset.type);
+        pendingCategoryIds.add(asset.categoryId);
+      }
     }
 
     const typeResult = calculateAllocations(statsWithType);
@@ -156,6 +166,8 @@ export default function PortfolioDetailScreen() {
       allocations: typeResult.allocations,
       categoryAllocations: categoryResult.categoryAllocations,
       hasAnyCategories: categoryResult.hasAnyCategories,
+      pendingTypes,
+      pendingCategoryIds,
     };
   }, [rawAssets, assetStats, categories]);
 
@@ -328,6 +340,8 @@ export default function PortfolioDetailScreen() {
                   currency={displayCurrency}
                   mode={allocationMode}
                   masked={isMasked}
+                  pendingTypes={allocationData.pendingTypes}
+                  pendingCategoryIds={allocationData.pendingCategoryIds}
                 />
               </YStack>
             )}

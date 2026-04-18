@@ -6,6 +6,7 @@ import { getAssetTypeColor, getAssetTypePlural } from '../lib/constants/assetTyp
 import { VALUE_MASK } from '../lib/constants/ui';
 import { useColors } from '../lib/theme/store';
 import { uncategorizedColor } from '../lib/theme/colors';
+import { AnimatedEllipsis } from './AnimatedEllipsis';
 
 export type AllocationMode = 'type' | 'category';
 
@@ -29,6 +30,8 @@ interface AssetAllocationChartProps {
   currency: string;
   mode: AllocationMode;
   masked?: boolean;
+  pendingTypes?: Set<string>;
+  pendingCategoryIds?: Set<string | null>;
 }
 
 export function AssetAllocationChart({
@@ -37,6 +40,8 @@ export function AssetAllocationChart({
   currency,
   mode,
   masked = false,
+  pendingTypes,
+  pendingCategoryIds,
 }: AssetAllocationChartProps) {
   const colors = useColors();
 
@@ -86,60 +91,76 @@ export function AssetAllocationChart({
       {/* Legend */}
       <YStack gap={8}>
         {showTypeView
-          ? sortedTypeAllocations.map((allocation) => (
-            <XStack
-              key={allocation.type}
-              justifyContent="space-between"
-              alignItems="center"
-            >
-              <XStack alignItems="center" gap={8}>
-                <YStack
-                  width={12}
-                  height={12}
-                  borderRadius={3}
-                  backgroundColor={getAssetTypeColor(allocation.type)}
-                />
-                <Text color={colors.text} fontSize={14}>
-                  {getAssetTypePlural(allocation.type)}
-                </Text>
+          ? sortedTypeAllocations.map((allocation) => {
+            const isPending = pendingTypes?.has(allocation.type) ?? false;
+            return (
+              <XStack
+                key={allocation.type}
+                justifyContent="space-between"
+                alignItems="center"
+              >
+                <XStack alignItems="center" gap={8}>
+                  <YStack
+                    width={12}
+                    height={12}
+                    borderRadius={3}
+                    backgroundColor={getAssetTypeColor(allocation.type)}
+                  />
+                  <XStack alignItems="center">
+                    <Text color={colors.text} fontSize={14}>
+                      {getAssetTypePlural(allocation.type)}
+                    </Text>
+                    {isPending && (
+                      <AnimatedEllipsis color={colors.textSecondary} fontSize={14} />
+                    )}
+                  </XStack>
+                </XStack>
+                <XStack alignItems="center" gap={8}>
+                  <Text color={colors.textSecondary} fontSize={14}>
+                    {masked ? VALUE_MASK : formatCurrency(allocation.value, currency)}
+                  </Text>
+                  <Text color={colors.text} fontSize={14} fontWeight="500" minWidth={80} textAlign="right">
+                    {formatPercent(allocation.percentage, { showSign: false, minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+                  </Text>
+                </XStack>
               </XStack>
-              <XStack alignItems="center" gap={8}>
-                <Text color={colors.textSecondary} fontSize={14}>
-                  {masked ? VALUE_MASK : formatCurrency(allocation.value, currency)}
-                </Text>
-                <Text color={colors.text} fontSize={14} fontWeight="500" minWidth={80} textAlign="right">
-                  {formatPercent(allocation.percentage, { showSign: false, minimumFractionDigits: 1, maximumFractionDigits: 1 })}
-                </Text>
+            );
+          })
+          : sortedCategoryAllocations.map((allocation) => {
+            const isPending = pendingCategoryIds?.has(allocation.categoryId) ?? false;
+            return (
+              <XStack
+                key={allocation.categoryId ?? 'uncategorized'}
+                justifyContent="space-between"
+                alignItems="center"
+              >
+                <XStack alignItems="center" gap={8}>
+                  <YStack
+                    width={12}
+                    height={12}
+                    borderRadius={3}
+                    backgroundColor={allocation.color}
+                  />
+                  <XStack alignItems="center">
+                    <Text color={colors.text} fontSize={14}>
+                      {allocation.categoryName}
+                    </Text>
+                    {isPending && (
+                      <AnimatedEllipsis color={colors.textSecondary} fontSize={14} />
+                    )}
+                  </XStack>
+                </XStack>
+                <XStack alignItems="center" gap={8}>
+                  <Text color={colors.textSecondary} fontSize={14}>
+                    {masked ? VALUE_MASK : formatCurrency(allocation.value, currency)}
+                  </Text>
+                  <Text color={colors.text} fontSize={14} fontWeight="500" minWidth={80} textAlign="right">
+                    {formatPercent(allocation.percentage, { showSign: false, minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+                  </Text>
+                </XStack>
               </XStack>
-            </XStack>
-          ))
-          : sortedCategoryAllocations.map((allocation) => (
-            <XStack
-              key={allocation.categoryId ?? 'uncategorized'}
-              justifyContent="space-between"
-              alignItems="center"
-            >
-              <XStack alignItems="center" gap={8}>
-                <YStack
-                  width={12}
-                  height={12}
-                  borderRadius={3}
-                  backgroundColor={allocation.color}
-                />
-                <Text color={colors.text} fontSize={14}>
-                  {allocation.categoryName}
-                </Text>
-              </XStack>
-              <XStack alignItems="center" gap={8}>
-                <Text color={colors.textSecondary} fontSize={14}>
-                  {masked ? VALUE_MASK : formatCurrency(allocation.value, currency)}
-                </Text>
-                <Text color={colors.text} fontSize={14} fontWeight="500" minWidth={80} textAlign="right">
-                  {formatPercent(allocation.percentage, { showSign: false, minimumFractionDigits: 1, maximumFractionDigits: 1 })}
-                </Text>
-              </XStack>
-            </XStack>
-          ))}
+            );
+          })}
       </YStack>
     </YStack>
   );
