@@ -1,6 +1,6 @@
 import { Modal, TouchableOpacity, TouchableWithoutFeedback, View, Switch, StyleSheet } from 'react-native';
 import { XStack, Text } from 'tamagui';
-import { Ionicons } from '@expo/vector-icons';
+import X from 'lucide-react/dist/esm/icons/x';
 import { useColors } from '../lib/theme/store';
 import { useAppStore } from '../store';
 
@@ -33,7 +33,7 @@ export function TableColumnConfigDialog({ visible, onClose }: TableColumnConfigD
                   Display Settings
                 </Text>
                 <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                  <Ionicons name="close" size={24} color={colors.textSecondary} />
+                  <X size={24} color={colors.textSecondary} />
                 </TouchableOpacity>
               </XStack>
 

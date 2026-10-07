@@ -9,7 +9,7 @@ When making significant changes to the codebase (schema, project structure, desi
 - Prefer reusable components and patterns if possible
 - When refactoring, change existing comments only if needed
 - Always use braces for control statements (no single-line shorthand)
-- Use `Slot` instead of `Stack` for layout files
+- Use `Outlet` (from `lib/routing.tsx`) for layout files
 
 ```typescript
 // Bad
@@ -26,12 +26,13 @@ if (!id) {
 # Project Structure
 
 ```
-/app                      # Expo Router screens
+/app                      # Route screens (registered in app/routes.tsx)
 ├── index.tsx             # Portfolio list (home)
 ├── _layout.tsx           # Root layout
+├── routes.tsx            # Explicit react-router route tree
 ├── settings/
 │   ├── index.tsx         # Settings screen
-│   ├── _layout.tsx       # Settings layout (uses Slot)
+│   ├── _layout.tsx       # Settings layout (uses Outlet)
 │   ├── qr-export.tsx     # QR code export
 │   └── qr-import.tsx     # QR code import (camera-based)
 ├── portfolio/
@@ -47,7 +48,14 @@ if (!id) {
     ├── close.tsx         # Close lot (sell transaction)
     └── edit.tsx          # Edit lot
 
+/src
+├── main.tsx              # Vite/app entry point (createBrowserRouter + render)
+└── vite-env.d.ts         # Ambient type declarations
+
 /lib
+├── routing.tsx           # react-router compatibility shim (router.push/replace/back,
+│                         # useRouter(), useLocalSearchParams(), Outlet) — keeps
+│                         # screen code's navigation API stable
 ├── types.ts              # TypeScript interfaces
 ├── constants/
 │   ├── assetTypes.ts     # Asset type definitions
@@ -288,26 +296,35 @@ Supports **dark**, **light**, and **auto** (system) modes. Colors are defined in
 1. **Price API Rate Limits**: Free APIs have rate limits; TanStack Query caching mitigates this
 2. **Yahoo Finance**: Requires a CORS proxy (see `CORS_PROXIES` in `lib/api/providers/yahoo.ts`)
 
-This project is web-only (Expo web via `react-native-web`). There is no iOS/Android/native support.
+This project is web-only (Vite + `react-native-web`). There is no iOS/Android/native support, and no Expo/Metro in the toolchain.
+
+---
+
+# Build Tooling
+
+- **Vite** (`vite.config.ts`) builds and serves the app; `src/main.tsx` is the entry point.
+- **Routing**: `react-router-dom`, via the `lib/routing.tsx` shim and the explicit route tree in `app/routes.tsx`.
+- **react-native-svg** and **react-native-safe-area-context** are aliased to their `src/` (not `lib/`) entry points in `vite.config.ts`, so Vite's `.web.ts(x)` extension resolution picks their web implementations instead of native-only code that pulls in real `react-native` internals. `optimizeDeps.esbuildOptions.resolveExtensions` must mirror `resolve.extensions` for this to also apply during dependency pre-bundling.
+- **react-native-qrcode-svg** ships JSX in a `.js` file; a custom Vite plugin (`jsxInNodeModulesJs`) strips it via esbuild before Rollup parses it during `vite build`.
 
 ---
 
 # Testing
 
-Tests are placed in the same directory as the file they test, named `*.test.ts` / `*.test.tsx`.
+Tests are placed in the same directory as the file they test, named `*.test.ts` / `*.test.tsx`. Runs on **Vitest** with `jsdom` and `@testing-library/react`.
 
 ```bash
-npm test           # Run all tests
+npm test           # Run all tests (vitest run)
 npm run test:watch # Watch mode
 ```
 
 ```typescript
-import { render, screen } from '@testing-library/react-native';
+import { render, screen } from '@testing-library/react';
 
 describe('MyComponent', () => {
   it('renders correctly', () => {
     render(<MyComponent />);
-    expect(screen.getByText('Hello')).toBeOnTheScreen();
+    expect(screen.getByText('Hello')).toBeInTheDocument();
   });
 });
 ```

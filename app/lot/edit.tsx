@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { alert } from '../../lib/utils/confirm';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from '../../lib/routing';
 import { YStack, Text, Spinner } from 'tamagui';
 import { Page } from '../../components/Page';
 import { Form } from '../../components/Form';

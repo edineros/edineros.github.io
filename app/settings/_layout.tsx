@@ -1,5 +1,5 @@
-import { Slot } from 'expo-router';
+import { Outlet } from '../../lib/routing';
 
 export default function SettingsLayout() {
-  return <Slot />;
+  return <Outlet />;
 }

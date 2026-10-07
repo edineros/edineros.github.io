@@ -1,5 +1,5 @@
 import { Button, ThemeName } from 'tamagui'
-import { useRouter } from 'expo-router'
+import { useRouter } from '../lib/routing'
 import { ReactNode } from 'react'
 
 type MicroButtonProps = {

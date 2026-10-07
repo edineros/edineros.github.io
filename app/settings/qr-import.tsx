@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'expo-router';
+import { useRouter } from '../../lib/routing';
 import { YStack, XStack, Text } from 'tamagui';
 import { useQueryClient } from '@tanstack/react-query';
 import { Page } from '../../components/Page';
@@ -226,13 +226,21 @@ export default function QRImportScreen() {
     }
   };
 
+  // WebQRScanner re-acquires the camera (getUserMedia) whenever its `onScan`
+  // prop changes identity. handleScan is recreated every render (it closes
+  // over chunks/totalChunks/etc.), so without this stable wrapper the camera
+  // was being torn down and reopened on every single chunk scanned.
+  const handleScanRef = useRef(handleScan);
+  handleScanRef.current = handleScan;
+  const stableOnScan = useCallback((data: string) => handleScanRef.current(data), []);
+
   return (
     <Page title="Import via QR" fallbackPath="/settings">
       <YStack flex={1}>
         {/* Camera/Scanner View */}
         <YStack flex={1}>
           <WebQRScanner
-            onScan={handleScan}
+            onScan={stableOnScan}
             isActive={scannerActive}
             onStop={handleScannerStopped}
           />

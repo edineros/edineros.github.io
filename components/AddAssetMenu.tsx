@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { TouchableOpacity, Modal, Pressable } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter } from '../lib/routing';
 import { YStack, Text } from 'tamagui';
 import { FloatingActionButton } from './FloatingActionButton';
 import { ASSET_TYPE_CONFIGS } from '../lib/constants/assetTypes';

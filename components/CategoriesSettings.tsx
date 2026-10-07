@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { TouchableOpacity, TextInput, Modal } from 'react-native';
 import { YStack, XStack, Text, Spacer } from 'tamagui';
-import { Ionicons } from '@expo/vector-icons';
+import Pencil from 'lucide-react/dist/esm/icons/pencil';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
+import Check from 'lucide-react/dist/esm/icons/check';
 import { alert, confirm } from '../lib/utils/confirm';
 import { SettingsSection } from './SettingsSection';
 import { LongButton } from './LongButton';
@@ -118,13 +120,13 @@ export function CategoriesSettings() {
                   onPress={() => openEdit(category)}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
-                  <Ionicons name="pencil" size={18} color={colors.textSecondary} />
+                  <Pencil size={18} color={colors.textSecondary} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => handleDelete(category)}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
-                  <Ionicons name="trash-outline" size={18} color={colors.loss} />
+                  <Trash2 size={18} color={colors.loss} />
                 </TouchableOpacity>
               </XStack>
             </XStack>
@@ -203,7 +205,7 @@ export function CategoriesSettings() {
                           }}
                         >
                           {color === c && (
-                            <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+                            <Check size={20} color="#FFFFFF" />
                           )}
                         </TouchableOpacity>
                       ))}

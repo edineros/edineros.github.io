@@ -1,7 +1,8 @@
 import { useState, ReactNode } from 'react';
 import { Modal, TouchableOpacity, ScrollView } from 'react-native';
 import { YStack, XStack, Text } from 'tamagui';
-import { Ionicons } from '@expo/vector-icons';
+import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
+import Check from 'lucide-react/dist/esm/icons/check';
 import { useColors } from '../lib/theme/store';
 
 export interface SelectOption<T = string> {
@@ -75,7 +76,7 @@ export function Select<T extends string | null = string>({
             </Text>
           )}
         </XStack>
-        <Ionicons name="chevron-down" size={20} color={colors.textTertiary} />
+        <ChevronDown size={20} color={colors.textTertiary} />
       </TouchableOpacity>
 
       <Modal
@@ -131,7 +132,7 @@ export function Select<T extends string | null = string>({
                         {nullLabel}
                       </Text>
                       {value === null && (
-                        <Ionicons name="checkmark" size={22} color={colors.accent} />
+                        <Check size={22} color={colors.accent} />
                       )}
                     </TouchableOpacity>
                   )}
@@ -166,7 +167,7 @@ export function Select<T extends string | null = string>({
                         )}
                       </XStack>
                       {value === option.value && (
-                        <Ionicons name="checkmark" size={22} color={colors.accent} />
+                        <Check size={22} color={colors.accent} />
                       )}
                     </TouchableOpacity>
                   ))}

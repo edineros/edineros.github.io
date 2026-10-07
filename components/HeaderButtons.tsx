@@ -1,6 +1,7 @@
 import { TouchableOpacity } from 'react-native';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { router } from '../lib/routing';
+import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
+import type { LucideIcon } from 'lucide-react';
 import { useColors } from '../lib/theme/store';
 
 // Consistent spacing for header buttons (matches main content padding of 16px)
@@ -43,13 +44,13 @@ export function HeaderBackButton({ fallbackPath = '/' }: HeaderBackButtonProps) 
       style={HEADER_BUTTON_STYLES.left}
       hitSlop={HEADER_BUTTON_STYLES.hitSlop}
     >
-      <Ionicons name="chevron-back" size={HEADER_BUTTON_STYLES.backIconSize} color={colors.accent} />
+      <ChevronLeft size={HEADER_BUTTON_STYLES.backIconSize} color={colors.accent} />
     </TouchableOpacity>
   );
 }
 
 interface HeaderIconButtonProps {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: LucideIcon;
   color?: string;
   onPress?: () => void;
   href?: string;
@@ -60,7 +61,7 @@ interface HeaderIconButtonProps {
  * Icon button for header. Can be used with onPress or href.
  */
 export function HeaderIconButton({
-  icon,
+  icon: Icon,
   color,
   onPress,
   href,
@@ -84,7 +85,7 @@ export function HeaderIconButton({
       style={style}
       hitSlop={HEADER_BUTTON_STYLES.hitSlop}
     >
-      <Ionicons name={icon} size={HEADER_BUTTON_STYLES.iconSize} color={resolvedColor} />
+      <Icon size={HEADER_BUTTON_STYLES.iconSize} color={resolvedColor} />
     </TouchableOpacity>
   );
 }

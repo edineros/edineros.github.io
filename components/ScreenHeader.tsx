@@ -1,8 +1,8 @@
 import { TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter } from '../lib/routing';
 import { XStack, Text, View } from 'tamagui';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
 import { useColors } from '../lib/theme/store';
 
 interface ScreenHeaderProps {
@@ -50,7 +50,7 @@ export function ScreenHeader({
               style={{ paddingHorizontal: 8, paddingVertical: 8 }}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Ionicons name="chevron-back" size={28} color={colors.accent} />
+              <ChevronLeft size={28} color={colors.accent} />
             </TouchableOpacity>
           ) : leftComponent}
         </View>

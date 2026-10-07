@@ -1,8 +1,10 @@
 import { useState, useMemo } from 'react';
 import { Modal, TouchableOpacity, ScrollView } from 'react-native';
-import { router } from 'expo-router';
+import { router } from '../lib/routing';
 import { YStack, XStack, Text } from 'tamagui';
-import { Ionicons } from '@expo/vector-icons';
+import Check from 'lucide-react/dist/esm/icons/check';
+import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
+import CirclePlus from 'lucide-react/dist/esm/icons/circle-plus';
 import type { Portfolio } from '../lib/types';
 import { useColors } from '../lib/theme/store';
 import { ALL_PORTFOLIOS_ID, useAppStore } from '../store';
@@ -44,7 +46,7 @@ function DropdownItem({ title, subtitle, isSelected, onPress }: DropdownItemProp
         </Text>
       </YStack>
       {isSelected && (
-        <Ionicons name="checkmark" size={22} color={colors.accent} />
+        <Check size={22} color={colors.accent} />
       )}
     </TouchableOpacity>
   );
@@ -167,7 +169,7 @@ export function PortfolioSwitcher({ currentPortfolio, portfolios, isAllPortfolio
         <Text color={colors.text} fontSize={17} fontWeight="600">
           {displayName}
         </Text>
-        <Ionicons name="chevron-down" size={16} color={colors.textSecondary} />
+        <ChevronDown size={16} color={colors.textSecondary} />
       </TouchableOpacity>
 
       <Modal
@@ -231,7 +233,7 @@ export function PortfolioSwitcher({ currentPortfolio, portfolios, isAllPortfolio
                       gap: 8,
                     }}
                   >
-                    <Ionicons name="add-circle-outline" size={22} color={colors.accent} />
+                    <CirclePlus size={22} color={colors.accent} />
                     <Text color={colors.accent} fontSize={17} fontWeight="500">
                       New Portfolio
                     </Text>

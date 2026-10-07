@@ -1,8 +1,12 @@
 import { useCallback, useState, useMemo, useEffect } from 'react';
 import { ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
-import { useLocalSearchParams, useFocusEffect, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from '../../lib/routing';
 import { YStack, XStack, Text, Spinner } from 'tamagui';
-import { Ionicons } from '@expo/vector-icons';
+import Menu from 'lucide-react/dist/esm/icons/menu';
+import Eye from 'lucide-react/dist/esm/icons/eye';
+import EyeOff from 'lucide-react/dist/esm/icons/eye-off';
+import SlidersHorizontal from 'lucide-react/dist/esm/icons/sliders-horizontal';
+import Pencil from 'lucide-react/dist/esm/icons/pencil';
 import { useQueryClient } from '@tanstack/react-query';
 import { ALL_PORTFOLIOS_ID, useAppStore } from '../../store';
 import { usePortfolios, usePortfolio, useUpdatePortfolio } from '../../lib/hooks/usePortfolios';
@@ -115,24 +119,20 @@ export default function PortfolioDetailScreen() {
     return portfolios.some((p) => p.masked);
   }, [portfolioId, portfolio, selectedPortfolioIds, portfolios]);
 
-  useFocusEffect(
-    useCallback(() => {
-      // Persist the current single-portfolio view as the selection (for startup navigation)
-      if (portfolioId) {
-        setSelectedPortfolioIds([portfolioId]);
-      }
-    }, [portfolioId, setSelectedPortfolioIds])
-  );
+  useEffect(() => {
+    // Persist the current single-portfolio view as the selection (for startup navigation)
+    if (portfolioId) {
+      setSelectedPortfolioIds([portfolioId]);
+    }
+  }, [portfolioId, setSelectedPortfolioIds]);
 
   // Redirect to first portfolio if current portfolio doesn't exist
-  useFocusEffect(
-    useCallback(() => {
-      if (portfolioId && !portfolioLoading && !portfolio && portfolios.length > 0) {
-        // Portfolio doesn't exist (maybe ID changed after migration)
-        router.replace(`/portfolio/${portfolios[0].id}`);
-      }
-    }, [portfolioId, portfolioLoading, portfolio, portfolios, router])
-  );
+  useEffect(() => {
+    if (portfolioId && !portfolioLoading && !portfolio && portfolios.length > 0) {
+      // Portfolio doesn't exist (maybe ID changed after migration)
+      router.replace(`/portfolio/${portfolios[0].id}`);
+    }
+  }, [portfolioId, portfolioLoading, portfolio, portfolios, router]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -230,7 +230,7 @@ export default function PortfolioDetailScreen() {
           style={{ paddingHorizontal: 8, paddingVertical: 8 }}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons name="menu" size={24} color={colors.text} />
+          <Menu size={24} color={colors.text} />
         </TouchableOpacity>
       }
       titleComponent={
@@ -242,7 +242,7 @@ export default function PortfolioDetailScreen() {
       }
       rightComponent={
         portfolioId ? (
-          <HeaderIconButton icon="pencil" color={colors.text} href={`/portfolio/edit/${portfolioId}`} />
+          <HeaderIconButton icon={Pencil} color={colors.text} href={`/portfolio/edit/${portfolioId}`} />
         ) : null
       }
     >
@@ -256,11 +256,11 @@ export default function PortfolioDetailScreen() {
             onPress={handleToggleMasked}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Ionicons
-              name={isMasked ? 'eye-off-outline' : 'eye-outline'}
-              size={16}
-              color={colors.textSecondary}
-            />
+            {isMasked ? (
+              <EyeOff size={16} color={colors.textSecondary} />
+            ) : (
+              <Eye size={16} color={colors.textSecondary} />
+            )}
           </TouchableOpacity>
         </XStack>
         {stats ? (
@@ -326,7 +326,7 @@ export default function PortfolioDetailScreen() {
               onPress={() => setShowTableConfig(true)}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Ionicons name="options-outline" size={18} color={colors.textSecondary} />
+              <SlidersHorizontal size={18} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
         </XStack>

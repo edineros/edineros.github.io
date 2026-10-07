@@ -1,10 +1,15 @@
 import { useState, useRef } from 'react';
 import { ScrollView, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter } from '../../lib/routing';
 import { YStack, XStack, Text } from 'tamagui';
-import { Ionicons } from '@expo/vector-icons';
+import Sun from 'lucide-react/dist/esm/icons/sun';
+import Moon from 'lucide-react/dist/esm/icons/moon';
+import Smartphone from 'lucide-react/dist/esm/icons/smartphone';
+import QrCode from 'lucide-react/dist/esm/icons/qr-code';
+import Code from 'lucide-react/dist/esm/icons/code';
+import type { LucideIcon } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import Constants from 'expo-constants';
+import packageJson from '../../package.json';
 import { exportToJson, importFromJson } from '../../lib/utils/export';
 import { alert, confirm } from '../../lib/utils/confirm';
 import { Page } from '../../components/Page';
@@ -17,10 +22,10 @@ import { alertImportSuccess } from '../../lib/utils/backup';
 
 const CACHE_KEY = 'portfolio-query-cache';
 
-const THEME_OPTIONS: { value: ThemeMode; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { value: 'light', label: 'Light', icon: 'sunny-outline' },
-  { value: 'dark', label: 'Dark', icon: 'moon-outline' },
-  { value: 'auto', label: 'Auto', icon: 'phone-portrait-outline' },
+const THEME_OPTIONS: { value: ThemeMode; label: string; icon: LucideIcon }[] = [
+  { value: 'light', label: 'Light', icon: Sun },
+  { value: 'dark', label: 'Dark', icon: Moon },
+  { value: 'auto', label: 'Auto', icon: Smartphone },
 ];
 
 export default function SettingsScreen() {
@@ -129,8 +134,7 @@ export default function SettingsScreen() {
                     gap: 6,
                   }}
                 >
-                  <Ionicons
-                    name={option.icon}
+                  <option.icon
                     size={22}
                     color={mode === option.value ? '#FFFFFF' : colors.textSecondary}
                   />
@@ -154,14 +158,14 @@ export default function SettingsScreen() {
           >
             <YStack gap={12}>
               <LongButton
-                iconName="qr-code-outline"
+                icon={QrCode}
                 onPress={() => router.push('/settings/qr-export')}
                 variant="secondary"
               >
                 Export via QR Code
               </LongButton>
               <LongButton
-                iconName="code-slash-outline"
+                icon={Code}
                 onPress={handleExportJson}
                 disabled={isExporting}
                 variant="secondary"
@@ -177,14 +181,14 @@ export default function SettingsScreen() {
           >
             <YStack gap={12}>
               <LongButton
-                iconName="qr-code-outline"
+                icon={QrCode}
                 onPress={() => router.push('/settings/qr-import')}
                 variant="secondary"
               >
                 Import via QR Code
               </LongButton>
               <LongButton
-                iconName="code-slash-outline"
+                icon={Code}
                 onPress={handleImportWeb}
                 disabled={isImporting}
                 variant="secondary"
@@ -198,7 +202,7 @@ export default function SettingsScreen() {
             <YStack gap={8}>
               <XStack justifyContent="space-between">
                 <Text color={colors.textSecondary}>Version</Text>
-                <Text color={colors.text}>{Constants.expoConfig?.version ?? '–'}</Text>
+                <Text color={colors.text}>{packageJson.version}</Text>
               </XStack>
 
               <YStack height={1} backgroundColor={colors.border} marginVertical={8} />

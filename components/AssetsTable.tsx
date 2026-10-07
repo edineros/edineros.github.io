@@ -1,7 +1,7 @@
 import { useCallback, useRef } from 'react';
 import { ScrollView, TouchableOpacity, View, StyleSheet, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 import { YStack, Text, Spinner } from 'tamagui';
-import { useRouter } from 'expo-router';
+import { useRouter } from '../lib/routing';
 import { useColors } from '../lib/theme/store';
 import { useAppStore, TableColumnId } from '../store';
 import { formatCurrency, formatPercent, formatQuantity, getGainColor } from '../lib/utils/format';

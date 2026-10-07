@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from '../../../lib/routing';
 import { YStack, Text, Spinner } from 'tamagui';
 import { Page } from '../../../components/Page';
 import { Form } from '../../../components/Form';
@@ -10,6 +10,7 @@ import { usePortfolio, useUpdatePortfolio, useDeletePortfolio } from '../../../l
 import { useAppStore } from '../../../store';
 import { useColors } from '../../../lib/theme/store';
 import { HeaderIconButton } from '../../../components/HeaderButtons';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
 
 export default function EditPortfolioScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -89,7 +90,7 @@ export default function EditPortfolioScreen() {
       rightComponent={
         <HeaderIconButton
           color={colors.destructive}
-          icon="trash-outline"
+          icon={Trash2}
           onPress={handleDelete}
         />
       }

@@ -1,6 +1,6 @@
 import { TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from '../lib/routing';
+import Plus from 'lucide-react/dist/esm/icons/plus';
 import { useColors } from '../lib/theme/store';
 
 interface FloatingActionButtonProps {
@@ -44,7 +44,7 @@ export function FloatingActionButton({ href, onPress }: FloatingActionButtonProp
       }}
       onPress={handlePress}
     >
-      <Ionicons name="add" size={28} color="#FFFFFF" />
+      <Plus size={28} color="#FFFFFF" />
     </TouchableOpacity>
   );
 }

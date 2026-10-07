@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Edineros</title>
+    <meta name="description" content="Privacy-first, offline-capable portfolio tracking application" />
+
+    <!-- PWA meta tags -->
+    <meta name="theme-color" content="#000000" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Edineros" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" href="/assets/favicon.png" />
+    <link rel="apple-touch-icon" href="/assets/icon.png" />
+
+    <style>
+      html,
+      body,
+      #root {
+        height: 100%;
+        margin: 0;
+      }
+      #root {
+        display: flex;
+        flex-direction: column;
+      }
+    </style>
+
+    <script>
+      (function () {
+        // Restore the path saved by 404.html's GitHub Pages SPA redirect
+        var redirectPath = sessionStorage.getItem('spa-redirect-path');
+        if (redirectPath) {
+          sessionStorage.removeItem('spa-redirect-path');
+          history.replaceState(null, '', redirectPath);
+        }
+
+        // Register service worker for auto-updates
+        if ('serviceWorker' in navigator) {
+          var refreshing = false;
+          navigator.serviceWorker.addEventListener('controllerchange', function () {
+            if (!refreshing) {
+              refreshing = true;
+              window.location.reload();
+            }
+          });
+
+          navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).then(function (reg) {
+            reg.update();
+            document.addEventListener('visibilitychange', function () {
+              if (document.visibilityState === 'visible') {
+                reg.update();
+              }
+            });
+          });
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

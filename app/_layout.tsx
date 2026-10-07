@@ -1,15 +1,20 @@
 import { useEffect } from 'react';
-import { Slot } from 'expo-router';
 import { TamaguiProvider, Theme, View } from 'tamagui';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
 import config from '../tamagui.config';
 import { useThemeStore, useColors } from '../lib/theme/store';
 import { QueryProvider } from '../lib/providers/QueryProvider';
+import { Outlet, setNavigate } from '../lib/routing';
+import { useNavigate } from 'react-router-dom';
 
 function AppContent() {
   const { resolvedTheme, initializeTheme } = useThemeStore();
   const colors = useColors();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    setNavigate(navigate);
+  }, [navigate]);
 
   useEffect(() => {
     initializeTheme();
@@ -18,9 +23,8 @@ function AppContent() {
   return (
     <Theme name={resolvedTheme}>
       <SafeAreaProvider>
-        <StatusBar style={resolvedTheme === 'light' ? 'dark' : 'light'} />
         <View flex={1} backgroundColor={colors.background}>
-          <Slot />
+          <Outlet />
         </View>
       </SafeAreaProvider>
     </Theme>

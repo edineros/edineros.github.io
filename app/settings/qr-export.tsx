@@ -8,7 +8,8 @@ import { useColors } from '../../lib/theme/store';
 import { CONTENT_HORIZONTAL_PADDING } from '../../lib/constants/layout';
 import { encodeForQR } from '../../lib/utils/qrData';
 import { exportData } from '../../lib/utils/export';
-import { Ionicons } from '@expo/vector-icons';
+import Pause from 'lucide-react/dist/esm/icons/pause';
+import Play from 'lucide-react/dist/esm/icons/play';
 
 const ANIMATION_INTERVAL_MS = 500; // Time per QR code frame
 
@@ -141,11 +142,11 @@ export default function QRExportScreen() {
             </LongButton>
             <Separator />
             <LongButton onPress={togglePlayPause}>
-              <Ionicons
-                name={isPlaying ? 'pause' : 'play'}
-                size={16}
-                color={colors.text}
-              />
+              {isPlaying ? (
+                <Pause size={16} color={colors.text} />
+              ) : (
+                <Play size={16} color={colors.text} />
+              )}
             </LongButton>
           </XStack>
         </YStack>

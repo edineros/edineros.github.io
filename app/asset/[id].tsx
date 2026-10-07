@@ -1,10 +1,11 @@
 import { useState, useCallback } from 'react';
 import { FlatList, RefreshControl } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from '../../lib/routing';
 import { useQueryClient } from '@tanstack/react-query';
 import { confirm } from '../../lib/utils/confirm';
 import { Page } from '../../components/Page';
 import { HeaderIconButton } from '../../components/HeaderButtons';
+import Pencil from 'lucide-react/dist/esm/icons/pencil';
 import { QuantityAtPrice } from '../../components/QuantityAtPrice';
 import { FloatingActionButton } from '../../components/FloatingActionButton';
 import { CONTENT_HORIZONTAL_PADDING } from '../../lib/constants/layout';
@@ -309,7 +310,7 @@ export default function AssetDetailScreen() {
       fallbackPath={portfolioId ? `/portfolio/${portfolioId}` : '/'}
       rightComponent={
         <HeaderIconButton
-          icon="pencil"
+          icon={Pencil}
           color={colors.text}
           href={`/asset/edit/${id}?portfolioId=${portfolioId}`}
         />

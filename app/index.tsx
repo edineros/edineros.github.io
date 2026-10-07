@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 import { TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter } from '../lib/routing';
 import { YStack, Text, Spinner } from 'tamagui';
-import { Ionicons } from '@expo/vector-icons';
+import Menu from 'lucide-react/dist/esm/icons/menu';
 import { ALL_PORTFOLIOS_ID, useAppStore } from '../store';
 import { usePortfolios } from '../lib/hooks/usePortfolios';
 import { Page } from '../components/Page';
@@ -22,7 +22,7 @@ function MenuButton() {
       style={{ paddingHorizontal: 8, paddingVertical: 8 }}
       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
     >
-      <Ionicons name="menu" size={24} color={colors.text} />
+      <Menu size={24} color={colors.text} />
     </TouchableOpacity>
   );
 }

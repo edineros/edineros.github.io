@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from '../../../lib/routing';
 import { YStack, Text, Spinner } from 'tamagui';
 import { useAsset, useUpdateAsset, useDeleteAsset } from '../../../lib/hooks/useAssets';
 import { useCategories } from '../../../lib/hooks/useCategories';
@@ -11,6 +11,7 @@ import { alert, confirm } from '../../../lib/utils/confirm';
 import { isSimpleAssetType } from '../../../lib/constants/assetTypes';
 import { useColors } from '../../../lib/theme/store';
 import { HeaderIconButton } from '../../../components/HeaderButtons';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
 
 export default function EditAssetScreen() {
   const { id, portfolioId } = useLocalSearchParams<{ id: string; portfolioId: string }>();
@@ -91,7 +92,7 @@ export default function EditAssetScreen() {
       rightComponent={
         <HeaderIconButton
           color={colors.destructive}
-          icon="trash-outline"
+          icon={Trash2}
           onPress={handleDelete}
         />
       }

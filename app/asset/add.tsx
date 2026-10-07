@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ScrollView, TouchableOpacity } from 'react-native';
 import { alert } from '../../lib/utils/confirm';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from '../../lib/routing';
 import { YStack, XStack, Text, Spinner } from 'tamagui';
 import { usePortfolio } from '../../lib/hooks/usePortfolios';
 import { useCreateAsset } from '../../lib/hooks/useAssets';

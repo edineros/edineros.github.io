@@ -1,7 +1,8 @@
 import { ReactNode, useState } from 'react';
 import { TouchableOpacity } from 'react-native';
 import { YStack, XStack, Text } from 'tamagui';
-import { Ionicons } from '@expo/vector-icons';
+import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
+import ChevronUp from 'lucide-react/dist/esm/icons/chevron-up';
 import { useColors } from '../lib/theme/store';
 import { CONTENT_HORIZONTAL_PADDING } from '../lib/constants/layout';
 
@@ -33,12 +34,11 @@ export function SettingsSection({ title, subtitle, collapsed, children }: Settin
         )}
       </YStack>
       {collapsible && (
-        <Ionicons
-          name={isCollapsed ? 'chevron-down' : 'chevron-up'}
-          size={20}
-          color={colors.textSecondary}
-          style={{ marginTop: 4 }}
-        />
+        isCollapsed ? (
+          <ChevronDown size={20} color={colors.textSecondary} style={{ marginTop: 4 }} />
+        ) : (
+          <ChevronUp size={20} color={colors.textSecondary} style={{ marginTop: 4 }} />
+        )
       )}
     </XStack>
   );

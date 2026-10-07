@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { alert } from '../../lib/utils/confirm';
-import { router } from 'expo-router';
+import { router } from '../../lib/routing';
 import { useCreatePortfolio } from '../../lib/hooks/usePortfolios';
 import { Page } from '../../components/Page';
 import { Form } from '../../components/Form';
