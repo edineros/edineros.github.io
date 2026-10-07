@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Platform, Appearance } from 'react-native';
+import { Appearance } from 'react-native';
 import { darkColors, lightColors, type Colors } from './colors';
 
 export type ThemeMode = 'light' | 'dark' | 'auto';
@@ -16,28 +16,10 @@ const STORAGE_KEY = 'theme_mode';
 // Simple storage abstraction
 const storage = {
   get: async (): Promise<ThemeMode | null> => {
-    if (Platform.OS === 'web') {
-      return localStorage.getItem(STORAGE_KEY) as ThemeMode | null;
-    }
-    // For native, use AsyncStorage
-    try {
-      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-      return await AsyncStorage.getItem(STORAGE_KEY) as ThemeMode | null;
-    } catch {
-      return null;
-    }
+    return localStorage.getItem(STORAGE_KEY) as ThemeMode | null;
   },
   set: async (value: ThemeMode): Promise<void> => {
-    if (Platform.OS === 'web') {
-      localStorage.setItem(STORAGE_KEY, value);
-      return;
-    }
-    try {
-      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-      await AsyncStorage.setItem(STORAGE_KEY, value);
-    } catch {
-      // Ignore storage errors
-    }
+    localStorage.setItem(STORAGE_KEY, value);
   },
 };
 

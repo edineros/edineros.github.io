@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { Platform } from 'react-native';
 
 const TABLE_CONFIG_KEY = 'assets_table_config';
 const SELECTED_PORTFOLIOS_KEY = 'selected_portfolio_ids';
@@ -37,34 +36,13 @@ const DEFAULT_TABLE_CONFIG: TableConfig = {
 // Simple storage abstraction
 const storage = {
   get: async (key: string): Promise<string | null> => {
-    if (Platform.OS === 'web') {
-      return localStorage.getItem(key);
-    }
-    try {
-      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-      return await AsyncStorage.getItem(key);
-    } catch {
-      return null;
-    }
+    return localStorage.getItem(key);
   },
   set: async (key: string, value: string | null): Promise<void> => {
-    if (Platform.OS === 'web') {
-      if (value) {
-        localStorage.setItem(key, value);
-      } else {
-        localStorage.removeItem(key);
-      }
-      return;
-    }
-    try {
-      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-      if (value) {
-        await AsyncStorage.setItem(key, value);
-      } else {
-        await AsyncStorage.removeItem(key);
-      }
-    } catch {
-      // Ignore storage errors
+    if (value) {
+      localStorage.setItem(key, value);
+    } else {
+      localStorage.removeItem(key);
     }
   },
 };

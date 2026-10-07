@@ -1,5 +1,5 @@
 import { useState, ReactNode } from 'react';
-import { Modal, TouchableOpacity, ScrollView, Platform } from 'react-native';
+import { Modal, TouchableOpacity, ScrollView } from 'react-native';
 import { YStack, XStack, Text } from 'tamagui';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../lib/theme/store';
@@ -93,7 +93,7 @@ export function Select<T extends string | null = string>({
             flex={1}
             justifyContent="flex-end"
             paddingHorizontal={16}
-            paddingBottom={Platform.OS === 'web' ? 40 : 34}
+            paddingBottom={40}
           >
             <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
               <YStack

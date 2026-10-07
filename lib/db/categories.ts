@@ -1,49 +1,13 @@
 import { generateId } from '../utils/generateId';
-import { getDatabase, isWeb } from './schema';
 import { webDb } from './webDatabase';
 import type { Category } from '../types';
 
-interface CategoryRow {
-  id: string;
-  name: string;
-  color: string;
-  sort_order: number;
-  created_at: number;
-}
-
-function rowToCategory(row: CategoryRow): Category {
-  return {
-    id: row.id,
-    name: row.name,
-    color: row.color,
-    sortOrder: row.sort_order,
-    createdAt: new Date(row.created_at),
-  };
-}
-
 export async function getAllCategories(): Promise<Category[]> {
-  if (isWeb()) {
-    return webDb.getAllCategories();
-  }
-
-  const db = await getDatabase();
-  const rows = await db.getAllAsync<CategoryRow>(
-    'SELECT * FROM categories ORDER BY sort_order ASC, name ASC'
-  );
-  return rows.map(rowToCategory);
+  return webDb.getAllCategories();
 }
 
 export async function getCategoryById(id: string): Promise<Category | null> {
-  if (isWeb()) {
-    return webDb.getCategoryById(id);
-  }
-
-  const db = await getDatabase();
-  const row = await db.getFirstAsync<CategoryRow>(
-    'SELECT * FROM categories WHERE id = ?',
-    [id]
-  );
-  return row ? rowToCategory(row) : null;
+  return webDb.getCategoryById(id);
 }
 
 export async function createCategory(
@@ -54,21 +18,13 @@ export async function createCategory(
   const id = generateId();
   const now = Date.now();
 
-  if (isWeb()) {
-    await webDb.createCategory({
-      id,
-      name,
-      color,
-      sort_order: sortOrder,
-      created_at: now,
-    });
-  } else {
-    const db = await getDatabase();
-    await db.runAsync(
-      'INSERT INTO categories (id, name, color, sort_order, created_at) VALUES (?, ?, ?, ?, ?)',
-      [id, name, color, sortOrder, now]
-    );
-  }
+  await webDb.createCategory({
+    id,
+    name,
+    color,
+    sort_order: sortOrder,
+    created_at: now,
+  });
 
   return {
     id,
@@ -92,21 +48,13 @@ export async function updateCategory(
   const newColor = updates.color ?? category.color;
   const newSortOrder = updates.sortOrder ?? category.sortOrder;
 
-  if (isWeb()) {
-    await webDb.updateCategory({
-      id,
-      name: newName,
-      color: newColor,
-      sort_order: newSortOrder,
-      created_at: category.createdAt.getTime(),
-    });
-  } else {
-    const db = await getDatabase();
-    await db.runAsync(
-      'UPDATE categories SET name = ?, color = ?, sort_order = ? WHERE id = ?',
-      [newName, newColor, newSortOrder, id]
-    );
-  }
+  await webDb.updateCategory({
+    id,
+    name: newName,
+    color: newColor,
+    sort_order: newSortOrder,
+    created_at: category.createdAt.getTime(),
+  });
 
   return {
     ...category,
@@ -117,13 +65,6 @@ export async function updateCategory(
 }
 
 export async function deleteCategory(id: string): Promise<boolean> {
-  if (isWeb()) {
-    await webDb.deleteCategory(id);
-    return true;
-  }
-
-  const db = await getDatabase();
-  // Assets with this category will have their category_id set to NULL due to ON DELETE SET NULL
-  const result = await db.runAsync('DELETE FROM categories WHERE id = ?', [id]);
-  return result.changes > 0;
+  await webDb.deleteCategory(id);
+  return true;
 }

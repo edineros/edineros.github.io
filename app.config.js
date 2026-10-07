@@ -13,21 +13,6 @@ module.exports = {
       resizeMode: "contain",
       backgroundColor: "#ffffff"
     },
-    ios: {
-      supportsTablet: true,
-      bundleIdentifier: "com.edineros.app",
-      infoPlist: {
-        ITSAppUsesNonExemptEncryption: false
-      }
-    },
-    android: {
-      adaptiveIcon: {
-        foregroundImage: "./assets/adaptive-icon.png",
-        backgroundColor: "#ffffff"
-      },
-      edgeToEdgeEnabled: true,
-      package: "com.edineros.app"
-    },
     web: {
       favicon: "./assets/favicon.png",
       bundler: "metro",
@@ -45,14 +30,7 @@ module.exports = {
       backgroundColor: "#000000"
     },
     plugins: [
-      "expo-router",
-      "expo-sqlite",
-      "expo-camera"
-    ],
-    extra: {
-      eas: {
-        projectId: "310eda78-0f81-43d5-8703-a573af9e6f4d"
-      }
-    }
+      "expo-router"
+    ]
   }
 };

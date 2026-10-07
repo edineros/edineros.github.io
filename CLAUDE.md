@@ -9,7 +9,7 @@ When making significant changes to the codebase (schema, project structure, desi
 - Prefer reusable components and patterns if possible
 - When refactoring, change existing comments only if needed
 - Always use braces for control statements (no single-line shorthand)
-- Use `Slot` instead of `Stack` for layout files (Stack causes errors in Expo Go)
+- Use `Slot` instead of `Stack` for layout files
 
 ```typescript
 // Bad
@@ -33,7 +33,7 @@ if (!id) {
 │   ├── index.tsx         # Settings screen
 │   ├── _layout.tsx       # Settings layout (uses Slot)
 │   ├── qr-export.tsx     # QR code export
-│   └── qr-import.tsx     # QR code import (mobile only)
+│   └── qr-import.tsx     # QR code import (camera-based)
 ├── portfolio/
 │   ├── [id].tsx          # Portfolio detail
 │   ├── create.tsx        # Create portfolio
@@ -72,8 +72,7 @@ if (!id) {
 │   ├── usePrices.ts      # Price fetching hooks
 │   └── useExchangeRates.ts # Exchange rate hooks
 ├── db/
-│   ├── schema.ts         # SQLite schema & migrations
-│   ├── webDatabase.ts    # IndexedDB wrapper for web
+│   ├── webDatabase.ts    # IndexedDB wrapper & migrations
 │   ├── webStorage.ts     # Web storage utilities
 │   ├── portfolios.ts     # Portfolio CRUD (raw DB functions)
 │   ├── assets.ts         # Asset CRUD (raw DB functions)
@@ -128,7 +127,9 @@ if (!id) {
 - **Transaction**: Buy/sell records (source of truth)
 - **Lot**: Computed from buy transactions, tracks remaining quantity
 
-## SQLite Schema
+## Schema
+
+Stored in IndexedDB (`lib/db/webDatabase.ts`) as object stores matching this shape:
 
 ```sql
 CREATE TABLE portfolios (
@@ -200,7 +201,7 @@ Uses **TanStack Query** (`@tanstack/react-query`) for all async data management.
 
 ## Cache Persistence
 
-Query cache persists to localStorage (web) or AsyncStorage (native) with 24-hour max age. Page refreshes won't refetch data if within TTL.
+Query cache persists to localStorage with 24-hour max age. Page refreshes won't refetch data if within TTL.
 
 ## Key Hooks
 
@@ -284,11 +285,10 @@ Supports **dark**, **light**, and **auto** (system) modes. Colors are defined in
 
 # Known Issues
 
-1. **Web OPFS**: expo-sqlite OPFS doesn't work reliably on web; uses pure IndexedDB instead
-2. **Price API Rate Limits**: Free APIs have rate limits; TanStack Query caching mitigates this
-3. **Yahoo Finance**: May require CORS proxy for web; works natively on mobile
-4. **expo-dev-client breaks Expo Go**: Do not add `expo-dev-client` to dependencies - it causes "Cannot find native module" errors (e.g., ExpoCamera) in Expo Go on iOS. Only add it if switching to development builds.
-5. **AsyncStorage on web**: Native cache persistence uses dynamic `require()` for AsyncStorage with fallback to no persistence if unavailable
+1. **Price API Rate Limits**: Free APIs have rate limits; TanStack Query caching mitigates this
+2. **Yahoo Finance**: Requires a CORS proxy (see `CORS_PROXIES` in `lib/api/providers/yahoo.ts`)
+
+This project is web-only (Expo web via `react-native-web`). There is no iOS/Android/native support.
 
 ---
 

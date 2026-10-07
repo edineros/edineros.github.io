@@ -23,9 +23,7 @@
 - [x] Gain/loss display with color coding
 
 ### Data Storage
-- [x] SQLite for native (iOS/Android)
-- [x] IndexedDB for web (bypasses expo-sqlite OPFS issues)
-- [x] Automatic platform detection
+- [x] IndexedDB (web-only)
 
 ### Export/Import
 - [x] JSON export (full portfolio backup)

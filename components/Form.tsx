@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { ScrollView, KeyboardAvoidingView } from 'react-native';
 import { YStack } from 'tamagui';
 import { useColors } from '../lib/theme/store';
 
@@ -12,10 +12,7 @@ export function Form({ children, footer }: FormProps) {
   const colors = useColors();
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior="height">
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ flexGrow: 1, paddingBottom: footer ? 16 : 0 }}

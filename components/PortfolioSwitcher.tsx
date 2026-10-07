@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Modal, TouchableOpacity, ScrollView, Platform } from 'react-native';
+import { Modal, TouchableOpacity, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import { YStack, XStack, Text } from 'tamagui';
 import { Ionicons } from '@expo/vector-icons';
@@ -184,7 +184,7 @@ export function PortfolioSwitcher({ currentPortfolio, portfolios, isAllPortfolio
             flex={1}
             justifyContent="flex-end"
             paddingHorizontal={16}
-            paddingBottom={Platform.OS === 'web' ? 40 : 34}
+            paddingBottom={40}
           >
             <TouchableOpacity onPress={(e) => e.stopPropagation()}>
               <YStack

@@ -1,22 +1,21 @@
 # Edineros
 
-A privacy-first, offline-capable portfolio tracking application for iOS, Android, and Web.
+A privacy-first, offline-capable portfolio tracking web application.
 
 ## Features
 
 - **Privacy by Design** - No accounts, no server-side data storage
 - **Offline First** - Full functionality without internet; online only for price updates
 - **Data Ownership** - User data stored locally in portable formats (JSON/CSV export)
-- **Cross-Platform** - Works on iOS, Android, and Web (PWA)
+- **Web (PWA)**
 - **Real-time Prices** - Fetches prices from Yahoo Finance (stocks), Kraken (crypto)
 
 ## Live Demo
 
 **[https://edineros.github.io](https://edineros.github.io)**
 
-Install as a PWA on your device for the best experience:
-- **iOS**: Open in Safari → Share → Add to Home Screen
-- **Android**: Open in Chrome → Menu → Install app
+Install as a PWA for the best experience:
+- **Mobile**: Open in your browser → Share/Menu → Add to Home Screen
 - **Desktop**: Click the install icon in the address bar
 
 ## Development
@@ -35,10 +34,8 @@ npm install
 # Start development server
 npm start
 
-# Run on specific platform
-npm run web      # Web browser
-npm run ios      # iOS simulator
-npm run android  # Android emulator
+# Or directly in the browser
+npm run web
 ```
 
 ### Build for Production
@@ -89,10 +86,10 @@ For root-level hosting (not a subdirectory), update `public/manifest.json`:
 
 ## Tech Stack
 
-- **Framework**: Expo (React Native)
+- **Framework**: Expo (React Native Web)
 - **Language**: TypeScript
 - **State**: Zustand
-- **Storage**: IndexedDB (web), SQLite (native)
+- **Storage**: IndexedDB
 - **UI**: Tamagui
 - **Price APIs**: Yahoo Finance, Kraken, Frankfurter
 

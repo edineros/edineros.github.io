@@ -1,5 +1,3 @@
-import { Alert, Platform } from 'react-native';
-
 interface ConfirmOptions {
   title: string;
   message: string;
@@ -9,65 +7,26 @@ interface ConfirmOptions {
 }
 
 /**
- * Cross-platform confirmation dialog.
- * Uses Alert.alert on native and window.confirm on web.
- */
-/**
- * Cross-platform alert dialog.
- * Uses Alert.alert on native and window.alert on web.
+ * Alert dialog. Uses window.alert on web.
  */
 export function alert(title: string, message?: string): void {
-  if (Platform.OS === 'web') {
-    window.alert(message ? `${title}\n\n${message}` : title);
-  } else {
-    Alert.alert(title, message);
-  }
+  window.alert(message ? `${title}\n\n${message}` : title);
 }
 
 /**
- * Cross-platform alert dialog that returns a promise.
- * Resolves when the user dismisses the alert.
+ * Alert dialog that returns a promise, resolving when the user dismisses it.
  */
 export function alertAsync(title: string, message?: string): Promise<void> {
   return new Promise((resolve) => {
-    if (Platform.OS === 'web') {
-      window.alert(message ? `${title}\n\n${message}` : title);
-      resolve();
-    } else {
-      Alert.alert(title, message, [{ text: 'OK', onPress: () => resolve() }]);
-    }
+    window.alert(message ? `${title}\n\n${message}` : title);
+    resolve();
   });
 }
 
 export function confirm(options: ConfirmOptions): Promise<boolean> {
-  const {
-    title,
-    message,
-    confirmText = 'OK',
-    cancelText = 'Cancel',
-    destructive = false,
-  } = options;
+  const { title, message } = options;
 
   return new Promise((resolve) => {
-    if (Platform.OS === 'web') {
-      // On web, use window.confirm
-      const result = window.confirm(`${title}\n\n${message}`);
-      resolve(result);
-    } else {
-      // On native, use Alert.alert
-      Alert.alert(
-        title,
-        message,
-        [
-          { text: cancelText, style: 'cancel', onPress: () => resolve(false) },
-          {
-            text: confirmText,
-            style: destructive ? 'destructive' : 'default',
-            onPress: () => resolve(true),
-          },
-        ],
-        { cancelable: true, onDismiss: () => resolve(false) }
-      );
-    }
+    resolve(window.confirm(`${title}\n\n${message}`));
   });
 }

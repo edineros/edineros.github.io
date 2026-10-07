@@ -1,11 +1,9 @@
 import { useEffect } from 'react';
 import { Slot } from 'expo-router';
 import { TamaguiProvider, Theme, View } from 'tamagui';
-import { Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import config from '../tamagui.config';
-import { getDatabase } from '../lib/db/schema';
 import { useThemeStore, useColors } from '../lib/theme/store';
 import { QueryProvider } from '../lib/providers/QueryProvider';
 
@@ -30,13 +28,6 @@ function AppContent() {
 }
 
 export default function RootLayout() {
-  useEffect(() => {
-    // Initialize database on app start (only for native platforms)
-    if (Platform.OS !== 'web') {
-      getDatabase().catch(console.error);
-    }
-  }, []);
-
   return (
     <QueryProvider>
       <TamaguiProvider config={config}>

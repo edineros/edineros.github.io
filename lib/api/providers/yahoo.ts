@@ -1,4 +1,3 @@
-import { Platform } from 'react-native';
 import { calculatePercentChange } from '../../utils/calculations';
 import type { PriceData } from '../../types';
 
@@ -80,7 +79,7 @@ interface YahooSearchResult {
   exchDisp?: string;
 }
 
-// CORS proxies for web (try multiple in case one fails)
+// CORS proxies (try multiple in case one fails)
 const CORS_PROXIES = [
   (url: string) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
   (url: string) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
@@ -91,10 +90,7 @@ const CORS_PROXIES = [
 let currentProxyIndex = 0;
 
 function getProxiedUrl(url: string): string {
-  if (Platform.OS === 'web') {
-    return CORS_PROXIES[currentProxyIndex](url);
-  }
-  return url;
+  return CORS_PROXIES[currentProxyIndex](url);
 }
 
 function switchToNextProxy(): boolean {
@@ -131,8 +127,8 @@ async function fetchWithRetry(url: string, retries = MAX_RETRIES, triedProxySwit
 
     // Retry on rate limit or server errors
     if ((response.status === 429 || response.status >= 500) && retries > 0) {
-      // On 5xx errors, try switching proxy first (on web)
-      if (Platform.OS === 'web' && response.status >= 500 && !triedProxySwitch && switchToNextProxy()) {
+      // On 5xx errors, try switching proxy first
+      if (response.status >= 500 && !triedProxySwitch && switchToNextProxy()) {
         const baseUrl = extractBaseUrl(url);
         const newUrl = getProxiedUrl(baseUrl);
         return fetchWithRetry(newUrl, retries, true);
@@ -145,8 +141,8 @@ async function fetchWithRetry(url: string, retries = MAX_RETRIES, triedProxySwit
 
     return response;
   } catch (error) {
-    // On network errors, try switching proxy first (on web)
-    if (Platform.OS === 'web' && !triedProxySwitch && switchToNextProxy()) {
+    // On network errors, try switching proxy first
+    if (!triedProxySwitch && switchToNextProxy()) {
       const baseUrl = extractBaseUrl(url);
       const newUrl = getProxiedUrl(baseUrl);
       return fetchWithRetry(newUrl, retries, true);

@@ -1,11 +1,11 @@
 import { useState, useRef } from 'react';
-import { ScrollView, Platform, TouchableOpacity } from 'react-native';
+import { ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { YStack, XStack, Text } from 'tamagui';
 import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
 import Constants from 'expo-constants';
-import { exportToJson, shareFile, importFromJson } from '../../lib/utils/export';
+import { exportToJson, importFromJson } from '../../lib/utils/export';
 import { alert, confirm } from '../../lib/utils/confirm';
 import { Page } from '../../components/Page';
 import { LongButton } from '../../components/LongButton';
@@ -35,8 +35,7 @@ export default function SettingsScreen() {
   const handleExportJson = async () => {
     setIsExporting(true);
     try {
-      const filePath = await exportToJson();
-      await shareFile(filePath);
+      await exportToJson();
     } catch (error) {
       alert('Export Failed', (error as Error).message);
     } finally {
@@ -52,16 +51,7 @@ export default function SettingsScreen() {
       // Clear all cached data (in-memory)
       queryClient.clear();
       // Also clear persisted cache from storage to prevent stale data restoration
-      if (Platform.OS === 'web') {
-        window.localStorage.removeItem(CACHE_KEY);
-      } else {
-        try {
-          const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-          await AsyncStorage.removeItem(CACHE_KEY);
-        } catch {
-          // AsyncStorage not available, ignore
-        }
-      }
+      window.localStorage.removeItem(CACHE_KEY);
 
       await alertImportSuccess(importResult);
       router.replace('/');
@@ -80,39 +70,6 @@ export default function SettingsScreen() {
       cancelText: 'Cancel',
       destructive: true,
     });
-  };
-
-  const handleImportNative = async () => {
-    try {
-      const DocumentPicker = await import('expo-document-picker');
-      const { File } = await import('expo-file-system');
-
-      const result = await DocumentPicker.getDocumentAsync({
-        type: 'application/json',
-        copyToCacheDirectory: true,
-      });
-
-      if (result.canceled) {
-        return;
-      }
-
-      const pickedFile = result.assets[0];
-      if (!pickedFile) {
-        return;
-      }
-
-      const confirmed = await confirmImport();
-      if (!confirmed) {
-        return;
-      }
-
-      const file = new File(pickedFile.uri);
-      const content = await file.text();
-      await processImport(content);
-    } catch (error) {
-      alert('Import Failed', (error as Error).message);
-      setIsImporting(false);
-    }
   };
 
   const handleImportWeb = () => {
@@ -143,21 +100,17 @@ export default function SettingsScreen() {
     }
   };
 
-  const handleImport = Platform.OS === 'web' ? handleImportWeb : handleImportNative;
-
   return (
     <Page title="Settings" fallbackPath="/">
       <ScrollView style={{ flex: 1 }}>
-        {/* Hidden file input for web */}
-        {Platform.OS === 'web' && (
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".json,application/json"
-            style={{ display: 'none' }}
-            onChange={handleFileChange}
-          />
-        )}
+        {/* Hidden file input used to trigger the native file picker */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json,application/json"
+          style={{ display: 'none' }}
+          onChange={handleFileChange}
+        />
 
         <YStack flex={1} padding={CONTENT_HORIZONTAL_PADDING} gap={16}>
           <SettingsSection title="Appearance" subtitle="Choose your preferred theme">
@@ -232,7 +185,7 @@ export default function SettingsScreen() {
               </LongButton>
               <LongButton
                 iconName="code-slash-outline"
-                onPress={handleImport}
+                onPress={handleImportWeb}
                 disabled={isImporting}
                 variant="secondary"
               >

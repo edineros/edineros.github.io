@@ -1,4 +1,3 @@
-import { Platform } from 'react-native';
 import { format } from 'date-fns';
 import { getAllPortfolios, getPortfolioById } from '../db/portfolios';
 import { getAssetsByPortfolioId } from '../db/assets';
@@ -69,36 +68,8 @@ export async function exportToJson(portfolioId?: string): Promise<string> {
   const json = JSON.stringify(data, null, 2);
   const filename = `portfolio_backup_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.json`;
 
-  if (Platform.OS === 'web') {
-    downloadFile(json, filename, 'application/json');
-    return filename; // Return filename for web (no file path)
-  }
-
-  // Native: use expo-file-system
-  const { File, Paths } = await import('expo-file-system');
-  const file = new File(Paths.document, filename);
-  await file.write(json);
-  return file.uri;
-}
-
-export async function shareFile(filePath: string): Promise<void> {
-  if (Platform.OS === 'web') {
-    // On web, file was already downloaded in exportToJson
-    return;
-  }
-
-  // Native: use expo-sharing
-  const Sharing = await import('expo-sharing');
-  const isAvailable = await Sharing.isAvailableAsync();
-
-  if (!isAvailable) {
-    throw new Error('Sharing is not available on this device');
-  }
-
-  await Sharing.shareAsync(filePath, {
-    mimeType: 'application/json',
-    dialogTitle: 'Export Portfolio Data',
-  });
+  downloadFile(json, filename, 'application/json');
+  return filename;
 }
 
 export async function importFromJson(jsonString: string): Promise<ImportResult> {

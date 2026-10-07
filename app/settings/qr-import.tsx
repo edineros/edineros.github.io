@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Platform, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { YStack, XStack, Text } from 'tamagui';
 import { useQueryClient } from '@tanstack/react-query';
@@ -13,16 +12,6 @@ import { alert, confirm } from '../../lib/utils/confirm';
 import { alertImportSuccess } from '../../lib/utils/backup';
 
 const CACHE_KEY = 'portfolio-query-cache';
-
-// Native camera imports (lazy loaded)
-let CameraView: any;
-let useCameraPermissions: any;
-
-if (Platform.OS !== 'web') {
-  const ExpoCamera = require('expo-camera');
-  CameraView = ExpoCamera.CameraView;
-  useCameraPermissions = ExpoCamera.useCameraPermissions;
-}
 
 // Declare jsqr module (no types available)
 declare module 'jsqr' {
@@ -41,7 +30,7 @@ function WebQRScanner({ onScan, isActive, onStop }: { onScan: (data: string) => 
   const colors = useColors();
 
   useEffect(() => {
-    if (Platform.OS !== 'web' || !isActive) {
+    if (!isActive) {
       return;
     }
 
@@ -114,64 +103,6 @@ function WebQRScanner({ onScan, isActive, onStop }: { onScan: (data: string) => 
   );
 }
 
-// Native camera component
-function NativeQRScanner({ onScan }: { onScan: (data: string) => void }) {
-  const colors = useColors();
-  const [permission, requestPermission] = useCameraPermissions();
-
-  if (!permission) {
-    return (
-      <YStack flex={1} justifyContent="center" alignItems="center">
-        <Text color={colors.textSecondary}>Requesting camera permission...</Text>
-      </YStack>
-    );
-  }
-
-  if (!permission.granted) {
-    return (
-      <YStack flex={1} padding={CONTENT_HORIZONTAL_PADDING} justifyContent="center" alignItems="center" gap={16}>
-        <Text color={colors.textSecondary} textAlign="center">
-          Camera access is required to scan QR codes.
-        </Text>
-        <LongButton onPress={requestPermission}>Grant Camera Access</LongButton>
-      </YStack>
-    );
-  }
-
-  return (
-    <YStack flex={1} position="relative">
-      <CameraView
-        style={StyleSheet.absoluteFill}
-        facing="back"
-        barcodeScannerSettings={{
-          barcodeTypes: ['qr'],
-        }}
-        onBarcodeScanned={({ data }: { data: string }) => onScan(data)}
-      />
-
-      {/* Overlay with scanning frame */}
-      <YStack
-        position="absolute"
-        top={0}
-        left={0}
-        right={0}
-        bottom={0}
-        justifyContent="center"
-        alignItems="center"
-      >
-        <YStack
-          width={250}
-          height={250}
-          borderWidth={2}
-          borderColor="white"
-          borderRadius={12}
-          opacity={0.8}
-        />
-      </YStack>
-    </YStack>
-  );
-}
-
 export default function QRImportScreen() {
   const colors = useColors();
   const router = useRouter();
@@ -239,27 +170,13 @@ export default function QRImportScreen() {
     try {
       const result = await importFromJson(jsonData);
       // Clear cached data (both persisted and in-memory)
-      if (Platform.OS === 'web') {
-        window.localStorage.removeItem(CACHE_KEY);
-      } else {
-        try {
-          const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-          await AsyncStorage.removeItem(CACHE_KEY);
-        } catch {
-          // AsyncStorage not available, ignore
-        }
-      }
+      window.localStorage.removeItem(CACHE_KEY);
       queryClient.clear();
       await alertImportSuccess(result);
 
-      // Navigate after alert is dismissed
-      if (Platform.OS === 'web') {
-        pendingNavigationRef.current = true;
-        // If scanner already stopped, navigate immediately
-        handleScannerStopped();
-      } else {
-        navigateHome();
-      }
+      // Navigate after alert is dismissed, once scanner has stopped
+      pendingNavigationRef.current = true;
+      handleScannerStopped();
     } catch (error) {
       alert('Import Failed', (error as Error).message);
       resetScanner();
@@ -314,15 +231,11 @@ export default function QRImportScreen() {
       <YStack flex={1}>
         {/* Camera/Scanner View */}
         <YStack flex={1}>
-          {Platform.OS === 'web' ? (
-            <WebQRScanner
-              onScan={handleScan}
-              isActive={scannerActive}
-              onStop={handleScannerStopped}
-            />
-          ) : (
-            <NativeQRScanner onScan={handleScan} />
-          )}
+          <WebQRScanner
+            onScan={handleScan}
+            isActive={scannerActive}
+            onStop={handleScannerStopped}
+          />
         </YStack>
 
         {/* Progress Panel */}
