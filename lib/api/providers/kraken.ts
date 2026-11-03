@@ -156,7 +156,7 @@ async function getKrakenPair(symbol: string, currency: string): Promise<string |
 export async function fetchKrakenPrice(symbol: string): Promise<PriceData | null> {
   const pair = await getKrakenPair(symbol, CRYPTO_BASE_CURRENCY);
   if (!pair) {
-    return null;
+    throw new Error(`Kraken has no ${CRYPTO_BASE_CURRENCY} pair for ${symbol}`);
   }
 
   try {
@@ -164,14 +164,13 @@ export async function fetchKrakenPrice(symbol: string): Promise<PriceData | null
     const response = await fetch(url);
 
     if (!response.ok) {
-      return null;
+      throw new Error(`Kraken API error: ${response.status}`);
     }
 
     const data = (await response.json()) as KrakenTickerResponse;
 
     if (data.error?.length > 0) {
-      console.error('Kraken API error:', data.error);
-      return null;
+      throw new Error(`Kraken API error: ${data.error.join(', ')}`);
     }
 
     // Get the first (and only) result
@@ -190,9 +189,10 @@ export async function fetchKrakenPrice(symbol: string): Promise<PriceData | null
     }
   } catch (error) {
     console.error('Error fetching Kraken price:', error);
+    throw error;
   }
 
-  return null;
+  throw new Error(`Kraken returned no price for ${symbol}`);
 }
 
 // Fetch multiple prices at once (Kraken supports comma-separated pairs)
@@ -214,7 +214,7 @@ export async function fetchKrakenPrices(
   }
 
   if (pairs.length === 0) {
-    return results;
+    throw new Error('Kraken found no supported pairs for the requested symbols');
   }
 
   try {
@@ -222,14 +222,13 @@ export async function fetchKrakenPrices(
     const response = await fetch(url);
 
     if (!response.ok) {
-      return results;
+      throw new Error(`Kraken API error: ${response.status}`);
     }
 
     const data = (await response.json()) as KrakenTickerResponse;
 
     if (data.error?.length > 0) {
-      console.error('Kraken API error:', data.error);
-      return results;
+      throw new Error(`Kraken API error: ${data.error.join(', ')}`);
     }
 
     for (const [pairKey, ticker] of Object.entries(data.result)) {
@@ -259,6 +258,11 @@ export async function fetchKrakenPrices(
     }
   } catch (error) {
     console.error('Error batch fetching Kraken prices:', error);
+    throw error;
+  }
+
+  if (Object.keys(results).length === 0) {
+    throw new Error('Kraken returned no prices for the requested symbols');
   }
 
   return results;

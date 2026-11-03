@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useQueries, useQuery } from '@tanstack/react-query';
+import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { usePortfolios } from '../usePortfolios';
 import { useAssets } from '../useAssets';
 import { queryKeys } from '../config/queryKeys';
@@ -22,7 +22,12 @@ interface AssetStatsData {
   todayChangePercent: number | null;
 }
 
-const EMPTY_STATS = { assetStats: new Map<string, AssetWithStats>(), portfolioStats: null, pendingPriceCount: 0 };
+const EMPTY_STATS = {
+  assetStats: new Map<string, AssetWithStats>(),
+  portfolioStats: null,
+  pendingPriceCount: 0,
+  fetchingPriceAssetIds: new Set<string>(),
+};
 
 interface SingleAssetStatsResult {
   stats: AssetWithStats;
@@ -107,6 +112,8 @@ export interface PortfolioStatsResult {
   hasPartialData: boolean;
   /** Number of assets that still need price data */
   pendingPriceCount: number;
+  /** Asset IDs whose market prices are currently being fetched or refreshed */
+  fetchingPriceAssetIds: Set<string>;
 }
 
 /**
@@ -122,6 +129,7 @@ export function usePortfolioStats(
   portfolioIds: string[] | null,
   displayCurrency: string
 ): PortfolioStatsResult {
+  const queryClient = useQueryClient();
   // When there is exactly one portfolio, use the efficient per-portfolio asset query.
   const singlePortfolioId = portfolioIds?.length === 1 ? portfolioIds[0] : undefined;
 
@@ -153,16 +161,22 @@ export function usePortfolioStats(
 
   // Batch fetch crypto prices (always in USD, conversion handled by exchange rates)
   const cryptoSymbols = [...new Set(cryptoAssets.map((a) => a.symbol))].sort();
-  const { data: cryptoPrices, isLoading: cryptoPricesLoading } = useQuery({
-    queryKey: ['prices', 'crypto', 'batch', ...cryptoSymbols],
+  const cryptoQueryKey = ['prices', 'crypto', 'batch', ...cryptoSymbols];
+  const { data: cryptoPrices, isLoading: cryptoPricesLoading, isFetching: cryptoPricesFetching } = useQuery({
+    queryKey: cryptoQueryKey,
     queryFn: async () => {
       if (cryptoSymbols.length === 0) {
         return {} as Record<string, PriceData>;
       }
-      return fetchKrakenPrices(cryptoSymbols);
+      const fetchedPrices = await fetchKrakenPrices(cryptoSymbols);
+      return {
+        ...(queryClient.getQueryData<Record<string, PriceData>>(cryptoQueryKey) ?? {}),
+        ...fetchedPrices,
+      };
     },
     enabled: cryptoSymbols.length > 0,
     staleTime: PRICE_STALE_TIME.crypto,
+    gcTime: Infinity,
   });
 
   // Fetch individual prices for other market assets (deduplicated)
@@ -174,7 +188,25 @@ export function usePortfolioStats(
       queryKey: queryKeys.prices.single(asset.symbol, asset.type),
       queryFn: () => fetchYahooPrice(asset.symbol),
       staleTime: PRICE_STALE_TIME[asset.type],
+      gcTime: Infinity,
     })),
+  });
+
+  const fetchingPriceAssetIds = new Set<string>();
+  effectiveAssets.forEach((asset) => {
+    if (isSimpleAssetType(asset.type)) {
+      return;
+    }
+    if (asset.type === 'crypto' || asset.type === 'bitcoin') {
+      if (cryptoPricesFetching) {
+        fetchingPriceAssetIds.add(asset.id);
+      }
+      return;
+    }
+    const queryIndex = uniqueOtherAssets.findIndex((queryAsset) => queryAsset.symbol === asset.symbol);
+    if (otherPriceQueries[queryIndex]?.isFetching) {
+      fetchingPriceAssetIds.add(asset.id);
+    }
   });
 
   // Fetch exchange rates
@@ -361,5 +393,6 @@ export function usePortfolioStats(
     isLoading,
     hasPartialData,
     pendingPriceCount,
+    fetchingPriceAssetIds,
   };
 }

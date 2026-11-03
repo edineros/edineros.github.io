@@ -151,15 +151,14 @@ export async function fetchYahooPrice(symbol: string): Promise<(PriceData & { na
       const response = await fetchWithRetry(baseUrl);
 
       if (!response.ok) {
-        console.error(`Yahoo Finance API error: ${response.status}`);
-        return null;
+        throw new Error(`Yahoo Finance API error: ${response.status}`);
       }
 
       const data = await response.json();
       const result = data?.chart?.result?.[0] as YahooChartResult | undefined;
 
-      if (!result?.meta?.regularMarketPrice) {
-        return null;
+      if (typeof result?.meta?.regularMarketPrice !== 'number' || !Number.isFinite(result.meta.regularMarketPrice)) {
+        throw new Error(`Yahoo Finance returned no price for ${symbol}`);
       }
 
       const currentPrice = result.meta.regularMarketPrice;
@@ -175,7 +174,7 @@ export async function fetchYahooPrice(symbol: string): Promise<(PriceData & { na
       };
     } catch (error) {
       console.error('Error fetching Yahoo price:', error);
-      return null;
+      throw error;
     }
   });
 }

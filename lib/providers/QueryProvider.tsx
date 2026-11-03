@@ -33,13 +33,13 @@ export function QueryProvider({ children }: QueryProviderProps) {
       client={queryClient}
       persistOptions={{
         persister,
-        maxAge: 24 * 60 * 60 * 1000, // 24 hours max cache age
+        maxAge: Infinity,
         buster: '3', // Increment to invalidate all cached data
         dehydrateOptions: {
           // Don't persist database queries (portfolios, assets, etc.) - only persist prices/exchange rates
           // This prevents stale data issues after import
           shouldDehydrateQuery: (query) => {
-            if (query.state.status !== 'success' || query.state.data == null) {
+            if (query.state.data == null) {
               return false;
             }
             // Only persist price and exchange rate queries

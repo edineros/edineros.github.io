@@ -44,6 +44,7 @@ export function usePrice(
     queryFn: () => fetchPriceFromProvider(symbol!, assetType!, preferredCurrency),
     enabled: !!symbol && !!assetType,
     staleTime: assetType ? PRICE_STALE_TIME[assetType] : PRICE_STALE_TIME.stock,
+    gcTime: Infinity,
   });
 }
 
@@ -54,6 +55,7 @@ export function usePrices(assets: Asset[] | undefined, portfolioCurrency?: strin
       queryKey: queryKeys.prices.single(asset.symbol, asset.type),
       queryFn: () => fetchPriceFromProvider(asset.symbol, asset.type, portfolioCurrency),
       staleTime: PRICE_STALE_TIME[asset.type],
+      gcTime: Infinity,
     }));
 
   return useQueries({ queries });
@@ -62,16 +64,24 @@ export function usePrices(assets: Asset[] | undefined, portfolioCurrency?: strin
 // Hook to batch fetch crypto prices (more efficient for multiple crypto assets)
 // Always fetches in EUR, conversion handled by exchange rates
 export function useCryptoPrices(symbols: string[] | undefined) {
+  const queryClient = useQueryClient();
+  const queryKey = ['prices', 'crypto', 'batch', ...(symbols ?? [])];
+
   return useQuery({
-    queryKey: ['prices', 'crypto', 'batch', ...(symbols ?? [])],
+    queryKey,
     queryFn: async () => {
       if (!symbols || symbols.length === 0) {
         return {} as Record<string, PriceData>;
       }
-      return fetchKrakenPrices(symbols);
+      const fetchedPrices = await fetchKrakenPrices(symbols);
+      return {
+        ...(queryClient.getQueryData<Record<string, PriceData>>(queryKey) ?? {}),
+        ...fetchedPrices,
+      };
     },
     enabled: !!symbols && symbols.length > 0,
     staleTime: PRICE_STALE_TIME.crypto,
+    gcTime: Infinity,
   });
 }
 

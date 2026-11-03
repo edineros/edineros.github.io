@@ -12,6 +12,7 @@ import type { Asset, AssetWithStats } from '../lib/types';
 interface AssetsTableProps {
   assets: Asset[];
   assetStats: Map<string, AssetWithStats>;
+  fetchingPriceAssetIds: Set<string>;
   masked?: boolean;
 }
 
@@ -21,7 +22,7 @@ const ROW_HEIGHT = 44;
 const HEADER_HEIGHT = 32;
 const INDICATOR_WIDTH = 3;
 
-export function AssetsTable({ assets, assetStats, masked = false }: AssetsTableProps) {
+export function AssetsTable({ assets, assetStats, fetchingPriceAssetIds, masked = false }: AssetsTableProps) {
   const router = useRouter();
   const colors = useColors();
   const { tableConfig } = useAppStore();
@@ -39,7 +40,7 @@ export function AssetsTable({ assets, assetStats, masked = false }: AssetsTableP
 
     switch (columnId) {
       case 'price':
-        if (isSimple || !stats?.currentPrice) {
+        if (isSimple || stats?.currentPrice == null) {
           return '—';
         }
         return formatCurrency(stats.currentPrice, asset.currency);
@@ -182,7 +183,7 @@ export function AssetsTable({ assets, assetStats, masked = false }: AssetsTableP
             const gainColor = stats ? getGainColor(stats.unrealizedGain) : 'neutral';
             const isSimple = isSimpleAssetType(asset.type);
             const isLastRow = index === assets.length - 1;
-            const isPriceLoading = !isSimple && stats?.currentPrice == null;
+            const isPriceLoading = !isSimple && fetchingPriceAssetIds.has(asset.id);
 
             return (
               <TouchableOpacity

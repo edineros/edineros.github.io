@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { searchYahooSymbol } from './yahoo';
+import { fetchYahooPrice, searchYahooSymbol } from './yahoo';
 
 describe('Yahoo Finance proxy fallback', () => {
   const fetchMock = vi.fn<typeof fetch>();
@@ -35,5 +35,14 @@ describe('Yahoo Finance proxy fallback', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(String(fetchMock.mock.calls[0][0])).toContain('codetabs.com');
     expect(String(fetchMock.mock.calls[1][0])).toContain('allorigins.win');
+  });
+
+  it('rejects failed price requests so cached prices are not replaced with null', async () => {
+    fetchMock
+      .mockResolvedValueOnce(new Response('', { status: 401 }))
+      .mockResolvedValueOnce(new Response('', { status: 401 }))
+      .mockResolvedValueOnce(new Response('', { status: 401 }));
+
+    await expect(fetchYahooPrice('SXRV.DE')).rejects.toThrow('Yahoo Finance API error: 401');
   });
 });

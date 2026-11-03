@@ -84,7 +84,7 @@ export default function PortfolioDetailScreen() {
   );
 
   // Load stats
-  const { portfolio: stats, assetStats, isLoading, pendingPriceCount } = usePortfolioStats(statsPortfolioIds, displayCurrency);
+  const { portfolio: stats, assetStats, isLoading, pendingPriceCount, fetchingPriceAssetIds } = usePortfolioStats(statsPortfolioIds, displayCurrency);
 
   // When in multi-portfolio mode, narrow the raw assets to just the selected portfolios.
   // Reused by both the table and the allocation chart.
@@ -348,6 +348,7 @@ export default function PortfolioDetailScreen() {
               <AssetsTable
                 assets={portfolioAssets}
                 assetStats={assetStats}
+                fetchingPriceAssetIds={fetchingPriceAssetIds}
                 masked={isMasked}
               />
             </YStack>
