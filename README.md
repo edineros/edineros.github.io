@@ -47,6 +47,10 @@ npm run build:web
 # Output is in the `dist` folder
 ```
 
+### Yahoo Finance relay
+
+The static app uses the separate `edineros-yahoo-relay` Render service by default for Yahoo chart, Spark, and symbol-search requests. To override the service URL, set `VITE_YAHOO_RELAY_URL` in `.env.local` for local development or as a GitHub Actions repository variable for GitHub Pages builds.
+
 ## Hosting on GitHub Pages
 
 ### Automatic Deployment

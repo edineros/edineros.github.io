@@ -2,8 +2,7 @@ import { calculatePercentChange } from '../../utils/calculations';
 import type { PriceData } from '../../types';
 
 const DELAY = 200; // 200ms delay makes sure we fire no more than 5 yahoo requests per second
-const RETRY_DELAY = 7000; // 7 seconds delay before retrying on 429/500 errors
-const MAX_RETRIES = 2;
+const DEFAULT_RELAY_URL = 'https://edineros-yahoo-relay.onrender.com';
 
 // Rate limiting queue for Yahoo Finance API
 // Ensures no more than 5 requests per second (150ms minimum between requests)
@@ -71,6 +70,11 @@ interface YahooChartResult {
   };
 }
 
+interface YahooSparkEntry {
+  symbol: string;
+  response?: YahooChartResult[];
+}
+
 interface YahooSearchResult {
   symbol: string;
   shortname?: string;
@@ -79,76 +83,22 @@ interface YahooSearchResult {
   exchDisp?: string;
 }
 
-// CORS proxies (try multiple in case one fails)
-const CORS_PROXIES = [
-  (url: string) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
-  (url: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-  (url: string) => `https://thingproxy.freeboard.io/fetch/${url}`,
-];
+function getRelayUrl(): string {
+  const relayUrl = import.meta.env.VITE_YAHOO_RELAY_URL?.trim().replace(/\/+$/, '');
+  return relayUrl || DEFAULT_RELAY_URL;
+}
 
-// Try each proxy before retrying transient network, rate-limit, or server failures.
-async function fetchWithRetry(baseUrl: string, retries = MAX_RETRIES): Promise<Response> {
-  let retryCount = 0;
-
-  while (true) {
-    let lastNetworkError: unknown;
-    let networkFailed = false;
-
-    for (let proxyIndex = 0; proxyIndex < CORS_PROXIES.length; proxyIndex++) {
-      let response: Response;
-
-      try {
-        response = await fetch(CORS_PROXIES[proxyIndex](baseUrl));
-      } catch (error) {
-        lastNetworkError = error;
-        networkFailed = true;
-        if (proxyIndex < CORS_PROXIES.length - 1) {
-          console.log(`[Yahoo] Switching to proxy ${proxyIndex + 1}`);
-          continue;
-        }
-        break;
-      }
-
-      lastNetworkError = undefined;
-      networkFailed = false;
-
-      if (
-        (response.status === 401 || response.status === 403 || response.status >= 500) &&
-        proxyIndex < CORS_PROXIES.length - 1
-      ) {
-        console.log(`[Yahoo] Switching to proxy ${proxyIndex + 1}`);
-        continue;
-      }
-
-      if ((response.status === 429 || response.status >= 500) && retryCount < retries) {
-        console.log(`[Yahoo] API returned ${response.status}, retrying in ${RETRY_DELAY}ms...`);
-        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-        retryCount++;
-        break;
-      }
-
-      return response;
-    }
-
-    if (networkFailed) {
-      if (retryCount < retries) {
-        console.log(`[Yahoo] Fetch failed: ${lastNetworkError}, retrying in ${RETRY_DELAY}ms...`);
-        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-        retryCount++;
-        continue;
-      }
-      throw lastNetworkError;
-    }
-  }
+async function fetchFromRelay(relayPath: string): Promise<Response> {
+  return fetch(`${getRelayUrl()}${relayPath}`);
 }
 
 export async function fetchYahooPrice(symbol: string): Promise<(PriceData & { name?: string }) | null> {
   return yahooQueue.enqueue(async () => {
     try {
       // Use the chart API endpoint which is more accessible
-      const baseUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`;
+      const relayPath = `/api/yahoo/chart?symbol=${encodeURIComponent(symbol)}`;
 
-      const response = await fetchWithRetry(baseUrl);
+      const response = await fetchFromRelay(relayPath);
 
       if (!response.ok) {
         throw new Error(`Yahoo Finance API error: ${response.status}`);
@@ -179,6 +129,50 @@ export async function fetchYahooPrice(symbol: string): Promise<(PriceData & { na
   });
 }
 
+export async function fetchYahooPrices(symbols: string[]): Promise<Record<string, PriceData & { name?: string }>> {
+  const uniqueSymbols = [...new Set(symbols.map((symbol) => symbol.trim()).filter(Boolean))];
+  if (uniqueSymbols.length === 0) {
+    return {};
+  }
+  if (uniqueSymbols.length > 20) {
+    throw new Error('Yahoo Spark supports at most 20 symbols per request');
+  }
+
+  return yahooQueue.enqueue(async () => {
+    const relayPath = `/api/yahoo/spark?symbols=${encodeURIComponent(uniqueSymbols.join(','))}`;
+    const response = await fetchFromRelay(relayPath);
+
+    if (!response.ok) {
+      throw new Error(`Yahoo Finance Spark API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const entries = (data?.spark?.result ?? []) as YahooSparkEntry[];
+    const prices: Record<string, PriceData & { name?: string }> = {};
+
+    for (const entry of entries) {
+      const result = entry.response?.[0];
+      if (!result || typeof result.meta.regularMarketPrice !== 'number' || !Number.isFinite(result.meta.regularMarketPrice)) {
+        continue;
+      }
+
+      const currentPrice = result.meta.regularMarketPrice;
+      const previousClose = result.meta.previousClose ?? result.meta.chartPreviousClose ?? result.meta.regularMarketOpen;
+      prices[entry.symbol] = {
+        price: currentPrice,
+        currency: result.meta.currency || 'USD',
+        name: result.meta.longName || result.meta.shortName,
+        todayChangePercent: calculatePercentChange(currentPrice, previousClose),
+      };
+    }
+
+    if (Object.keys(prices).length === 0) {
+      throw new Error('Yahoo Finance Spark returned no prices');
+    }
+    return prices;
+  });
+}
+
 export async function searchYahooSymbol(query: string): Promise<
   Array<{
     symbol: string;
@@ -189,9 +183,9 @@ export async function searchYahooSymbol(query: string): Promise<
 > {
   return yahooQueue.enqueue(async () => {
     try {
-      const baseUrl = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=10&newsCount=0`;
+      const relayPath = `/api/yahoo/search?q=${encodeURIComponent(query)}`;
 
-      const response = await fetchWithRetry(baseUrl);
+      const response = await fetchFromRelay(relayPath);
 
       if (!response.ok) {
         console.error(`Yahoo Finance search error: ${response.status}`);

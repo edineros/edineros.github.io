@@ -6,11 +6,11 @@ import { queryKeys } from '../config/queryKeys';
 import { PRICE_STALE_TIME, EXCHANGE_RATE_STALE_TIME } from '../config/queryClient';
 import { isSimpleAssetType, CRYPTO_BASE_CURRENCY } from '../../constants/assetTypes';
 import { getLotsForAsset } from '../../db/transactions';
-import { fetchYahooPrice } from '../../api/providers/yahoo';
+import { fetchYahooPrice, fetchYahooPrices } from '../../api/providers/yahoo';
 import { fetchKrakenPrices } from '../../api/providers/kraken';
 import { fetchExchangeRate } from '../../api/providers/frankfurter';
 import { calculateCAGR } from '../../utils/calculations';
-import type { Asset, AssetWithStats, PortfolioWithStats, Lot, PriceData } from '../../types';
+import type { Asset, AssetType, AssetWithStats, PortfolioWithStats, Lot, PriceData } from '../../types';
 
 interface AssetStatsData {
   asset: Asset;
@@ -181,15 +181,51 @@ export function usePortfolioStats(
 
   // Fetch individual prices for other market assets (deduplicated)
   const uniqueOtherAssets = otherMarketAssets.filter(
-    (asset, index, arr) => arr.findIndex((a) => a.symbol === asset.symbol) === index
+    (asset, index, arr) => arr.findIndex((a) => a.symbol === asset.symbol && a.type === asset.type) === index
   );
-  const otherPriceQueries = useQueries({
-    queries: uniqueOtherAssets.map((asset) => ({
-      queryKey: queryKeys.prices.single(asset.symbol, asset.type),
-      queryFn: () => fetchYahooPrice(asset.symbol),
-      staleTime: PRICE_STALE_TIME[asset.type],
-      gcTime: Infinity,
-    })),
+  const yahooBatches = useMemo(() => {
+    const assetsByType = new Map<AssetType, Asset[]>();
+    uniqueOtherAssets.forEach((asset) => {
+      const batch = assetsByType.get(asset.type) ?? [];
+      batch.push(asset);
+      assetsByType.set(asset.type, batch);
+    });
+
+    const batches: Array<{ type: AssetType; assets: Asset[] }> = [];
+    assetsByType.forEach((group, type) => {
+      for (let index = 0; index < group.length; index += 20) {
+        batches.push({ type, assets: group.slice(index, index + 20) });
+      }
+    });
+    return batches;
+  }, [uniqueOtherAssets]);
+  const otherPriceBatchQueries = useQueries({
+    queries: yahooBatches.map((batch) => {
+      const symbols = batch.assets.map((asset) => asset.symbol);
+      const queryKey = ['prices', 'yahoo', 'spark', batch.type, ...symbols];
+      return {
+        queryKey,
+        queryFn: async () => {
+          const cachedBatch = queryClient.getQueryData<Record<string, PriceData>>(queryKey) ?? {};
+          const cachedSingles = Object.fromEntries(batch.assets.flatMap((asset) => {
+            const cachedPrice = queryClient.getQueryData<PriceData>(queryKeys.prices.single(asset.symbol, asset.type));
+            return cachedPrice ? [[asset.symbol, cachedPrice]] : [];
+          }));
+          const fetchedPrices = await fetchYahooPrices(symbols);
+
+          Object.entries(fetchedPrices).forEach(([symbol, price]) => {
+            const asset = batch.assets.find((entry) => entry.symbol === symbol);
+            if (asset) {
+              queryClient.setQueryData(queryKeys.prices.single(asset.symbol, asset.type), price);
+            }
+          });
+
+          return { ...cachedBatch, ...cachedSingles, ...fetchedPrices };
+        },
+        staleTime: PRICE_STALE_TIME[batch.type],
+        gcTime: Infinity,
+      };
+    }),
   });
 
   const fetchingPriceAssetIds = new Set<string>();
@@ -203,8 +239,8 @@ export function usePortfolioStats(
       }
       return;
     }
-    const queryIndex = uniqueOtherAssets.findIndex((queryAsset) => queryAsset.symbol === asset.symbol);
-    if (otherPriceQueries[queryIndex]?.isFetching) {
+    const queryIndex = yahooBatches.findIndex((batch) => batch.type === asset.type && batch.assets.some((entry) => entry.symbol === asset.symbol));
+    if (otherPriceBatchQueries[queryIndex]?.isFetching) {
       fetchingPriceAssetIds.add(asset.id);
     }
   });
@@ -237,7 +273,7 @@ export function usePortfolioStats(
     assetsLoading ||
     lotsQueries.some((q) => q.isLoading) ||
     cryptoPricesLoading ||
-    otherPriceQueries.some((q) => q.isLoading) ||
+    otherPriceBatchQueries.some((q) => q.isLoading) ||
     assetToPortfolioRateQueries.some((q) => q.isLoading) ||
     cryptoToAssetRateQueries.some((q) => q.isLoading)
   );
@@ -269,18 +305,19 @@ export function usePortfolioStats(
   // Build price map for other market assets
   const otherPriceMap = useMemo(() => {
     const map = new Map<string, PriceData>();
-    uniqueOtherAssets.forEach((asset, index) => {
-      const priceData = otherPriceQueries[index]?.data;
-      if (priceData) {
-        map.set(asset.symbol, {
-          price: priceData.price,
-          currency: priceData.currency,
-          todayChangePercent: priceData.todayChangePercent ?? null,
-        });
-      }
+    yahooBatches.forEach((batch, batchIndex) => {
+      const prices = otherPriceBatchQueries[batchIndex]?.data;
+      batch.assets.forEach((asset) => {
+        const priceData = prices?.[asset.symbol] ?? queryClient.getQueryData<PriceData>(
+          queryKeys.prices.single(asset.symbol, asset.type)
+        );
+        if (priceData) {
+          map.set(asset.symbol, priceData);
+        }
+      });
     });
     return map;
-  }, [uniqueOtherAssets, otherPriceQueries]);
+  }, [otherPriceBatchQueries, yahooBatches, queryClient]);
 
   // Calculate stats for each asset
   const { assetStats, portfolioStats, pendingPriceCount } = useMemo(() => {
